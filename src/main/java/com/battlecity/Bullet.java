@@ -12,13 +12,15 @@ public class Bullet {
     private Direction direction;
     private boolean fromEnemy;
     private int power;
+    private boolean canDestroyTrees;
 
-    public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power) {
+    public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees) {
         this.x = x;
         this.y = y;
         this.direction = direction;
         this.fromEnemy = fromEnemy;
         this.power = power;
+        this.canDestroyTrees = canDestroyTrees;
     }
 
     public void update() {
@@ -45,6 +47,13 @@ public class Bullet {
                y + SIZE > base.getY();
     }
 
+    public boolean collidesWith(Bullet other) {
+        return x < other.x + SIZE &&
+               x + SIZE > other.x &&
+               y < other.y + SIZE &&
+               y + SIZE > other.y;
+    }
+
     public boolean isOutOfBounds(int width, int height) {
         return x < 0 || x > width || y < 0 || y > height;
     }
@@ -55,4 +64,5 @@ public class Bullet {
     public Direction getDirection() { return direction; }
     public boolean isFromEnemy() { return fromEnemy; }
     public int getPower() { return power; }
+    public boolean canDestroyTrees() { return canDestroyTrees; }
 }

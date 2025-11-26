@@ -10,10 +10,13 @@ public class PowerUp {
     private static final int LIFETIME = 600; // 10 seconds
 
     public enum Type {
-        GUN,    // Ability to break iron/steel walls
-        STAR,   // Shooting faster (stackable)
-        CAR,    // Tank becomes faster (stackable)
-        SHIP    // Tank can swim through water
+        GUN,     // Ability to break iron/steel walls
+        STAR,    // Shooting faster (stackable)
+        CAR,     // Tank becomes faster (stackable)
+        SHIP,    // Tank can swim through water
+        SHOVEL,  // Base surrounded by steel for 1 minute
+        SAW,     // Able to destroy forest/trees
+        TANK     // Extra life
     }
 
     private double x;
@@ -60,6 +63,15 @@ public class PowerUp {
                 break;
             case SHIP:
                 tank.applyShip();
+                break;
+            case SHOVEL:
+                // SHOVEL is handled in Game class (affects map, not tank)
+                break;
+            case SAW:
+                tank.applySaw();
+                break;
+            case TANK:
+                tank.applyTank();
                 break;
         }
     }
@@ -111,6 +123,34 @@ public class PowerUp {
                 );
                 gc.fillRect(x + SIZE / 2 - 2, y + 10, 4, 8);
                 break;
+            case SHOVEL:
+                // Draw shovel icon
+                gc.fillRect(x + SIZE / 2 - 2, y + 4, 4, 12);
+                gc.fillPolygon(
+                    new double[]{x + SIZE / 2 - 4, x + SIZE / 2 + 4, x + SIZE / 2},
+                    new double[]{y + 14, y + 14, y + 20},
+                    3
+                );
+                break;
+            case SAW:
+                // Draw saw icon (zigzag pattern)
+                gc.fillOval(x + 4, y + 4, 16, 16);
+                gc.setStroke(Color.WHITE);
+                gc.setLineWidth(2);
+                for (int i = 0; i < 8; i++) {
+                    double angle = (Math.PI * 2 * i) / 8;
+                    double x1 = x + SIZE / 2 + 6 * Math.cos(angle);
+                    double y1 = y + SIZE / 2 + 6 * Math.sin(angle);
+                    double x2 = x + SIZE / 2 + 10 * Math.cos(angle);
+                    double y2 = y + SIZE / 2 + 10 * Math.sin(angle);
+                    gc.strokeLine(x1, y1, x2, y2);
+                }
+                break;
+            case TANK:
+                // Draw tank icon (helmet shape)
+                gc.fillOval(x + 6, y + 8, 12, 12);
+                gc.fillRect(x + 4, y + 12, 16, 6);
+                break;
         }
     }
 
@@ -120,6 +160,9 @@ public class PowerUp {
             case STAR -> Color.YELLOW;
             case CAR -> Color.LIME;
             case SHIP -> Color.CYAN;
+            case SHOVEL -> Color.ORANGE;
+            case SAW -> Color.BROWN;
+            case TANK -> Color.GREEN;
         };
     }
 

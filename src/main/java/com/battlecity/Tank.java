@@ -26,6 +26,7 @@ public class Tank {
     private double speedMultiplier; // Base is 1.0, each CAR adds 0.3
     private int bulletPower; // 1 = normal, 2 = can break steel
     private boolean canSwim; // SHIP power-up
+    private boolean canDestroyTrees; // SAW power-up
     private int shootCooldownReduction; // STAR power-up (each star reduces cooldown)
 
     private Random random;
@@ -49,6 +50,7 @@ public class Tank {
         this.speedMultiplier = 1.0;
         this.bulletPower = 1;
         this.canSwim = false;
+        this.canDestroyTrees = false;
         this.shootCooldownReduction = 0;
         this.random = new Random();
         this.aiMoveCooldown = 60;
@@ -102,7 +104,7 @@ public class Tank {
             case RIGHT -> bulletX = x + SIZE;
         }
 
-        bullets.add(new Bullet(bulletX, bulletY, direction, !isPlayer, bulletPower));
+        bullets.add(new Bullet(bulletX, bulletY, direction, !isPlayer, bulletPower, canDestroyTrees));
         // Apply shoot cooldown reduction from STAR power-ups (min cooldown is 5 frames)
         shootCooldown = Math.max(5, SHOOT_COOLDOWN - (shootCooldownReduction * 5));
         soundManager.playShoot();
@@ -230,7 +232,34 @@ public class Tank {
         canSwim = true; // Can move through water
     }
 
+    public void applySaw() {
+        canDestroyTrees = true; // Bullets can destroy trees
+    }
+
+    public void applyTank() {
+        lives++; // Extra life
+    }
+
     public boolean canSwim() {
         return canSwim;
+    }
+
+    public boolean canDestroyTrees() {
+        return canDestroyTrees;
+    }
+
+    public void respawn(double newX, double newY) {
+        this.x = newX;
+        this.y = newY;
+        this.direction = Direction.UP;
+        this.health = 1;
+        this.hasShield = true;
+        this.shieldDuration = 180;
+        this.alive = true;
+    }
+
+    public void setPosition(double x, double y) {
+        this.x = x;
+        this.y = y;
     }
 }

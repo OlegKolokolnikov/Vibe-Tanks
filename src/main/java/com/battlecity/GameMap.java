@@ -87,15 +87,19 @@ public class GameMap {
             }
         }
 
-        // Protect base with bricks
+        // Completely surround base with bricks (base is at row 24, col 12)
+        // Top wall
         tiles[23][11] = TileType.BRICK;
         tiles[23][12] = TileType.BRICK;
         tiles[23][13] = TileType.BRICK;
-        tiles[23][14] = TileType.BRICK;
-        tiles[22][11] = TileType.BRICK;
-        tiles[22][14] = TileType.BRICK;
-        tiles[21][11] = TileType.BRICK;
-        tiles[21][14] = TileType.BRICK;
+        // Left wall
+        tiles[24][11] = TileType.BRICK;
+        // Right wall
+        tiles[24][13] = TileType.BRICK;
+        // Bottom wall
+        tiles[25][11] = TileType.BRICK;
+        tiles[25][12] = TileType.BRICK;
+        tiles[25][13] = TileType.BRICK;
     }
 
     public boolean checkTankCollision(double x, double y, int tankSize) {
@@ -145,6 +149,10 @@ public class GameMap {
             if (bullet.getPower() >= 2) {
                 tiles[row][col] = TileType.EMPTY;
             }
+            return true;
+        } else if (tile == TileType.TREES && bullet.canDestroyTrees()) {
+            // Trees can be destroyed with SAW power-up
+            tiles[row][col] = TileType.EMPTY;
             return true;
         }
 
@@ -204,5 +212,25 @@ public class GameMap {
             return TileType.STEEL; // treat out of bounds as steel
         }
         return tiles[row][col];
+    }
+
+    // Base protection management (for SHOVEL power-up)
+    public void setBaseProtection(TileType protectionType) {
+        // Top wall
+        tiles[23][11] = protectionType;
+        tiles[23][12] = protectionType;
+        tiles[23][13] = protectionType;
+        // Left wall
+        tiles[24][11] = protectionType;
+        // Right wall
+        tiles[24][13] = protectionType;
+        // Bottom wall
+        tiles[25][11] = protectionType;
+        tiles[25][12] = protectionType;
+        tiles[25][13] = protectionType;
+    }
+
+    public void resetBaseProtection() {
+        setBaseProtection(TileType.BRICK);
     }
 }

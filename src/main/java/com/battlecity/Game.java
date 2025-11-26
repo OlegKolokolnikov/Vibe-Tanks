@@ -28,6 +28,7 @@ public class Game {
     private InputHandler inputHandler;
     private SoundManager soundManager;
     private Base base;
+    private double[][] playerStartPositions; // For respawning
 
     private AnimationTimer gameLoop;
     private long lastUpdate = 0;
@@ -35,6 +36,10 @@ public class Game {
 
     private boolean gameOver = false;
     private boolean victory = false;
+
+    // SHOVEL power-up - base protection with steel
+    private int baseProtectionDuration = 0;
+    private static final int BASE_PROTECTION_TIME = 3600; // 1 minute at 60 FPS
 
     public Game(Pane root, int width, int height, int playerCount, Stage stage) {
         this.root = root;
@@ -67,6 +72,14 @@ public class Game {
         }
         if (playerCount >= 2) {
             playerTanks.add(new Tank(16 * 32, 24 * 32, Direction.UP, true, 2)); // Player 2
+        }
+
+        // Store player start positions for respawn
+        playerStartPositions = new double[playerTanks.size()][2];
+        for (int i = 0; i < playerTanks.size(); i++) {
+            Tank player = playerTanks.get(i);
+            playerStartPositions[i][0] = player.getX();
+            playerStartPositions[i][1] = player.getY();
         }
 
         // Initialize enemy tanks list
@@ -118,13 +131,26 @@ public class Game {
         // Handle player input
         inputHandler.handleInput(gameMap, bullets, soundManager);
 
+        // Update base protection from SHOVEL power-up
+        if (baseProtectionDuration > 0) {
+            baseProtectionDuration--;
+            if (baseProtectionDuration == 0) {
+                gameMap.resetBaseProtection();
+            }
+        }
+
         // Spawn enemies if needed
         enemySpawner.update(enemyTanks);
 
-        // Update player tanks
-        for (Tank tank : playerTanks) {
-            if (tank.isAlive()) {
-                tank.update(gameMap, bullets, soundManager);
+        // Update player tanks and handle respawn
+        for (int i = 0; i < playerTanks.size(); i++) {
+            Tank player = playerTanks.get(i);
+            if (player.isAlive()) {
+                player.update(gameMap, bullets, soundManager);
+            } else if (player.getLives() > 0) {
+                // Player died but has lives left - respawn at start position
+                soundManager.playExplosion();
+                player.respawn(playerStartPositions[i][0], playerStartPositions[i][1]);
             }
         }
 
@@ -156,7 +182,7 @@ public class Game {
             // Check bullet collision with tanks
             boolean bulletRemoved = false;
 
-            // Check collision with enemy tanks
+            // Check collision with enemy tanks (from player bullets)
             if (!bullet.isFromEnemy()) {
                 for (Tank enemy : enemyTanks) {
                     if (enemy.isAlive() && bullet.collidesWith(enemy)) {
@@ -188,13 +214,28 @@ public class Game {
                         break;
                     }
                 }
+            }
 
-                // Check collision with base
-                if (!bulletRemoved && bullet.collidesWith(base)) {
-                    base.destroy();
-                    soundManager.playExplosion();
-                    bulletIterator.remove();
-                    gameOver = true;
+            // Check collision with base (all bullets can hit base)
+            if (!bulletRemoved && bullet.collidesWith(base)) {
+                base.destroy();
+                soundManager.playExplosion();
+                bulletIterator.remove();
+                bulletRemoved = true;
+                gameOver = true;
+            }
+        }
+
+        // Check bullet-to-bullet collisions (bullets annihilate each other)
+        for (int i = 0; i < bullets.size(); i++) {
+            Bullet bullet1 = bullets.get(i);
+            for (int j = i + 1; j < bullets.size(); j++) {
+                Bullet bullet2 = bullets.get(j);
+                if (bullet1.collidesWith(bullet2)) {
+                    bullets.remove(j);
+                    bullets.remove(i);
+                    i--; // Adjust index after removal
+                    break;
                 }
             }
         }
@@ -209,7 +250,13 @@ public class Game {
             boolean collected = false;
             for (Tank player : playerTanks) {
                 if (player.isAlive() && powerUp.collidesWith(player)) {
-                    powerUp.applyEffect(player);
+                    // Handle SHOVEL power-up specially (affects map, not tank)
+                    if (powerUp.getType() == PowerUp.Type.SHOVEL) {
+                        gameMap.setBaseProtection(GameMap.TileType.STEEL);
+                        baseProtectionDuration = BASE_PROTECTION_TIME;
+                    } else {
+                        powerUp.applyEffect(player);
+                    }
                     powerUpIterator.remove();
                     collected = true;
                     break;
@@ -220,7 +267,13 @@ public class Game {
             if (!collected) {
                 for (Tank enemy : enemyTanks) {
                     if (enemy.isAlive() && powerUp.collidesWith(enemy)) {
-                        powerUp.applyEffect(enemy);
+                        // Handle SHOVEL power-up specially (affects map, not tank)
+                        if (powerUp.getType() == PowerUp.Type.SHOVEL) {
+                            gameMap.setBaseProtection(GameMap.TileType.STEEL);
+                            baseProtectionDuration = BASE_PROTECTION_TIME;
+                        } else {
+                            powerUp.applyEffect(enemy);
+                        }
                         powerUpIterator.remove();
                         collected = true;
                         break;

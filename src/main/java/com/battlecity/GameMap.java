@@ -99,6 +99,10 @@ public class GameMap {
     }
 
     public boolean checkTankCollision(double x, double y, int tankSize) {
+        return checkTankCollision(x, y, tankSize, false);
+    }
+
+    public boolean checkTankCollision(double x, double y, int tankSize, boolean canSwim) {
         int startCol = (int) x / TILE_SIZE;
         int endCol = (int) (x + tankSize - 1) / TILE_SIZE;
         int startRow = (int) y / TILE_SIZE;
@@ -110,8 +114,12 @@ public class GameMap {
                     return true; // collision with boundary
                 }
                 TileType tile = tiles[row][col];
-                if (tile == TileType.BRICK || tile == TileType.STEEL || tile == TileType.WATER) {
+                if (tile == TileType.BRICK || tile == TileType.STEEL) {
                     return true; // collision with solid tile
+                }
+                // Check water collision only if tank cannot swim
+                if (tile == TileType.WATER && !canSwim) {
+                    return true;
                 }
             }
         }

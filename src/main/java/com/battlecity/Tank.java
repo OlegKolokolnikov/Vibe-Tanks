@@ -23,10 +23,10 @@ public class Tank {
     private int shootCooldown;
     private boolean hasShield;
     private int shieldDuration;
-    private double speedMultiplier;
-    private int speedDuration;
-    private int bulletPower;
-    private int powerDuration;
+    private double speedMultiplier; // Base is 1.0, each CAR adds 0.3
+    private int bulletPower; // 1 = normal, 2 = can break steel
+    private boolean canSwim; // SHIP power-up
+    private int shootCooldownReduction; // STAR power-up (each star reduces cooldown)
 
     private Random random;
 
@@ -47,9 +47,9 @@ public class Tank {
         this.hasShield = isPlayer; // Players start with shield
         this.shieldDuration = isPlayer ? 180 : 0; // 3 seconds
         this.speedMultiplier = 1.0;
-        this.speedDuration = 0;
         this.bulletPower = 1;
-        this.powerDuration = 0;
+        this.canSwim = false;
+        this.shootCooldownReduction = 0;
         this.random = new Random();
         this.aiMoveCooldown = 60;
         this.aiShootCooldown = 90;
@@ -63,14 +63,6 @@ public class Tank {
         if (shieldDuration > 0) {
             shieldDuration--;
             if (shieldDuration == 0) hasShield = false;
-        }
-        if (speedDuration > 0) {
-            speedDuration--;
-            if (speedDuration == 0) speedMultiplier = 1.0;
-        }
-        if (powerDuration > 0) {
-            powerDuration--;
-            if (powerDuration == 0) bulletPower = 1;
         }
     }
 
@@ -89,8 +81,8 @@ public class Tank {
             return;
         }
 
-        // Check collision with map tiles
-        if (!map.checkTankCollision(newX, newY, SIZE)) {
+        // Check collision with map tiles (pass canSwim for SHIP power-up)
+        if (!map.checkTankCollision(newX, newY, SIZE, canSwim)) {
             x = newX;
             y = newY;
         }
@@ -111,7 +103,8 @@ public class Tank {
         }
 
         bullets.add(new Bullet(bulletX, bulletY, direction, !isPlayer, bulletPower));
-        shootCooldown = SHOOT_COOLDOWN;
+        // Apply shoot cooldown reduction from STAR power-ups (min cooldown is 5 frames)
+        shootCooldown = Math.max(5, SHOOT_COOLDOWN - (shootCooldownReduction * 5));
         soundManager.playShoot();
     }
 
@@ -220,22 +213,24 @@ public class Tank {
     public Direction getDirection() { return direction; }
 
     // Power-up effects
-    public void applyShield() {
-        hasShield = true;
-        shieldDuration = 300; // 5 seconds
+    public void applyGun() {
+        bulletPower = 2; // Can break steel walls
     }
 
-    public void applySpeed() {
-        speedMultiplier = 1.5;
-        speedDuration = 300; // 5 seconds
+    public void applyStar() {
+        shootCooldownReduction++; // Each star reduces cooldown by 5 frames
     }
 
-    public void applyPower() {
-        bulletPower = 2;
-        powerDuration = 300; // 5 seconds
+    public void applyCar() {
+        speedMultiplier += 0.3; // Each car increases speed by 30%
+        speedMultiplier = Math.min(speedMultiplier, 2.5); // Cap at 2.5x speed
     }
 
-    public void addLife() {
-        lives++;
+    public void applyShip() {
+        canSwim = true; // Can move through water
+    }
+
+    public boolean canSwim() {
+        return canSwim;
     }
 }

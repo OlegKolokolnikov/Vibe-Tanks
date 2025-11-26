@@ -10,10 +10,10 @@ public class PowerUp {
     private static final int LIFETIME = 600; // 10 seconds
 
     public enum Type {
-        SHIELD,   // Temporary invincibility
-        SPEED,    // Increased movement speed
-        POWER,    // More powerful bullets
-        LIFE      // Extra life
+        GUN,    // Ability to break iron/steel walls
+        STAR,   // Shooting faster (stackable)
+        CAR,    // Tank becomes faster (stackable)
+        SHIP    // Tank can swim through water
     }
 
     private double x;
@@ -49,17 +49,17 @@ public class PowerUp {
 
     public void applyEffect(Tank tank) {
         switch (type) {
-            case SHIELD:
-                tank.applyShield();
+            case GUN:
+                tank.applyGun();
                 break;
-            case SPEED:
-                tank.applySpeed();
+            case STAR:
+                tank.applyStar();
                 break;
-            case POWER:
-                tank.applyPower();
+            case CAR:
+                tank.applyCar();
                 break;
-            case LIFE:
-                tank.addLife();
+            case SHIP:
+                tank.applyShip();
                 break;
         }
     }
@@ -76,23 +76,14 @@ public class PowerUp {
         // Draw icon based on type
         gc.setFill(getTypeColor());
         switch (type) {
-            case SHIELD:
-                // Draw shield icon
-                gc.fillOval(x + 4, y + 4, SIZE - 8, SIZE - 8);
-                gc.setStroke(Color.CYAN);
-                gc.setLineWidth(2);
-                gc.strokeOval(x + 4, y + 4, SIZE - 8, SIZE - 8);
+            case GUN:
+                // Draw gun icon - rectangle representing gun
+                gc.fillRect(x + 6, y + 10, 4, 10);
+                gc.fillRect(x + 10, y + 8, 8, 4);
+                gc.fillRect(x + 14, y + 12, 6, 6);
                 break;
-            case SPEED:
-                // Draw speed icon (arrow)
-                gc.fillPolygon(
-                    new double[]{x + SIZE / 2, x + SIZE - 4, x + 4},
-                    new double[]{y + 4, y + SIZE / 2, y + SIZE / 2},
-                    3
-                );
-                break;
-            case POWER:
-                // Draw power icon (star)
+            case STAR:
+                // Draw star icon
                 double centerX = x + SIZE / 2;
                 double centerY = y + SIZE / 2;
                 double[] xPoints = new double[5];
@@ -104,19 +95,31 @@ public class PowerUp {
                 }
                 gc.fillPolygon(xPoints, yPoints, 5);
                 break;
-            case LIFE:
-                // Draw life icon (heart)
-                gc.fillText("+1", x + 6, y + SIZE / 2 + 4);
+            case CAR:
+                // Draw car/tank icon
+                gc.fillRect(x + 6, y + 10, 12, 8);
+                gc.fillOval(x + 6, y + 16, 4, 4);
+                gc.fillOval(x + 14, y + 16, 4, 4);
+                gc.fillRect(x + 10, y + 6, 4, 4);
+                break;
+            case SHIP:
+                // Draw ship/boat icon
+                gc.fillPolygon(
+                    new double[]{x + SIZE / 2, x + 4, x + SIZE - 4},
+                    new double[]{y + 6, y + SIZE - 6, y + SIZE - 6},
+                    3
+                );
+                gc.fillRect(x + SIZE / 2 - 2, y + 10, 4, 8);
                 break;
         }
     }
 
     private Color getTypeColor() {
         return switch (type) {
-            case SHIELD -> Color.CYAN;
-            case SPEED -> Color.LIME;
-            case POWER -> Color.ORANGE;
-            case LIFE -> Color.RED;
+            case GUN -> Color.RED;
+            case STAR -> Color.YELLOW;
+            case CAR -> Color.LIME;
+            case SHIP -> Color.CYAN;
         };
     }
 

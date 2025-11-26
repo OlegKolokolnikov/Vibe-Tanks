@@ -45,6 +45,7 @@ public class Game {
 
         canvas = new Canvas(width, height);
         gc = canvas.getGraphicsContext2D();
+        canvas.setFocusTraversable(false); // Canvas should not take focus
         root.getChildren().add(canvas);
 
         initialize();
@@ -77,8 +78,8 @@ public class Game {
         // Initialize input handler
         inputHandler = new InputHandler(root, playerTanks);
 
-        // Add ESC key handler to return to menu
-        root.setOnKeyPressed(event -> {
+        // Add ESC key handler to return to menu - combine with existing handler
+        root.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ESCAPE && (gameOver || victory)) {
                 returnToMenu();
             }
@@ -205,16 +206,30 @@ public class Game {
             powerUp.update();
 
             // Check if collected by players
+            boolean collected = false;
             for (Tank player : playerTanks) {
                 if (player.isAlive() && powerUp.collidesWith(player)) {
                     powerUp.applyEffect(player);
                     powerUpIterator.remove();
+                    collected = true;
                     break;
                 }
             }
 
-            // Remove expired power-ups
-            if (powerUp.isExpired()) {
+            // Check if collected by enemies (if not already collected by players)
+            if (!collected) {
+                for (Tank enemy : enemyTanks) {
+                    if (enemy.isAlive() && powerUp.collidesWith(enemy)) {
+                        powerUp.applyEffect(enemy);
+                        powerUpIterator.remove();
+                        collected = true;
+                        break;
+                    }
+                }
+            }
+
+            // Remove expired power-ups (only if not already collected)
+            if (!collected && powerUp.isExpired()) {
                 powerUpIterator.remove();
             }
         }

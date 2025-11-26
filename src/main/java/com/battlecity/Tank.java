@@ -171,7 +171,7 @@ public class Tank {
                     }
                 }
                 stuckCounter = 0;
-                aiMoveCooldown = 30 + random.nextInt(60);
+                aiMoveCooldown = 60 + random.nextInt(120); // Commit to new direction longer
             }
         } else {
             stuckCounter = 0;

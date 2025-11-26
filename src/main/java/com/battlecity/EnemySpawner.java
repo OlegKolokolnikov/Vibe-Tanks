@@ -60,7 +60,29 @@ public class EnemySpawner {
         }
 
         if (positionClear) {
-            Tank enemy = new Tank(spawnPos[0], spawnPos[1], Direction.DOWN, false, 0);
+            // Determine enemy type based on progression and randomness
+            Tank.EnemyType type;
+            int remaining = totalEnemies - spawnedCount;
+            double rand = random.nextDouble();
+
+            if (remaining <= 5) {
+                // Last 5 enemies are HEAVY
+                type = Tank.EnemyType.HEAVY;
+            } else if (rand < 0.5) {
+                // 50% REGULAR
+                type = Tank.EnemyType.REGULAR;
+            } else if (rand < 0.7) {
+                // 20% FAST
+                type = Tank.EnemyType.FAST;
+            } else if (rand < 0.85) {
+                // 15% ARMORED
+                type = Tank.EnemyType.ARMORED;
+            } else {
+                // 15% POWER
+                type = Tank.EnemyType.POWER;
+            }
+
+            Tank enemy = new Tank(spawnPos[0], spawnPos[1], Direction.DOWN, false, 0, type);
             enemyTanks.add(enemy);
             spawnedCount++;
         }

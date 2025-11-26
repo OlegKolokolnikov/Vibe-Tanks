@@ -9,6 +9,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.util.*;
+import java.util.Random;
 
 public class Game {
     private final Pane root;
@@ -123,6 +124,29 @@ public class Game {
         gameLoop.start();
     }
 
+    private double[] getRandomPowerUpSpawnPosition() {
+        Random random = new Random();
+        int maxAttempts = 100;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            // Random position within playable area (avoiding borders)
+            int col = 2 + random.nextInt(22); // 2 to 23 (avoid border at 0,1 and 24,25)
+            int row = 2 + random.nextInt(22);
+
+            double x = col * 32;
+            double y = row * 32;
+
+            // Check if position is clear (not in wall, water, or trees)
+            GameMap.TileType tile = gameMap.getTile(row, col);
+            if (tile == GameMap.TileType.EMPTY) {
+                return new double[]{x, y};
+            }
+        }
+
+        // Fallback to center if no valid position found
+        return new double[]{13 * 32, 13 * 32};
+    }
+
     private void update() {
         if (gameOver || victory) {
             return;
@@ -186,13 +210,16 @@ public class Game {
             if (!bullet.isFromEnemy()) {
                 for (Tank enemy : enemyTanks) {
                     if (enemy.isAlive() && bullet.collidesWith(enemy)) {
-                        enemy.damage();
+                        boolean dropPowerUp = enemy.damage();
+
+                        // Handle power-up drops (POWER type drops on each hit, others on death with 30% chance)
+                        if (dropPowerUp || (!enemy.isAlive() && Math.random() < 0.3)) {
+                            double[] spawnPos = getRandomPowerUpSpawnPosition();
+                            powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                        }
+
                         if (!enemy.isAlive()) {
                             soundManager.playExplosion();
-                            // Random power-up drop
-                            if (Math.random() < 0.3) {
-                                powerUps.add(new PowerUp(enemy.getX(), enemy.getY()));
-                            }
                         }
                         bulletIterator.remove();
                         bulletRemoved = true;

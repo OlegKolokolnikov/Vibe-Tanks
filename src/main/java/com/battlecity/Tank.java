@@ -7,6 +7,14 @@ import java.util.List;
 import java.util.Random;
 
 public class Tank {
+    public enum EnemyType {
+        REGULAR,    // 1 shot, normal speed
+        ARMORED,    // 2 shots, normal speed, bigger
+        FAST,       // 1 shot, faster
+        POWER,      // 2 shots, drops power-up on each hit, rainbow colors
+        HEAVY       // 3 shots, fast, black with white dot
+    }
+
     private static final int SIZE = 28;
     private static final double SPEED = 2.0;
     private static final int SHOOT_COOLDOWN = 30; // frames
@@ -16,9 +24,11 @@ public class Tank {
     private Direction direction;
     private boolean isPlayer;
     private int playerNumber; // 1 or 2
+    private EnemyType enemyType; // For enemy tanks
     private boolean alive;
     private int lives;
     private int health;
+    private int maxHealth;
 
     private int shootCooldown;
     private boolean hasShield;
@@ -34,20 +44,49 @@ public class Tank {
     // AI variables
     private int aiMoveCooldown;
     private int aiShootCooldown;
+    private double lastX, lastY; // Track position to detect stuck
+    private int stuckCounter; // Count frames stuck
 
     public Tank(double x, double y, Direction direction, boolean isPlayer, int playerNumber) {
+        this(x, y, direction, isPlayer, playerNumber, EnemyType.REGULAR);
+    }
+
+    public Tank(double x, double y, Direction direction, boolean isPlayer, int playerNumber, EnemyType enemyType) {
         this.x = x;
         this.y = y;
         this.direction = direction;
         this.isPlayer = isPlayer;
         this.playerNumber = playerNumber;
+        this.enemyType = enemyType;
         this.alive = true;
         this.lives = isPlayer ? 3 : 1;
-        this.health = 1;
+
+        // Set health and speed based on enemy type
+        if (!isPlayer) {
+            switch (enemyType) {
+                case REGULAR -> this.maxHealth = 1;
+                case ARMORED -> this.maxHealth = 2;
+                case FAST -> {
+                    this.maxHealth = 1;
+                    this.speedMultiplier = 1.5;
+                }
+                case POWER -> this.maxHealth = 2;
+                case HEAVY -> {
+                    this.maxHealth = 3;
+                    this.speedMultiplier = 1.5;
+                }
+            }
+        } else {
+            this.maxHealth = 1;
+        }
+
+        this.health = maxHealth;
         this.shootCooldown = 0;
         this.hasShield = isPlayer; // Players start with shield
         this.shieldDuration = isPlayer ? 180 : 0; // 3 seconds
-        this.speedMultiplier = 1.0;
+        if (isPlayer) {
+            this.speedMultiplier = 1.0;
+        }
         this.bulletPower = 1;
         this.canSwim = false;
         this.canDestroyTrees = false;
@@ -55,6 +94,9 @@ public class Tank {
         this.random = new Random();
         this.aiMoveCooldown = 60;
         this.aiShootCooldown = 90;
+        this.lastX = x;
+        this.lastY = y;
+        this.stuckCounter = 0;
     }
 
     public void update(GameMap map, List<Bullet> bullets, SoundManager soundManager) {
@@ -115,6 +157,28 @@ public class Tank {
 
         update(map, bullets, soundManager);
 
+        // Detect if stuck (position hasn't changed)
+        if (Math.abs(x - lastX) < 0.1 && Math.abs(y - lastY) < 0.1) {
+            stuckCounter++;
+            if (stuckCounter > 3) { // Stuck for 3 frames - change direction immediately
+                // Try different directions until one works
+                Direction[] directions = Direction.values();
+                Direction originalDirection = direction;
+                for (int i = 0; i < 4; i++) {
+                    direction = directions[random.nextInt(4)];
+                    if (direction != originalDirection) {
+                        break;
+                    }
+                }
+                stuckCounter = 0;
+                aiMoveCooldown = 30 + random.nextInt(60);
+            }
+        } else {
+            stuckCounter = 0;
+        }
+        lastX = x;
+        lastY = y;
+
         // Decrease AI cooldowns
         aiMoveCooldown--;
         aiShootCooldown--;
@@ -154,20 +218,29 @@ public class Tank {
         }
     }
 
-    public void damage() {
-        if (!alive || hasShield) return;
+    public boolean damage() {
+        if (!alive || hasShield) return false;
 
         health--;
+        boolean dropPowerUp = false;
+
+        // POWER type drops power-up on every hit
+        if (!isPlayer && enemyType == EnemyType.POWER && health > 0) {
+            dropPowerUp = true;
+        }
+
         if (health <= 0) {
             lives--;
             if (lives > 0) {
-                health = 1;
+                health = maxHealth;
                 hasShield = true;
                 shieldDuration = 180;
             } else {
                 alive = false;
             }
         }
+
+        return dropPowerUp;
     }
 
     public void render(GraphicsContext gc) {
@@ -180,13 +253,48 @@ public class Tank {
             gc.strokeOval(x - 4, y - 4, SIZE + 8, SIZE + 8);
         }
 
-        // Draw tank body
+        // Draw tank body based on type
         if (isPlayer) {
             gc.setFill(playerNumber == 1 ? Color.YELLOW : Color.LIME);
+            gc.fillRect(x, y, SIZE, SIZE);
         } else {
-            gc.setFill(Color.RED);
+            // Draw different enemy types
+            switch (enemyType) {
+                case REGULAR -> {
+                    gc.setFill(Color.RED);
+                    gc.fillRect(x, y, SIZE, SIZE);
+                }
+                case ARMORED -> {
+                    // Bigger, slightly darker tank
+                    gc.setFill(Color.DARKRED);
+                    gc.fillRect(x - 2, y - 2, SIZE + 4, SIZE + 4);
+                    gc.setFill(Color.RED);
+                    gc.fillRect(x, y, SIZE, SIZE);
+                }
+                case FAST -> {
+                    // Lighter red, sleeker
+                    gc.setFill(Color.rgb(255, 100, 100));
+                    gc.fillRect(x, y, SIZE, SIZE);
+                }
+                case POWER -> {
+                    // Rainbow/animated colors
+                    int frame = (int) (System.currentTimeMillis() / 100) % 7;
+                    Color[] rainbow = {
+                        Color.RED, Color.ORANGE, Color.YELLOW,
+                        Color.GREEN, Color.CYAN, Color.BLUE, Color.PURPLE
+                    };
+                    gc.setFill(rainbow[frame]);
+                    gc.fillRect(x, y, SIZE, SIZE);
+                }
+                case HEAVY -> {
+                    // Black tank with white dot in center
+                    gc.setFill(Color.BLACK);
+                    gc.fillRect(x - 3, y - 3, SIZE + 6, SIZE + 6);
+                    gc.setFill(Color.WHITE);
+                    gc.fillOval(x + SIZE / 2 - 4, y + SIZE / 2 - 4, 8, 8);
+                }
+            }
         }
-        gc.fillRect(x, y, SIZE, SIZE);
 
         // Draw tank direction indicator
         gc.setFill(Color.DARKGRAY);
@@ -213,6 +321,7 @@ public class Tank {
     public int getLives() { return lives; }
     public boolean hasShield() { return hasShield; }
     public Direction getDirection() { return direction; }
+    public EnemyType getEnemyType() { return enemyType; }
 
     // Power-up effects
     public void applyGun() {

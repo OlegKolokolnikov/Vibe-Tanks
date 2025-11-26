@@ -22,22 +22,37 @@ public class Base {
 
     public void render(GraphicsContext gc) {
         if (alive) {
-            // Draw base as a flag/eagle
-            gc.setFill(Color.GOLD);
+            // Draw base as classic Battle City eagle
+            // Background
+            gc.setFill(Color.rgb(252, 216, 168)); // Tan background
             gc.fillRect(x, y, SIZE, SIZE);
-            gc.setFill(Color.RED);
-            gc.fillPolygon(
-                new double[]{x + SIZE / 2, x + 10, x + SIZE - 10},
-                new double[]{y + 8, y + 20, y + 20},
-                3
-            );
+
+            // Eagle body - black
+            gc.setFill(Color.BLACK);
+            // Head
+            gc.fillRect(x + 12, y + 4, 8, 8);
+            // Body center
+            gc.fillRect(x + 8, y + 12, 16, 12);
+            // Wings
+            gc.fillRect(x + 4, y + 16, 6, 8);
+            gc.fillRect(x + 22, y + 16, 6, 8);
+            // Tail/legs
+            gc.fillRect(x + 10, y + 24, 4, 6);
+            gc.fillRect(x + 18, y + 24, 4, 6);
+
+            // Orange/red details
+            gc.setFill(Color.rgb(252, 116, 96));
+            gc.fillRect(x + 10, y + 16, 4, 4);
+            gc.fillRect(x + 18, y + 16, 4, 4);
+            gc.fillRect(x + 14, y + 12, 4, 8);
         } else {
-            // Draw destroyed base
-            gc.setFill(Color.DARKRED);
+            // Draw destroyed base - rubble
+            gc.setFill(Color.rgb(80, 48, 0)); // Dark brown
             gc.fillRect(x, y, SIZE, SIZE);
-            gc.setStroke(Color.RED);
-            gc.strokeLine(x, y, x + SIZE, y + SIZE);
-            gc.strokeLine(x + SIZE, y, x, y + SIZE);
+            gc.setFill(Color.rgb(120, 72, 0));
+            gc.fillRect(x + 4, y + 4, 8, 8);
+            gc.fillRect(x + 20, y + 8, 10, 10);
+            gc.fillRect(x + 8, y + 20, 12, 10);
         }
     }
 

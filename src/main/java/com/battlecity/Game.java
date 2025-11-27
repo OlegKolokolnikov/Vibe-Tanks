@@ -407,10 +407,13 @@ public class Game {
                 continue;
             }
 
-            // Check bullet out of bounds
+            // Check bullet out of bounds and handle wraparound through destroyed borders
             if (bullet.isOutOfBounds(width, height)) {
-                bulletIterator.remove();
-                continue;
+                // Try to wrap around if border is destroyed, otherwise remove bullet
+                if (!bullet.handleWraparound(gameMap, width, height)) {
+                    bulletIterator.remove();
+                    continue;
+                }
             }
 
             // Check bullet collision with tanks

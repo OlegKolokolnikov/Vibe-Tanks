@@ -58,6 +58,52 @@ public class Bullet {
         return x < 0 || x > width || y < 0 || y > height;
     }
 
+    // Check and handle wraparound through destroyed borders
+    // Returns true if bullet wrapped around, false if it should be removed
+    public boolean handleWraparound(GameMap map, int width, int height) {
+        // Left edge
+        if (x < 0) {
+            int row = (int)((y + SIZE/2) / 32);
+            if (row >= 0 && row < map.getHeight() && map.getTile(row, 0) == GameMap.TileType.EMPTY) {
+                x = width - SIZE; // Wrap to right edge
+                return true;
+            }
+            return false; // Border intact, bullet should be removed
+        }
+
+        // Right edge
+        if (x > width) {
+            int row = (int)((y + SIZE/2) / 32);
+            if (row >= 0 && row < map.getHeight() && map.getTile(row, map.getWidth() - 1) == GameMap.TileType.EMPTY) {
+                x = 0; // Wrap to left edge
+                return true;
+            }
+            return false; // Border intact, bullet should be removed
+        }
+
+        // Top edge
+        if (y < 0) {
+            int col = (int)((x + SIZE/2) / 32);
+            if (col >= 0 && col < map.getWidth() && map.getTile(0, col) == GameMap.TileType.EMPTY) {
+                y = height - SIZE; // Wrap to bottom edge
+                return true;
+            }
+            return false; // Border intact, bullet should be removed
+        }
+
+        // Bottom edge
+        if (y > height) {
+            int col = (int)((x + SIZE/2) / 32);
+            if (col >= 0 && col < map.getWidth() && map.getTile(map.getHeight() - 1, col) == GameMap.TileType.EMPTY) {
+                y = 0; // Wrap to top edge
+                return true;
+            }
+            return false; // Border intact, bullet should be removed
+        }
+
+        return true; // Bullet is within bounds
+    }
+
     public double getX() { return x; }
     public double getY() { return y; }
     public int getSize() { return SIZE; }

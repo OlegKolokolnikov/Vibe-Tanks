@@ -126,11 +126,49 @@ public class Tank {
             double newX = x + slidingDirection.getDx() * slideStep;
             double newY = y + slidingDirection.getDy() * slideStep;
 
-            // Check boundaries and collisions
+            // Check boundaries and handle wraparound during sliding
+            int mapWidth = map.getWidth() * 32;
+            int mapHeight = map.getHeight() * 32;
             boolean canSlide = true;
-            if (newX < 0 || newX + SIZE > map.getWidth() * 32 ||
-                newY < 0 || newY + SIZE > map.getHeight() * 32) {
-                canSlide = false;
+
+            // Left edge wraparound
+            if (newX < 0) {
+                int row = (int)((y + SIZE/2) / 32);
+                if (map.getTile(row, 0) == GameMap.TileType.EMPTY) {
+                    newX = mapWidth - SIZE;
+                } else {
+                    canSlide = false;
+                }
+            }
+
+            // Right edge wraparound
+            if (newX + SIZE > mapWidth) {
+                int row = (int)((y + SIZE/2) / 32);
+                if (map.getTile(row, map.getWidth() - 1) == GameMap.TileType.EMPTY) {
+                    newX = 0;
+                } else {
+                    canSlide = false;
+                }
+            }
+
+            // Top edge wraparound
+            if (newY < 0) {
+                int col = (int)((x + SIZE/2) / 32);
+                if (map.getTile(0, col) == GameMap.TileType.EMPTY) {
+                    newY = mapHeight - SIZE;
+                } else {
+                    canSlide = false;
+                }
+            }
+
+            // Bottom edge wraparound
+            if (newY + SIZE > mapHeight) {
+                int col = (int)((x + SIZE/2) / 32);
+                if (map.getTile(map.getHeight() - 1, col) == GameMap.TileType.EMPTY) {
+                    newY = 0;
+                } else {
+                    canSlide = false;
+                }
             }
 
             // Check collision with other tanks
@@ -187,10 +225,52 @@ public class Tank {
         double newX = x + direction.getDx() * speed;
         double newY = y + direction.getDy() * speed;
 
-        // Check map boundaries
-        if (newX < 0 || newX + SIZE > map.getWidth() * 32 ||
-            newY < 0 || newY + SIZE > map.getHeight() * 32) {
-            return;
+        // Check map boundaries and handle wraparound through destroyed borders
+        int mapWidth = map.getWidth() * 32;
+        int mapHeight = map.getHeight() * 32;
+
+        // Left edge wraparound
+        if (newX < 0) {
+            // Check if left border column (col 0) is destroyed at tank's row
+            int row = (int)((y + SIZE/2) / 32);
+            if (map.getTile(row, 0) == GameMap.TileType.EMPTY) {
+                newX = mapWidth - SIZE; // Wrap to right edge
+            } else {
+                return; // Can't move through intact border
+            }
+        }
+
+        // Right edge wraparound
+        if (newX + SIZE > mapWidth) {
+            // Check if right border column (col 25) is destroyed at tank's row
+            int row = (int)((y + SIZE/2) / 32);
+            if (map.getTile(row, map.getWidth() - 1) == GameMap.TileType.EMPTY) {
+                newX = 0; // Wrap to left edge
+            } else {
+                return; // Can't move through intact border
+            }
+        }
+
+        // Top edge wraparound
+        if (newY < 0) {
+            // Check if top border row (row 0) is destroyed at tank's column
+            int col = (int)((x + SIZE/2) / 32);
+            if (map.getTile(0, col) == GameMap.TileType.EMPTY) {
+                newY = mapHeight - SIZE; // Wrap to bottom edge
+            } else {
+                return; // Can't move through intact border
+            }
+        }
+
+        // Bottom edge wraparound
+        if (newY + SIZE > mapHeight) {
+            // Check if bottom border row (row 25) is destroyed at tank's column
+            int col = (int)((x + SIZE/2) / 32);
+            if (map.getTile(map.getHeight() - 1, col) == GameMap.TileType.EMPTY) {
+                newY = 0; // Wrap to top edge
+            } else {
+                return; // Can't move through intact border
+            }
         }
 
         // Check collision with other tanks

@@ -37,6 +37,13 @@ public class PowerUp {
         this.type = types[random.nextInt(types.length)];
     }
 
+    public PowerUp(double x, double y, Type type) {
+        this.x = x;
+        this.y = y;
+        this.lifetime = LIFETIME;
+        this.type = type;
+    }
+
     public void update() {
         lifetime--;
     }
@@ -190,5 +197,7 @@ public class PowerUp {
         };
     }
 
+    public double getX() { return x; }
+    public double getY() { return y; }
     public Type getType() { return type; }
 }

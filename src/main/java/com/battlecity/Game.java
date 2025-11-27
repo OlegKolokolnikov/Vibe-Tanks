@@ -38,6 +38,13 @@ public class Game {
     private long lastUpdate = 0;
     private static final long FRAME_TIME = 16_666_667; // ~60 FPS in nanoseconds
 
+    // Network multiplayer
+    private NetworkManager network;
+    private boolean isNetworkGame = false;
+    private long lastNetworkUpdate = 0;
+    private static final long NETWORK_UPDATE_INTERVAL = 50_000_000; // ~20 updates per second
+    private List<GameState.TileChange> mapChanges = new ArrayList<>();
+
     private boolean gameOver = false;
     private boolean victory = false;
 
@@ -56,13 +63,21 @@ public class Game {
     private ImageView gameOverImageView;
     private boolean gameOverSoundPlayed = false;
 
+    // Constructor for local game
     public Game(Pane root, int width, int height, int playerCount, int totalEnemies, Stage stage) {
+        this(root, width, height, playerCount, totalEnemies, stage, null);
+    }
+
+    // Constructor for network game
+    public Game(Pane root, int width, int height, int playerCount, int totalEnemies, Stage stage, NetworkManager network) {
         this.root = root;
         this.width = width;
         this.height = height;
         this.playerCount = playerCount;
         this.totalEnemies = totalEnemies;
         this.stage = stage;
+        this.network = network;
+        this.isNetworkGame = (network != null);
 
         canvas = new Canvas(width, height);
         gc = canvas.getGraphicsContext2D();
@@ -331,12 +346,45 @@ public class Game {
             return;
         }
 
+        // Network game handling
+        if (isNetworkGame && network != null) {
+            if (!network.isConnected()) {
+                // Connection lost
+                gameOver = true;
+                System.out.println("Network connection lost!");
+                return;
+            }
+
+            if (network.isHost()) {
+                // HOST: Receive and apply client input for Player 2
+                PlayerInput clientInput = network.getPlayerInput();
+                if (clientInput != null && playerTanks.size() >= 2) {
+                    applyPlayerInput(playerTanks.get(1), clientInput);
+                }
+                // Host runs full game logic below
+            } else {
+                // CLIENT: Send Player 2 input to host
+                if (playerTanks.size() >= 2) {
+                    PlayerInput input = capturePlayerInput(playerTanks.get(1));
+                    network.sendInput(input);
+                }
+
+                // CLIENT: Receive and apply game state from host
+                GameState state = network.getLatestGameState();
+                if (state != null) {
+                    applyGameState(state);
+                }
+                // Client skips game logic and only renders
+                return;
+            }
+        }
+
         // Create combined list of all tanks for collision detection
         List<Tank> allTanks = new ArrayList<>();
         allTanks.addAll(playerTanks);
         allTanks.addAll(enemyTanks);
 
-        // Handle player input
+        // Handle player input (local or host)
         inputHandler.handleInput(gameMap, bullets, soundManager, allTanks, base);
 
         // Update base protection from SHOVEL power-up
@@ -546,6 +594,16 @@ public class Game {
         boolean allPlayersDead = playerTanks.stream().allMatch(p -> !p.isAlive() && p.getLives() <= 0);
         if (allPlayersDead || !base.isAlive()) {
             gameOver = true;
+        }
+
+        // HOST: Send game state to client periodically
+        if (isNetworkGame && network != null && network.isHost()) {
+            long now = System.nanoTime();
+            if (now - lastNetworkUpdate >= NETWORK_UPDATE_INTERVAL) {
+                GameState state = buildGameState();
+                network.sendGameState(state);
+                lastNetworkUpdate = now;
+            }
         }
     }
 
@@ -774,6 +832,171 @@ public class Game {
     public void stop() {
         if (gameLoop != null) {
             gameLoop.stop();
+        }
+    }
+
+    // ============ NETWORK MULTIPLAYER METHODS ============
+
+    private GameState buildGameState() {
+        GameState state = new GameState();
+
+        // Player 1 data
+        if (playerTanks.size() >= 1) {
+            Tank p1 = playerTanks.get(0);
+            state.p1X = p1.getX();
+            state.p1Y = p1.getY();
+            state.p1Direction = p1.getDirection().ordinal();
+            state.p1Lives = p1.getLives();
+            state.p1Alive = p1.isAlive();
+            state.p1HasShield = p1.hasShield();
+        }
+
+        // Player 2 data
+        if (playerTanks.size() >= 2) {
+            Tank p2 = playerTanks.get(1);
+            state.p2X = p2.getX();
+            state.p2Y = p2.getY();
+            state.p2Direction = p2.getDirection().ordinal();
+            state.p2Lives = p2.getLives();
+            state.p2Alive = p2.isAlive();
+            state.p2HasShield = p2.hasShield();
+        }
+
+        // Enemy tanks
+        for (Tank enemy : enemyTanks) {
+            if (enemy != null) {
+                state.enemies.add(new GameState.EnemyData(
+                    enemy.getX(),
+                    enemy.getY(),
+                    enemy.getDirection().ordinal(),
+                    enemy.isAlive(),
+                    enemy.getEnemyType().ordinal()
+                ));
+            }
+        }
+
+        // Bullets
+        for (Bullet bullet : bullets) {
+            if (bullet != null) {
+                state.bullets.add(new GameState.BulletData(
+                    bullet.getX(),
+                    bullet.getY(),
+                    bullet.getDirection().ordinal(),
+                    bullet.isFromEnemy(),
+                    bullet.getPower(),
+                    bullet.canDestroyTrees()
+                ));
+            }
+        }
+
+        // Power-ups
+        for (PowerUp powerUp : powerUps) {
+            if (powerUp != null) {
+                state.powerUps.add(new GameState.PowerUpData(
+                    powerUp.getX(),
+                    powerUp.getY(),
+                    powerUp.getType().ordinal()
+                ));
+            }
+        }
+
+        // Game state
+        state.gameOver = gameOver;
+        state.victory = victory;
+        state.remainingEnemies = enemySpawner.getRemainingEnemies();
+        state.baseAlive = base.isAlive();
+
+        // Map changes
+        state.tileChanges.addAll(mapChanges);
+        mapChanges.clear(); // Clear after sending
+
+        return state;
+    }
+
+    private void applyGameState(GameState state) {
+        // Update Player 1
+        if (playerTanks.size() >= 1 && state.p1Alive) {
+            Tank p1 = playerTanks.get(0);
+            p1.setPosition(state.p1X, state.p1Y);
+            // Note: Lives are not synced as Tank doesn't have setLives()
+            if (state.p1HasShield && !p1.hasShield()) {
+                p1.applyShield();
+            }
+        }
+
+        // Update Player 2
+        if (playerTanks.size() >= 2 && state.p2Alive) {
+            Tank p2 = playerTanks.get(1);
+            p2.setPosition(state.p2X, state.p2Y);
+            // Note: Lives are not synced as Tank doesn't have setLives()
+            if (state.p2HasShield && !p2.hasShield()) {
+                p2.applyShield();
+            }
+        }
+
+        // Update bullets (recreate from state)
+        bullets.clear();
+        for (GameState.BulletData bData : state.bullets) {
+            Bullet bullet = new Bullet(
+                bData.x, bData.y,
+                Direction.values()[bData.direction],
+                bData.fromEnemy,
+                bData.power,
+                bData.canDestroyTrees
+            );
+            bullets.add(bullet);
+        }
+
+        // Update power-ups (recreate from state)
+        powerUps.clear();
+        for (GameState.PowerUpData pData : state.powerUps) {
+            PowerUp powerUp = new PowerUp(
+                pData.x, pData.y,
+                PowerUp.Type.values()[pData.type]
+            );
+            powerUps.add(powerUp);
+        }
+
+        // Map changes: GameMap doesn't have setTile(), skip for now
+        // TODO: Implement map synchronization if needed
+
+        // Update game state
+        gameOver = state.gameOver;
+        victory = state.victory;
+
+        // Update base
+        if (!state.baseAlive && base.isAlive()) {
+            base.destroy();
+        }
+    }
+
+    private PlayerInput capturePlayerInput(Tank tank) {
+        // TODO: This needs to capture actual keyboard state from InputHandler
+        // For now, returning empty input as placeholder
+        return new PlayerInput();
+    }
+
+    private void applyPlayerInput(Tank tank, PlayerInput input) {
+        if (!tank.isAlive()) return;
+
+        List<Tank> allTanks = new ArrayList<>();
+        allTanks.addAll(playerTanks);
+        allTanks.addAll(enemyTanks);
+
+        // Apply movement
+        if (input.up) {
+            tank.move(Direction.UP, gameMap, allTanks, base);
+        } else if (input.down) {
+            tank.move(Direction.DOWN, gameMap, allTanks, base);
+        } else if (input.left) {
+            tank.move(Direction.LEFT, gameMap, allTanks, base);
+        } else if (input.right) {
+            tank.move(Direction.RIGHT, gameMap, allTanks, base);
+        }
+
+        // Apply shooting
+        if (input.shoot) {
+            tank.shoot(bullets, soundManager);
         }
     }
 }

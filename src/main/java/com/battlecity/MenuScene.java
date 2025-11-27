@@ -4,11 +4,13 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import java.util.Optional;
 
 public class MenuScene {
     private Scene scene;
@@ -47,6 +49,58 @@ public class MenuScene {
         Button twoPlayersButton = new Button("2 PLAYERS");
         styleButton(twoPlayersButton);
         twoPlayersButton.setOnAction(e -> startGame(2, 100));
+
+        // Host Game button (Online Multiplayer)
+        Button hostButton = new Button("HOST GAME (ONLINE)");
+        styleButton(hostButton);
+        hostButton.setStyle(
+            "-fx-background-color: #2a5a2a;" +
+            "-fx-text-fill: lightgreen;" +
+            "-fx-border-color: lightgreen;" +
+            "-fx-border-width: 2px;" +
+            "-fx-cursor: hand;"
+        );
+        hostButton.setOnMouseEntered(e -> hostButton.setStyle(
+            "-fx-background-color: #3a7a3a;" +
+            "-fx-text-fill: lightgreen;" +
+            "-fx-border-color: lightgreen;" +
+            "-fx-border-width: 3px;" +
+            "-fx-cursor: hand;"
+        ));
+        hostButton.setOnMouseExited(e -> hostButton.setStyle(
+            "-fx-background-color: #2a5a2a;" +
+            "-fx-text-fill: lightgreen;" +
+            "-fx-border-color: lightgreen;" +
+            "-fx-border-width: 2px;" +
+            "-fx-cursor: hand;"
+        ));
+        hostButton.setOnAction(e -> hostGame());
+
+        // Join Game button (Online Multiplayer)
+        Button joinButton = new Button("JOIN GAME (ONLINE)");
+        styleButton(joinButton);
+        joinButton.setStyle(
+            "-fx-background-color: #2a2a5a;" +
+            "-fx-text-fill: lightblue;" +
+            "-fx-border-color: lightblue;" +
+            "-fx-border-width: 2px;" +
+            "-fx-cursor: hand;"
+        );
+        joinButton.setOnMouseEntered(e -> joinButton.setStyle(
+            "-fx-background-color: #3a3a7a;" +
+            "-fx-text-fill: lightblue;" +
+            "-fx-border-color: lightblue;" +
+            "-fx-border-width: 3px;" +
+            "-fx-cursor: hand;"
+        ));
+        joinButton.setOnMouseExited(e -> joinButton.setStyle(
+            "-fx-background-color: #2a2a5a;" +
+            "-fx-text-fill: lightblue;" +
+            "-fx-border-color: lightblue;" +
+            "-fx-border-width: 2px;" +
+            "-fx-cursor: hand;"
+        ));
+        joinButton.setOnAction(e -> joinGame());
 
         // Test button
         Button testButton = new Button("TEST (20 ENEMIES)");
@@ -97,6 +151,8 @@ public class MenuScene {
             subtitle,
             onePlayerButton,
             twoPlayersButton,
+            hostButton,
+            joinButton,
             testButton,
             explanationButton,
             instructions,
@@ -149,6 +205,76 @@ public class MenuScene {
     private void showExplanation() {
         ExplanationScene explanationScene = new ExplanationScene(stage, scene, windowWidth, windowHeight);
         stage.setScene(explanationScene.getScene());
+    }
+
+    private void hostGame() {
+        NetworkManager network = new NetworkManager();
+
+        // Show IP address dialog
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+        alert.setTitle("Hosting Game");
+        alert.setHeaderText("Waiting for Player 2...");
+        alert.setContentText("Your IP: " + network.getLocalIP() + "\nPort: 25565\n\nWaiting for connection...");
+
+        // Start hosting
+        if (network.startHost()) {
+            alert.show();
+
+            // Wait for connection in background
+            new Thread(() -> {
+                while (!network.isConnected()) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+
+                // Connection established, start game
+                javafx.application.Platform.runLater(() -> {
+                    alert.close();
+                    startNetworkGame(network, true);
+                });
+            }).start();
+        } else {
+            alert.setAlertType(javafx.scene.control.Alert.AlertType.ERROR);
+            alert.setHeaderText("Failed to Host");
+            alert.setContentText("Could not start server. Port may be in use.");
+            alert.show();
+        }
+    }
+
+    private void joinGame() {
+        TextInputDialog dialog = new TextInputDialog("192.168.1.1");
+        dialog.setTitle("Join Game");
+        dialog.setHeaderText("Enter Host IP Address");
+        dialog.setContentText("IP:");
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(ip -> {
+            NetworkManager network = new NetworkManager();
+
+            if (network.joinHost(ip)) {
+                startNetworkGame(network, false);
+            } else {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Connection Failed");
+                alert.setHeaderText("Could not connect to host");
+                alert.setContentText("Make sure the IP address is correct and the host is ready.");
+                alert.showAndWait();
+            }
+        });
+    }
+
+    private void startNetworkGame(NetworkManager network, boolean isHost) {
+        javafx.scene.layout.Pane gameRoot = new javafx.scene.layout.Pane();
+        Scene gameScene = new Scene(gameRoot, windowWidth, windowHeight);
+
+        // Create network game (always 2 players, 100 enemies)
+        Game game = new Game(gameRoot, windowWidth, windowHeight, 2, 100, stage, network);
+        game.start();
+
+        stage.setScene(gameScene);
     }
 
     public Scene getScene() {

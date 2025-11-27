@@ -96,6 +96,9 @@ public class NetworkManager {
             return false;
         }
 
+        // Debug: Check if port is available
+        System.out.println("Attempting to start host on port " + PORT);
+
         isHost = true;
         isHosting = true;
         playerNumber = 1; // Host is always Player 1
@@ -103,7 +106,9 @@ public class NetworkManager {
         try {
             serverSocket = new ServerSocket();
             serverSocket.setReuseAddress(true); // Allow immediate port reuse
+            System.out.println("Binding to port " + PORT + "...");
             serverSocket.bind(new InetSocketAddress(PORT));
+            System.out.println("Successfully bound to port " + PORT);
             System.out.println("Waiting for players to connect on port " + PORT + "...");
 
             // Accept connections in background
@@ -136,7 +141,9 @@ public class NetworkManager {
 
             return true;
         } catch (IOException e) {
-            System.err.println("Failed to start host: " + e.getMessage());
+            isHosting = false; // Reset flag on failure
+            System.err.println("Failed to start host: " + e.getClass().getName() + " - " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }

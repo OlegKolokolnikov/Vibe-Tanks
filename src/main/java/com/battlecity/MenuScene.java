@@ -211,7 +211,7 @@ public class MenuScene {
         alert.setContentText("Getting IP addresses...");
 
         // Close network when dialog is closed (user cancels)
-        alert.setOnCloseRequest(e -> {
+        alert.setOnHidden(e -> {
             System.out.println("Host dialog closed - cleaning up network...");
             network.close();
         });

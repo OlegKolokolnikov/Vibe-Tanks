@@ -18,6 +18,9 @@ public class MenuScene {
     private int windowWidth;
     private int windowHeight;
 
+    // Static reference to ensure only one NetworkManager exists at a time
+    private static NetworkManager currentNetworkManager = null;
+
     public MenuScene(Stage stage, int windowWidth, int windowHeight) {
         this.stage = stage;
         this.windowWidth = windowWidth;
@@ -202,7 +205,23 @@ public class MenuScene {
     }
 
     private void hostGame() {
-        NetworkManager network = new NetworkManager();
+        // Close any existing network manager first
+        if (currentNetworkManager != null) {
+            System.out.println("Closing previous network manager...");
+            currentNetworkManager.close();
+
+            // Wait for OS to release the port
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ex) {
+                System.err.println("Interrupted while waiting for port release");
+            }
+
+            currentNetworkManager = null;
+        }
+
+        currentNetworkManager = new NetworkManager();
+        NetworkManager network = currentNetworkManager;
 
         // Show IP address dialog
         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);

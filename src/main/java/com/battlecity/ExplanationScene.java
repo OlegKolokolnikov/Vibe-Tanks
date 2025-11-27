@@ -52,6 +52,7 @@ public class ExplanationScene {
         addPowerUpExplanation(content, "SAW (Brown)", "Able to destroy forest/trees");
         addPowerUpExplanation(content, "TANK (Green)", "Extra life");
         addPowerUpExplanation(content, "SHIELD (Blue)", "Shield for 1 minute (Players) / Extra life (Enemies)");
+        addPowerUpExplanation(content, "MACHINEGUN (Purple)", "Bullets can wrap through destroyed borders");
 
         // Enemy tanks section
         Label enemiesTitle = new Label("\nENEMY TANK TYPES:");

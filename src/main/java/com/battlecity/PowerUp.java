@@ -10,14 +10,15 @@ public class PowerUp {
     private static final int LIFETIME = 600; // 10 seconds
 
     public enum Type {
-        GUN,     // Ability to break iron/steel walls
-        STAR,    // Shooting faster (stackable)
-        CAR,     // Tank becomes faster (stackable)
-        SHIP,    // Tank can swim through water
-        SHOVEL,  // Base surrounded by steel for 1 minute
-        SAW,     // Able to destroy forest/trees
-        TANK,    // Extra life
-        SHIELD   // Shield for 1 minute (players) or extra life (enemies)
+        GUN,        // Ability to break iron/steel walls
+        STAR,       // Shooting faster (stackable)
+        CAR,        // Tank becomes faster (stackable)
+        SHIP,       // Tank can swim through water
+        SHOVEL,     // Base surrounded by steel for 1 minute
+        SAW,        // Able to destroy forest/trees
+        TANK,       // Extra life
+        SHIELD,     // Shield for 1 minute (players) or extra life (enemies)
+        MACHINEGUN  // Bullets can wrap through destroyed borders
     }
 
     private double x;
@@ -76,6 +77,9 @@ public class PowerUp {
                 break;
             case SHIELD:
                 tank.applyShield();
+                break;
+            case MACHINEGUN:
+                tank.applyMachinegun();
                 break;
         }
     }
@@ -161,6 +165,14 @@ public class PowerUp {
                 gc.setFill(Color.WHITE);
                 gc.fillOval(x + 9, y + 10, 6, 6);
                 break;
+            case MACHINEGUN:
+                // Draw machine gun icon (gun with bullets)
+                gc.fillRect(x + 8, y + 10, 8, 4); // Gun barrel
+                gc.fillRect(x + 6, y + 12, 4, 6); // Gun grip
+                // Draw bullet stream
+                gc.fillRect(x + 16, y + 11, 3, 2);
+                gc.fillRect(x + 19, y + 11, 2, 2);
+                break;
         }
     }
 
@@ -174,6 +186,7 @@ public class PowerUp {
             case SAW -> Color.BROWN;
             case TANK -> Color.GREEN;
             case SHIELD -> Color.BLUE;
+            case MACHINEGUN -> Color.PURPLE;
         };
     }
 

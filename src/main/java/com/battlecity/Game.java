@@ -652,6 +652,13 @@ public class Game {
                 gc.fillOval(x + 3, y + 5, 8, 8);
                 gc.fillRect(x + 2, y + 8, 12, 4);
                 break;
+            case MACHINEGUN:
+                gc.fillRect(x + 5, y + 7, 6, 3); // Gun barrel
+                gc.fillRect(x + 4, y + 8, 3, 4); // Gun grip
+                // Draw bullet stream
+                gc.fillRect(x + 11, y + 8, 2, 1);
+                gc.fillRect(x + 13, y + 8, 1, 1);
+                break;
         }
     }
 
@@ -665,6 +672,7 @@ public class Game {
             case SAW -> Color.BROWN;
             case TANK -> Color.GREEN;
             case SHIELD -> Color.BLUE;
+            case MACHINEGUN -> Color.PURPLE;
         };
     }
 
@@ -712,6 +720,10 @@ public class Game {
             }
             if (player.hasShield()) {
                 renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SHIELD);
+                xOffset += 20;
+            }
+            if (player.hasMachinegun()) {
+                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.MACHINEGUN);
                 xOffset += 20;
             }
         }

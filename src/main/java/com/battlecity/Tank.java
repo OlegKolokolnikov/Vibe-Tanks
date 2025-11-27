@@ -37,6 +37,7 @@ public class Tank {
     private int bulletPower; // 1 = normal, 2 = can break steel
     private boolean canSwim; // SHIP power-up
     private boolean canDestroyTrees; // SAW power-up
+    private boolean hasMachinegun; // MACHINEGUN power-up (bullets wrap through destroyed borders)
     private int shootCooldownReduction; // STAR power-up (each star reduces cooldown)
 
     private Random random;
@@ -97,6 +98,7 @@ public class Tank {
         this.bulletPower = 1;
         this.canSwim = false;
         this.canDestroyTrees = false;
+        this.hasMachinegun = false;
         this.shootCooldownReduction = 0;
         this.random = new Random();
         this.aiMoveCooldown = 60;
@@ -333,7 +335,7 @@ public class Tank {
             case RIGHT -> bulletX = x + SIZE;
         }
 
-        bullets.add(new Bullet(bulletX, bulletY, direction, !isPlayer, bulletPower, canDestroyTrees));
+        bullets.add(new Bullet(bulletX, bulletY, direction, !isPlayer, bulletPower, canDestroyTrees, hasMachinegun));
         // Apply shoot cooldown reduction from STAR power-ups (min cooldown is 5 frames)
         shootCooldown = Math.max(5, SHOOT_COOLDOWN - (shootCooldownReduction * 5));
         soundManager.playShoot();
@@ -519,6 +521,7 @@ public class Tank {
     }
     public boolean hasShip() { return canSwim; }
     public boolean hasSaw() { return canDestroyTrees; }
+    public boolean hasMachinegun() { return hasMachinegun; }
 
     // Power-up effects
     public void applyGun() {
@@ -540,6 +543,10 @@ public class Tank {
 
     public void applySaw() {
         canDestroyTrees = true; // Bullets can destroy trees
+    }
+
+    public void applyMachinegun() {
+        hasMachinegun = true; // Bullets can wrap through destroyed borders
     }
 
     public void applyTank() {
@@ -580,6 +587,7 @@ public class Tank {
         this.speedMultiplier = 1.0;
         this.canSwim = false;
         this.canDestroyTrees = false;
+        this.hasMachinegun = false;
     }
 
     public void setPosition(double x, double y) {

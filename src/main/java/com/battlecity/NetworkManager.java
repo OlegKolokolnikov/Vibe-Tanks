@@ -37,11 +37,10 @@ public class NetworkManager {
         private int playerNumber;
         private boolean active = true;
 
-        public ClientHandler(Socket socket, int playerNumber) throws IOException {
+        public ClientHandler(Socket socket, int playerNumber, ObjectOutputStream out) throws IOException {
             this.socket = socket;
             this.playerNumber = playerNumber;
-            this.out = new ObjectOutputStream(socket.getOutputStream());
-            this.out.flush();
+            this.out = out; // Use pre-created stream
             this.in = new ObjectInputStream(socket.getInputStream());
 
             // Start receiving inputs from this client
@@ -209,7 +208,12 @@ public class NetworkManager {
                         Socket clientSocket = serverSocket.accept();
                         System.out.println("Player " + i + " connected from: " + clientSocket.getInetAddress());
 
-                        ClientHandler client = new ClientHandler(clientSocket, i);
+                        // Create ObjectOutputStream immediately so client can create its InputStream
+                        ObjectOutputStream tempOut = new ObjectOutputStream(clientSocket.getOutputStream());
+                        tempOut.flush();
+                        System.out.println("Server stream header sent to Player " + i);
+
+                        ClientHandler client = new ClientHandler(clientSocket, i, tempOut);
                         clients.add(client);
 
                         // First connection establishes game as ready

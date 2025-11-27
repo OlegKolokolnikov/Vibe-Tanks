@@ -8,6 +8,7 @@ public class SoundManager {
     private AudioClip shootSound;
     private AudioClip explosionSound;
     private AudioClip introSound;
+    private AudioClip sadSound;
 
     public SoundManager() {
         try {
@@ -18,8 +19,9 @@ public class SoundManager {
             shootSound = loadSound("/sounds/shoot.wav");
             explosionSound = loadSound("/sounds/explosion.wav");
             introSound = loadSound("/sounds/intro.wav");
+            sadSound = loadSound("/sounds/sad.wav");
 
-            if (shootSound == null || explosionSound == null || introSound == null) {
+            if (shootSound == null || explosionSound == null || introSound == null || sadSound == null) {
                 System.out.println("Some sounds could not be loaded. Game will run without sound effects.");
             } else {
                 System.out.println("All sounds loaded successfully!");
@@ -33,8 +35,9 @@ public class SoundManager {
         File shootFile = new File("src/main/resources/sounds/shoot.wav");
         File explosionFile = new File("src/main/resources/sounds/explosion.wav");
         File introFile = new File("src/main/resources/sounds/intro.wav");
+        File sadFile = new File("src/main/resources/sounds/sad.wav");
 
-        if (!shootFile.exists() || !explosionFile.exists() || !introFile.exists()) {
+        if (!shootFile.exists() || !explosionFile.exists() || !introFile.exists() || !sadFile.exists()) {
             System.out.println("Generating sound files...");
             SoundGenerator.generateAllSounds();
         }
@@ -77,6 +80,12 @@ public class SoundManager {
     public void playIntro() {
         if (introSound != null) {
             introSound.play();
+        }
+    }
+
+    public void playSad() {
+        if (sadSound != null) {
+            sadSound.play();
         }
     }
 }

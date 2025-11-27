@@ -47,6 +47,9 @@ public class Game {
 
     // Victory dancing anime girl
     private ImageView victoryImageView;
+    // Game over dancing death
+    private ImageView gameOverImageView;
+    private boolean gameOverSoundPlayed = false;
 
     public Game(Pane root, int width, int height, int playerCount, int totalEnemies, Stage stage) {
         this.root = root;
@@ -63,6 +66,8 @@ public class Game {
 
         // Load dancing anime girl GIF for victory screen
         loadVictoryImage();
+        // Load dancing death GIF for game over screen
+        loadGameOverImage();
 
         initialize();
     }
@@ -86,6 +91,27 @@ public class Game {
         } catch (Exception e) {
             System.out.println("Could not load victory image: " + e.getMessage());
             victoryImageView = null;
+        }
+    }
+
+    private void loadGameOverImage() {
+        try {
+            // Try to load a dancing grim reaper/death GIF from URL
+            String imageUrl = "https://i.imgur.com/QqXhHGt.gif"; // Dancing skeleton/death
+            Image gameOverImage = new Image(imageUrl, true);
+
+            gameOverImageView = new ImageView(gameOverImage);
+            gameOverImageView.setFitWidth(300);
+            gameOverImageView.setFitHeight(300);
+            gameOverImageView.setPreserveRatio(true);
+            gameOverImageView.setLayoutX(width / 2 - 150);
+            gameOverImageView.setLayoutY(height / 2 - 250);
+            gameOverImageView.setVisible(false);
+
+            root.getChildren().add(gameOverImageView);
+        } catch (Exception e) {
+            System.out.println("Could not load game over image: " + e.getMessage());
+            gameOverImageView = null;
         }
     }
 
@@ -531,12 +557,23 @@ public class Game {
         }
 
         if (gameOver) {
+            // Show dancing death if available
+            if (gameOverImageView != null) {
+                gameOverImageView.setVisible(true);
+            }
+
+            // Play sad sound once
+            if (!gameOverSoundPlayed) {
+                soundManager.playSad();
+                gameOverSoundPlayed = true;
+            }
+
             gc.setFill(Color.RED);
             gc.setFont(javafx.scene.text.Font.font(40));
-            gc.fillText("GAME OVER", width / 2 - 120, height / 2);
+            gc.fillText("GAME OVER", width / 2 - 120, height / 2 + 100);
             gc.setFill(Color.WHITE);
             gc.setFont(javafx.scene.text.Font.font(20));
-            gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 40);
+            gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 140);
         } else if (victory) {
             // Show dancing anime girl if available
             if (victoryImageView != null) {
@@ -550,9 +587,12 @@ public class Game {
             gc.setFont(javafx.scene.text.Font.font(20));
             gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 140);
         } else {
-            // Hide victory image when not in victory state
+            // Hide images when not in end state
             if (victoryImageView != null) {
                 victoryImageView.setVisible(false);
+            }
+            if (gameOverImageView != null) {
+                gameOverImageView.setVisible(false);
             }
         }
     }

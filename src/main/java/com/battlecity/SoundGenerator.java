@@ -28,6 +28,9 @@ public class SoundGenerator {
             // Generate intro sound - simple melody
             generateIntroSound("src/main/resources/sounds/intro.wav");
 
+            // Generate sad sound - descending sad melody for game over
+            generateSadSound("src/main/resources/sounds/sad.wav");
+
             System.out.println("Sound files generated successfully!");
         } catch (Exception e) {
             System.err.println("Error generating sounds: " + e.getMessage());
@@ -78,6 +81,39 @@ public class SoundGenerator {
                     envelope = i / (numSamples * 0.1);
                 } else if (i > numSamples * 0.7) {
                     envelope = (numSamples - i) / (numSamples * 0.3);
+                }
+                sample = (short) (sample * envelope);
+
+                buffer[bufferIndex++] = (byte) (sample & 0xFF);
+                buffer[bufferIndex++] = (byte) ((sample >> 8) & 0xFF);
+            }
+        }
+
+        saveWav(filename, buffer);
+    }
+
+    private static void generateSadSound(String filename) throws Exception {
+        // Sad descending melody - minor scale
+        double[] frequencies = {392.00, 349.23, 329.63, 293.66, 261.63}; // G, F, E, D, C (descending)
+        double noteDuration = 0.4; // Slower, sadder
+        int totalSamples = (int) (frequencies.length * noteDuration * SAMPLE_RATE);
+        byte[] buffer = new byte[totalSamples * 2];
+
+        int bufferIndex = 0;
+        for (double freq : frequencies) {
+            int numSamples = (int) (noteDuration * SAMPLE_RATE);
+            for (int i = 0; i < numSamples; i++) {
+                double angle = 2.0 * Math.PI * i * freq / SAMPLE_RATE;
+                // Add slight wobble for sadder effect
+                double wobble = 1.0 + 0.05 * Math.sin(2.0 * Math.PI * i * 3.0 / SAMPLE_RATE);
+                short sample = (short) (Math.sin(angle * wobble) * 0.4 * Short.MAX_VALUE);
+
+                // Apply longer envelope for sustained sad sound
+                double envelope = 1.0;
+                if (i < numSamples * 0.1) {
+                    envelope = i / (numSamples * 0.1);
+                } else if (i > numSamples * 0.6) {
+                    envelope = (numSamples - i) / (numSamples * 0.4);
                 }
                 sample = (short) (sample * envelope);
 

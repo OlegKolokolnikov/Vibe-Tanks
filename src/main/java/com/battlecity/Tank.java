@@ -60,6 +60,7 @@ public class Tank {
         this.enemyType = enemyType;
         this.alive = true;
         this.lives = isPlayer ? 3 : 1;
+        this.speedMultiplier = 1.0; // Default speed for all tanks
 
         // Set health and speed based on enemy type
         if (!isPlayer) {

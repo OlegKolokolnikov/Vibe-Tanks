@@ -264,10 +264,18 @@ public class NetworkManager {
             System.err.println("Error closing server socket: " + e.getMessage());
         }
 
-        // Interrupt accept thread
+        // Interrupt accept thread and wait for it to finish
         if (acceptThread != null && acceptThread.isAlive()) {
             System.out.println("Interrupting accept thread...");
             acceptThread.interrupt();
+            try {
+                acceptThread.join(1000); // Wait up to 1 second for thread to exit
+                if (acceptThread.isAlive()) {
+                    System.err.println("Warning: accept thread did not exit cleanly");
+                }
+            } catch (InterruptedException e) {
+                System.err.println("Interrupted while waiting for accept thread");
+            }
         }
 
         if (isHost) {

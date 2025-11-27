@@ -212,12 +212,12 @@ public class MenuScene {
 
         // Close network when dialog is closed (user cancels)
         alert.setOnHidden(e -> {
-            System.out.println("Host dialog closed - cleaning up network...");
-            // Close in background thread to avoid blocking UI
-            new Thread(() -> {
+            if (!network.isConnected()) {
+                // Only cleanup if not connected (if connected, game will handle cleanup)
+                System.out.println("Host dialog closed - cleaning up network...");
                 network.close();
                 System.out.println("Network cleanup complete");
-            }).start();
+            }
         });
 
         // Start hosting

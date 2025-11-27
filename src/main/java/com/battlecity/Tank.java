@@ -222,6 +222,12 @@ public class Tank {
     public boolean damage() {
         if (!alive || hasShield) return false;
 
+        // SHIP acts as one extra shot protection
+        if (canSwim) {
+            canSwim = false; // Lose SHIP ability but take no damage
+            return false;
+        }
+
         health--;
         boolean dropPowerUp = false;
 

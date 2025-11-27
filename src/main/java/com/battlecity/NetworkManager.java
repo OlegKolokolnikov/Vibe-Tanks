@@ -264,4 +264,16 @@ public class NetworkManager {
             return "Unknown";
         }
     }
+
+    public String getPublicIP() {
+        try {
+            URL url = new URL("https://api.ipify.org");
+            BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+            String ip = in.readLine();
+            in.close();
+            return ip;
+        } catch (Exception e) {
+            return "Unknown (check internet connection)";
+        }
+    }
 }

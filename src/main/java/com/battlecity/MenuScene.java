@@ -207,12 +207,28 @@ public class MenuScene {
         // Show IP address dialog
         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
         alert.setTitle("Hosting Game");
-        alert.setHeaderText("Waiting for Player 2...");
-        alert.setContentText("Your IP: " + network.getLocalIP() + "\nPort: 25565\n\nWaiting for connection...");
+        alert.setHeaderText("Waiting for players...");
+        alert.setContentText("Getting IP addresses...");
 
         // Start hosting
         if (network.startHost()) {
             alert.show();
+
+            // Get public IP in background and update dialog
+            new Thread(() -> {
+                String localIP = network.getLocalIP();
+                String publicIP = network.getPublicIP();
+                javafx.application.Platform.runLater(() -> {
+                    alert.setContentText(
+                        "Local IP (LAN): " + localIP + "\n" +
+                        "Public IP (Internet): " + publicIP + "\n" +
+                        "Port: 25565\n\n" +
+                        "Share PUBLIC IP with friends in other cities!\n" +
+                        "Use LOCAL IP for same network.\n\n" +
+                        "Waiting for connection..."
+                    );
+                });
+            }).start();
 
             // Wait for connection in background
             new Thread(() -> {

@@ -327,8 +327,8 @@ public class Game {
             victory = true;
         }
 
-        // Check game over condition
-        boolean allPlayersDead = playerTanks.stream().noneMatch(Tank::isAlive);
+        // Check game over condition (all players dead with no lives OR base destroyed)
+        boolean allPlayersDead = playerTanks.stream().allMatch(p -> !p.isAlive() && p.getLives() <= 0);
         if (allPlayersDead || !base.isAlive()) {
             gameOver = true;
         }

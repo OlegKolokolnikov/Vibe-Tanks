@@ -14,11 +14,13 @@ public class NetworkManager {
     private ServerSocket serverSocket;
     private boolean isHost;
     private boolean connected = false;
+    private boolean isHosting = false; // Track if currently hosting
     private int playerNumber = 1; // Which player this instance controls
 
     // For host: manage multiple clients
     private List<ClientHandler> clients = new ArrayList<>();
     private Map<Integer, PlayerInput> playerInputs = new ConcurrentHashMap<>();
+    private Thread acceptThread; // Track accept thread
 
     // For client: single connection to host
     private Socket socket;
@@ -88,7 +90,14 @@ public class NetworkManager {
 
     // Host mode - start server and accept up to 3 connections
     public boolean startHost() {
+        // Prevent starting if already hosting
+        if (isHosting) {
+            System.out.println("Already hosting - skipping");
+            return false;
+        }
+
         isHost = true;
+        isHosting = true;
         playerNumber = 1; // Host is always Player 1
 
         try {
@@ -98,7 +107,7 @@ public class NetworkManager {
             System.out.println("Waiting for players to connect on port " + PORT + "...");
 
             // Accept connections in background
-            new Thread(() -> {
+            acceptThread = new Thread(() -> {
                 try {
                     // Accept up to 3 clients (Player 2, 3, 4)
                     for (int i = 2; i <= MAX_PLAYERS; i++) {
@@ -117,11 +126,13 @@ public class NetworkManager {
                     }
                     System.out.println("Maximum players reached (4/4)");
                 } catch (IOException e) {
-                    if (connected) {
+                    if (isHosting) {
                         System.err.println("Error accepting connections: " + e.getMessage());
                     }
                 }
-            }).start();
+            });
+            acceptThread.setDaemon(true);
+            acceptThread.start();
 
             return true;
         } catch (IOException e) {
@@ -239,15 +250,24 @@ public class NetworkManager {
     }
 
     public void close() {
+        System.out.println("NetworkManager.close() called");
         connected = false;
+        isHosting = false; // Reset hosting flag
 
         try {
             // Close server socket FIRST to unblock accept() calls
             if (serverSocket != null && !serverSocket.isClosed()) {
+                System.out.println("Closing server socket...");
                 serverSocket.close();
             }
         } catch (IOException e) {
             System.err.println("Error closing server socket: " + e.getMessage());
+        }
+
+        // Interrupt accept thread
+        if (acceptThread != null && acceptThread.isAlive()) {
+            System.out.println("Interrupting accept thread...");
+            acceptThread.interrupt();
         }
 
         if (isHost) {
@@ -265,6 +285,8 @@ public class NetworkManager {
         } catch (IOException e) {
             System.err.println("Error closing connection: " + e.getMessage());
         }
+
+        System.out.println("NetworkManager.close() complete");
     }
 
     public String getLocalIP() {

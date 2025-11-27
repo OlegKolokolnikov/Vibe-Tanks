@@ -74,43 +74,91 @@ public class Game {
 
     private void loadVictoryImage() {
         try {
-            // Try to load a dancing anime girl GIF from URL
-            // Using a popular dancing anime girl GIF
-            String imageUrl = "https://i.imgur.com/7kZ8Lrb.gif"; // Famous dancing anime girl
-            Image victoryImage = new Image(imageUrl, true);
+            // Try multiple URLs for dancing anime girl GIF
+            String[] imageUrls = {
+                "https://i.imgur.com/7kZ8Lrb.gif",
+                "https://media.tenor.com/fSBeKScbxIkAAAAM/anime-dance.gif",
+                "https://media.giphy.com/media/nAvSNP8Y3F94hq9Rga/giphy.gif"
+            };
 
-            victoryImageView = new ImageView(victoryImage);
-            victoryImageView.setFitWidth(300);
-            victoryImageView.setFitHeight(300);
-            victoryImageView.setPreserveRatio(true);
-            victoryImageView.setLayoutX(width / 2 - 150);
-            victoryImageView.setLayoutY(height / 2 - 250);
-            victoryImageView.setVisible(false);
+            Image victoryImage = null;
+            for (String url : imageUrls) {
+                try {
+                    System.out.println("Trying to load victory image from: " + url);
+                    victoryImage = new Image(url, true);
+                    if (!victoryImage.isError()) {
+                        System.out.println("Successfully loaded victory image from: " + url);
+                        break;
+                    }
+                } catch (Exception e) {
+                    System.out.println("Failed to load from: " + url);
+                }
+            }
 
-            root.getChildren().add(victoryImageView);
+            if (victoryImage != null && !victoryImage.isError()) {
+                victoryImageView = new ImageView(victoryImage);
+                victoryImageView.setFitWidth(300);
+                victoryImageView.setFitHeight(300);
+                victoryImageView.setPreserveRatio(true);
+                victoryImageView.setLayoutX(width / 2 - 150);
+                victoryImageView.setLayoutY(height / 2 - 250);
+                victoryImageView.setVisible(false);
+
+                root.getChildren().add(victoryImageView);
+                System.out.println("Victory image view added successfully!");
+            } else {
+                System.out.println("Could not load any victory image URL");
+                victoryImageView = null;
+            }
         } catch (Exception e) {
             System.out.println("Could not load victory image: " + e.getMessage());
+            e.printStackTrace();
             victoryImageView = null;
         }
     }
 
     private void loadGameOverImage() {
         try {
-            // Try to load a dancing grim reaper/death GIF from URL
-            String imageUrl = "https://i.imgur.com/QqXhHGt.gif"; // Dancing skeleton/death
-            Image gameOverImage = new Image(imageUrl, true);
+            // Try multiple URLs for dancing skeleton/death GIF
+            String[] imageUrls = {
+                "https://media.tenor.com/wD7yF6gA1XwAAAAM/skeleton-dance.gif",
+                "https://media.giphy.com/media/3oKIPsx2VAYAgEHC12/giphy.gif",
+                "https://i.imgur.com/bJPo2.gif",
+                "https://media1.tenor.com/m/p0wM4WV3XPAAAAAC/skeleton-dancing.gif"
+            };
 
-            gameOverImageView = new ImageView(gameOverImage);
-            gameOverImageView.setFitWidth(300);
-            gameOverImageView.setFitHeight(300);
-            gameOverImageView.setPreserveRatio(true);
-            gameOverImageView.setLayoutX(width / 2 - 150);
-            gameOverImageView.setLayoutY(height / 2 - 250);
-            gameOverImageView.setVisible(false);
+            Image gameOverImage = null;
+            for (String url : imageUrls) {
+                try {
+                    System.out.println("Trying to load game over image from: " + url);
+                    gameOverImage = new Image(url, true);
+                    if (!gameOverImage.isError()) {
+                        System.out.println("Successfully loaded game over image from: " + url);
+                        break;
+                    }
+                } catch (Exception e) {
+                    System.out.println("Failed to load from: " + url);
+                }
+            }
 
-            root.getChildren().add(gameOverImageView);
+            if (gameOverImage != null && !gameOverImage.isError()) {
+                gameOverImageView = new ImageView(gameOverImage);
+                gameOverImageView.setFitWidth(300);
+                gameOverImageView.setFitHeight(300);
+                gameOverImageView.setPreserveRatio(true);
+                gameOverImageView.setLayoutX(width / 2 - 150);
+                gameOverImageView.setLayoutY(height / 2 - 250);
+                gameOverImageView.setVisible(false);
+
+                root.getChildren().add(gameOverImageView);
+                System.out.println("Game over image view added successfully!");
+            } else {
+                System.out.println("Could not load any game over image URL");
+                gameOverImageView = null;
+            }
         } catch (Exception e) {
             System.out.println("Could not load game over image: " + e.getMessage());
+            e.printStackTrace();
             gameOverImageView = null;
         }
     }

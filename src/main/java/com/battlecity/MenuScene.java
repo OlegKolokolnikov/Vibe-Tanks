@@ -316,8 +316,8 @@ public class MenuScene {
         Scene gameScene = new Scene(gameRoot, windowWidth, windowHeight);
 
         // Network game supports up to 4 players
-        // Host will have all connected players, clients will have 1 (themselves)
-        int playerCount = isHost ? 4 : 1;
+        // Both host and client need all 4 tanks so GameState can update them all
+        int playerCount = 4;
         Game game = new Game(gameRoot, windowWidth, windowHeight, playerCount, 100, stage, network);
         game.start();
 

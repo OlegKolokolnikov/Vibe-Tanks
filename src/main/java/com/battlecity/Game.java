@@ -74,24 +74,57 @@ public class Game {
 
     private void loadVictoryImage() {
         try {
-            // Try multiple URLs for dancing anime girl GIF
-            String[] imageUrls = {
-                "https://i.imgur.com/7kZ8Lrb.gif",
-                "https://media.tenor.com/fSBeKScbxIkAAAAM/anime-dance.gif",
-                "https://media.giphy.com/media/nAvSNP8Y3F94hq9Rga/giphy.gif"
-            };
-
             Image victoryImage = null;
-            for (String url : imageUrls) {
-                try {
-                    System.out.println("Trying to load victory image from: " + url);
-                    victoryImage = new Image(url, true);
+
+            // Try to load from local resources first
+            try {
+                java.io.File localFile = new java.io.File("src/main/resources/images/victory.gif");
+                if (localFile.exists()) {
+                    System.out.println("Loading victory image from local file: " + localFile.getPath());
+                    victoryImage = new Image(localFile.toURI().toString());
                     if (!victoryImage.isError()) {
-                        System.out.println("Successfully loaded victory image from: " + url);
-                        break;
+                        System.out.println("Successfully loaded victory image from local file!");
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Could not load from local file: " + e.getMessage());
+            }
+
+            // If local file failed, try resource path
+            if (victoryImage == null || victoryImage.isError()) {
+                try {
+                    java.net.URL resourceUrl = getClass().getResource("/images/victory.gif");
+                    if (resourceUrl != null) {
+                        System.out.println("Loading victory image from resources");
+                        victoryImage = new Image(resourceUrl.toString());
+                        if (!victoryImage.isError()) {
+                            System.out.println("Successfully loaded victory image from resources!");
+                        }
                     }
                 } catch (Exception e) {
-                    System.out.println("Failed to load from: " + url);
+                    System.out.println("Could not load from resources: " + e.getMessage());
+                }
+            }
+
+            // If still no image, try URLs as fallback
+            if (victoryImage == null || victoryImage.isError()) {
+                String[] imageUrls = {
+                    "https://i.imgur.com/7kZ8Lrb.gif",
+                    "https://media.tenor.com/fSBeKScbxIkAAAAM/anime-dance.gif",
+                    "https://media.giphy.com/media/nAvSNP8Y3F94hq9Rga/giphy.gif"
+                };
+
+                for (String url : imageUrls) {
+                    try {
+                        System.out.println("Trying to load victory image from URL: " + url);
+                        victoryImage = new Image(url, true);
+                        if (!victoryImage.isError()) {
+                            System.out.println("Successfully loaded victory image from: " + url);
+                            break;
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Failed to load from: " + url);
+                    }
                 }
             }
 
@@ -107,7 +140,8 @@ public class Game {
                 root.getChildren().add(victoryImageView);
                 System.out.println("Victory image view added successfully!");
             } else {
-                System.out.println("Could not load any victory image URL");
+                System.out.println("Could not load victory image from any source");
+                System.out.println("Please place a 'victory.gif' file in: src/main/resources/images/");
                 victoryImageView = null;
             }
         } catch (Exception e) {
@@ -119,25 +153,58 @@ public class Game {
 
     private void loadGameOverImage() {
         try {
-            // Try multiple URLs for dancing skeleton/death GIF
-            String[] imageUrls = {
-                "https://media.tenor.com/wD7yF6gA1XwAAAAM/skeleton-dance.gif",
-                "https://media.giphy.com/media/3oKIPsx2VAYAgEHC12/giphy.gif",
-                "https://i.imgur.com/bJPo2.gif",
-                "https://media1.tenor.com/m/p0wM4WV3XPAAAAAC/skeleton-dancing.gif"
-            };
-
             Image gameOverImage = null;
-            for (String url : imageUrls) {
-                try {
-                    System.out.println("Trying to load game over image from: " + url);
-                    gameOverImage = new Image(url, true);
+
+            // Try to load from local resources first
+            try {
+                java.io.File localFile = new java.io.File("src/main/resources/images/gameover.gif");
+                if (localFile.exists()) {
+                    System.out.println("Loading game over image from local file: " + localFile.getPath());
+                    gameOverImage = new Image(localFile.toURI().toString());
                     if (!gameOverImage.isError()) {
-                        System.out.println("Successfully loaded game over image from: " + url);
-                        break;
+                        System.out.println("Successfully loaded game over image from local file!");
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Could not load from local file: " + e.getMessage());
+            }
+
+            // If local file failed, try resource path
+            if (gameOverImage == null || gameOverImage.isError()) {
+                try {
+                    java.net.URL resourceUrl = getClass().getResource("/images/gameover.gif");
+                    if (resourceUrl != null) {
+                        System.out.println("Loading game over image from resources");
+                        gameOverImage = new Image(resourceUrl.toString());
+                        if (!gameOverImage.isError()) {
+                            System.out.println("Successfully loaded game over image from resources!");
+                        }
                     }
                 } catch (Exception e) {
-                    System.out.println("Failed to load from: " + url);
+                    System.out.println("Could not load from resources: " + e.getMessage());
+                }
+            }
+
+            // If still no image, try URLs as fallback
+            if (gameOverImage == null || gameOverImage.isError()) {
+                String[] imageUrls = {
+                    "https://media.tenor.com/wD7yF6gA1XwAAAAM/skeleton-dance.gif",
+                    "https://media.giphy.com/media/3oKIPsx2VAYAgEHC12/giphy.gif",
+                    "https://i.imgur.com/bJPo2.gif",
+                    "https://media1.tenor.com/m/p0wM4WV3XPAAAAAC/skeleton-dancing.gif"
+                };
+
+                for (String url : imageUrls) {
+                    try {
+                        System.out.println("Trying to load game over image from URL: " + url);
+                        gameOverImage = new Image(url, true);
+                        if (!gameOverImage.isError()) {
+                            System.out.println("Successfully loaded game over image from: " + url);
+                            break;
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Failed to load from: " + url);
+                    }
                 }
             }
 
@@ -153,7 +220,8 @@ public class Game {
                 root.getChildren().add(gameOverImageView);
                 System.out.println("Game over image view added successfully!");
             } else {
-                System.out.println("Could not load any game over image URL");
+                System.out.println("Could not load game over image from any source");
+                System.out.println("Please place a 'gameover.gif' file in: src/main/resources/images/");
                 gameOverImageView = null;
             }
         } catch (Exception e) {

@@ -118,4 +118,26 @@ public class InputHandler {
             player.shoot(bullets, soundManager);
         }
     }
+
+    // Capture Player 1 input state (for network)
+    public PlayerInput capturePlayer1Input() {
+        return new PlayerInput(
+            pressedKeys.contains(KeyCode.W),
+            pressedKeys.contains(KeyCode.S),
+            pressedKeys.contains(KeyCode.A),
+            pressedKeys.contains(KeyCode.D),
+            pressedKeys.contains(KeyCode.SPACE)
+        );
+    }
+
+    // Capture Player 2 input state (for network)
+    public PlayerInput capturePlayer2Input() {
+        return new PlayerInput(
+            pressedKeys.contains(KeyCode.UP),
+            pressedKeys.contains(KeyCode.DOWN),
+            pressedKeys.contains(KeyCode.LEFT),
+            pressedKeys.contains(KeyCode.RIGHT),
+            pressedKeys.contains(KeyCode.ENTER)
+        );
+    }
 }

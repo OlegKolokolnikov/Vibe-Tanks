@@ -971,8 +971,13 @@ public class Game {
     }
 
     private PlayerInput capturePlayerInput(Tank tank) {
-        // TODO: This needs to capture actual keyboard state from InputHandler
-        // For now, returning empty input as placeholder
+        // Determine which player this is
+        if (playerTanks.size() >= 1 && tank == playerTanks.get(0)) {
+            return inputHandler.capturePlayer1Input();
+        } else if (playerTanks.size() >= 2 && tank == playerTanks.get(1)) {
+            return inputHandler.capturePlayer2Input();
+        }
+        // Default empty input if tank not found
         return new PlayerInput();
     }
 

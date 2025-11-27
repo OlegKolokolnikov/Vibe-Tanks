@@ -344,6 +344,17 @@ public class Tank {
         lives++; // Extra life
     }
 
+    public void applyShield() {
+        if (isPlayer) {
+            // Players get shield for 1 minute (3600 frames at 60 FPS)
+            hasShield = true;
+            shieldDuration = 3600;
+        } else {
+            // Enemies get extra life
+            lives++;
+        }
+    }
+
     public boolean canSwim() {
         return canSwim;
     }

@@ -16,7 +16,8 @@ public class PowerUp {
         SHIP,    // Tank can swim through water
         SHOVEL,  // Base surrounded by steel for 1 minute
         SAW,     // Able to destroy forest/trees
-        TANK     // Extra life
+        TANK,    // Extra life
+        SHIELD   // Shield for 1 minute (players) or extra life (enemies)
     }
 
     private double x;
@@ -72,6 +73,9 @@ public class PowerUp {
                 break;
             case TANK:
                 tank.applyTank();
+                break;
+            case SHIELD:
+                tank.applyShield();
                 break;
         }
     }
@@ -151,6 +155,12 @@ public class PowerUp {
                 gc.fillOval(x + 6, y + 8, 12, 12);
                 gc.fillRect(x + 4, y + 12, 16, 6);
                 break;
+            case SHIELD:
+                // Draw shield icon
+                gc.fillOval(x + 6, y + 6, 12, 14);
+                gc.setFill(Color.WHITE);
+                gc.fillOval(x + 9, y + 10, 6, 6);
+                break;
         }
     }
 
@@ -163,6 +173,7 @@ public class PowerUp {
             case SHOVEL -> Color.ORANGE;
             case SAW -> Color.BROWN;
             case TANK -> Color.GREEN;
+            case SHIELD -> Color.BLUE;
         };
     }
 

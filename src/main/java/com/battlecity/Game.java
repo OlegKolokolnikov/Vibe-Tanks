@@ -841,6 +841,11 @@ public class Game {
         if (gameLoop != null) {
             gameLoop.stop();
         }
+        // Close network connection if it exists
+        if (network != null) {
+            System.out.println("Closing network connection...");
+            network.close();
+        }
     }
 
     // ============ NETWORK MULTIPLAYER METHODS ============

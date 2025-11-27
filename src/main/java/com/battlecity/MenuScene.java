@@ -210,6 +210,12 @@ public class MenuScene {
         alert.setHeaderText("Waiting for players...");
         alert.setContentText("Getting IP addresses...");
 
+        // Close network when dialog is closed (user cancels)
+        alert.setOnCloseRequest(e -> {
+            System.out.println("Host dialog closed - cleaning up network...");
+            network.close();
+        });
+
         // Start hosting
         if (network.startHost()) {
             alert.show();
@@ -231,21 +237,26 @@ public class MenuScene {
             }).start();
 
             // Wait for connection in background
-            new Thread(() -> {
+            Thread connectionThread = new Thread(() -> {
                 while (!network.isConnected()) {
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
+                        System.out.println("Connection wait interrupted - stopping...");
                         break;
                     }
                 }
 
                 // Connection established, start game
-                javafx.application.Platform.runLater(() -> {
-                    alert.close();
-                    startNetworkGame(network, true);
-                });
-            }).start();
+                if (network.isConnected()) {
+                    javafx.application.Platform.runLater(() -> {
+                        alert.close();
+                        startNetworkGame(network, true);
+                    });
+                }
+            });
+            connectionThread.setDaemon(true);
+            connectionThread.start();
         } else {
             alert.setAlertType(javafx.scene.control.Alert.AlertType.ERROR);
             alert.setHeaderText("Failed to Host");

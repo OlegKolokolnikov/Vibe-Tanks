@@ -493,6 +493,13 @@ public class Tank {
         this.hasShield = true;
         this.shieldDuration = 180;
         this.alive = true;
+
+        // Clear all power-ups on respawn
+        this.bulletPower = 1;
+        this.shootCooldownReduction = 0;
+        this.speedMultiplier = 1.0;
+        this.canSwim = false;
+        this.canDestroyTrees = false;
     }
 
     public void setPosition(double x, double y) {

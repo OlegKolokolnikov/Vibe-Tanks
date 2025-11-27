@@ -47,6 +47,12 @@ public class Tank {
     private double lastX, lastY; // Track position to detect stuck
     private int stuckCounter; // Count frames stuck
 
+    // Ice sliding variables
+    private boolean isSliding;
+    private Direction slidingDirection;
+    private double slideDistance;
+    private static final double SLIDE_DISTANCE = 32.0; // One tile
+
     public Tank(double x, double y, Direction direction, boolean isPlayer, int playerNumber) {
         this(x, y, direction, isPlayer, playerNumber, EnemyType.REGULAR);
     }
@@ -98,6 +104,8 @@ public class Tank {
         this.lastX = x;
         this.lastY = y;
         this.stuckCounter = 0;
+        this.isSliding = false;
+        this.slideDistance = 0;
     }
 
     public void update(GameMap map, List<Bullet> bullets, SoundManager soundManager) {
@@ -109,6 +117,32 @@ public class Tank {
             shieldDuration--;
             if (shieldDuration == 0) hasShield = false;
         }
+
+        // Handle ice sliding
+        if (isSliding && slideDistance > 0) {
+            double slideSpeed = SPEED * speedMultiplier * 2.0; // Same speed as moving on ice
+            double slideStep = Math.min(slideSpeed, slideDistance);
+
+            double newX = x + slidingDirection.getDx() * slideStep;
+            double newY = y + slidingDirection.getDy() * slideStep;
+
+            // Check boundaries and collisions
+            if (newX >= 0 && newX + SIZE <= map.getWidth() * 32 &&
+                newY >= 0 && newY + SIZE <= map.getHeight() * 32 &&
+                !map.checkTankCollision(newX, newY, SIZE, canSwim)) {
+                x = newX;
+                y = newY;
+                slideDistance -= slideStep;
+            } else {
+                // Stop sliding if hit obstacle
+                isSliding = false;
+                slideDistance = 0;
+            }
+
+            if (slideDistance <= 0) {
+                isSliding = false;
+            }
+        }
     }
 
     public void move(Direction newDirection, GameMap map) {
@@ -116,6 +150,11 @@ public class Tank {
 
         this.direction = newDirection;
         double speed = SPEED * speedMultiplier;
+
+        // Apply 2x speed when on ice
+        if (isOnIce(map)) {
+            speed *= 2.0;
+        }
 
         double newX = x + direction.getDx() * speed;
         double newY = y + direction.getDy() * speed;
@@ -130,6 +169,22 @@ public class Tank {
         if (!map.checkTankCollision(newX, newY, SIZE, canSwim)) {
             x = newX;
             y = newY;
+        }
+    }
+
+    private boolean isOnIce(GameMap map) {
+        // Check if center of tank is on ice
+        int centerX = (int) ((x + SIZE / 2) / 32);
+        int centerY = (int) ((y + SIZE / 2) / 32);
+        return map.getTile(centerY, centerX) == GameMap.TileType.ICE;
+    }
+
+    public void startSliding(Direction direction, GameMap map) {
+        // Start sliding only if on ice
+        if (isOnIce(map)) {
+            isSliding = true;
+            slidingDirection = direction;
+            slideDistance = SLIDE_DISTANCE;
         }
     }
 

@@ -15,7 +15,8 @@ public class GameMap {
         BRICK,
         STEEL,
         WATER,
-        TREES
+        TREES,
+        ICE
     }
 
     public GameMap(int width, int height) {
@@ -84,6 +85,19 @@ public class GameMap {
         for (int row = 8; row < 12; row++) {
             for (int col = 20; col < 24; col++) {
                 tiles[row][col] = TileType.TREES;
+            }
+        }
+
+        // Add ice patches (tanks move 2x faster and slide)
+        for (int row = 15; row < 18; row++) {
+            for (int col = 3; col < 8; col++) {
+                tiles[row][col] = TileType.ICE;
+            }
+        }
+
+        for (int row = 15; row < 18; row++) {
+            for (int col = 18; col < 23; col++) {
+                tiles[row][col] = TileType.ICE;
             }
         }
 
@@ -196,6 +210,15 @@ public class GameMap {
                         gc.fillOval(x + 4, y + 4, 10, 10);
                         gc.fillOval(x + 18, y + 8, 10, 10);
                         gc.fillOval(x + 8, y + 18, 10, 10);
+                        break;
+                    case ICE:
+                        gc.setFill(Color.rgb(200, 230, 255));
+                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        gc.setStroke(Color.rgb(150, 200, 255));
+                        gc.setLineWidth(2);
+                        // Draw diagonal lines to represent ice texture
+                        gc.strokeLine(x, y, x + TILE_SIZE, y + TILE_SIZE);
+                        gc.strokeLine(x + TILE_SIZE, y, x, y + TILE_SIZE);
                         break;
                     default:
                         // Empty tile - already black background

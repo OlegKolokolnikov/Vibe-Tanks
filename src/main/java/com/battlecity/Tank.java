@@ -430,6 +430,16 @@ public class Tank {
     public Direction getDirection() { return direction; }
     public EnemyType getEnemyType() { return enemyType; }
 
+    // Power-up status getters for UI display
+    public boolean hasGun() { return bulletPower >= 2; }
+    public int getStarCount() { return shootCooldownReduction; }
+    public int getCarCount() {
+        // Calculate CAR count based on speed multiplier (base 1.0, each adds 0.3)
+        return (int)((speedMultiplier - 1.0) / 0.3);
+    }
+    public boolean hasShip() { return canSwim; }
+    public boolean hasSaw() { return canDestroyTrees; }
+
     // Power-up effects
     public void applyGun() {
         bulletPower = 2; // Can break steel walls

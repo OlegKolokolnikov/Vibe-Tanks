@@ -373,14 +373,129 @@ public class Game {
         renderUI();
     }
 
+    private void renderPowerUpIcon(double x, double y, PowerUp.Type type) {
+        int size = 16;
+
+        // Background
+        gc.setFill(Color.WHITE);
+        gc.fillRect(x, y, size, size);
+
+        // Draw icon based on type
+        gc.setFill(getPowerUpColor(type));
+        switch (type) {
+            case GUN:
+                gc.fillRect(x + 3, y + 6, 2, 5);
+                gc.fillRect(x + 5, y + 5, 4, 2);
+                gc.fillRect(x + 8, y + 7, 3, 3);
+                break;
+            case STAR:
+                double centerX = x + size / 2;
+                double centerY = y + size / 2;
+                double[] xPoints = new double[5];
+                double[] yPoints = new double[5];
+                for (int i = 0; i < 5; i++) {
+                    double angle = Math.PI / 2 + (2 * Math.PI * i / 5);
+                    xPoints[i] = centerX + 5 * Math.cos(angle);
+                    yPoints[i] = centerY - 5 * Math.sin(angle);
+                }
+                gc.fillPolygon(xPoints, yPoints, 5);
+                break;
+            case CAR:
+                gc.fillRect(x + 3, y + 6, 8, 5);
+                gc.fillOval(x + 3, y + 10, 3, 3);
+                gc.fillOval(x + 9, y + 10, 3, 3);
+                gc.fillRect(x + 6, y + 3, 3, 3);
+                break;
+            case SHIP:
+                gc.fillPolygon(
+                    new double[]{x + size / 2, x + 2, x + size - 2},
+                    new double[]{y + 3, y + size - 3, y + size - 3},
+                    3
+                );
+                gc.fillRect(x + size / 2 - 1, y + 6, 2, 5);
+                break;
+            case SAW:
+                gc.fillOval(x + 2, y + 2, 12, 12);
+                break;
+            case SHIELD:
+                gc.fillOval(x + 3, y + 3, 8, 10);
+                gc.setFill(Color.WHITE);
+                gc.fillOval(x + 6, y + 6, 4, 4);
+                break;
+            case SHOVEL:
+                gc.fillRect(x + size / 2 - 1, y + 2, 2, 8);
+                gc.fillPolygon(
+                    new double[]{x + size / 2 - 2, x + size / 2 + 2, x + size / 2},
+                    new double[]{y + 9, y + 9, y + 13},
+                    3
+                );
+                break;
+            case TANK:
+                gc.fillOval(x + 3, y + 5, 8, 8);
+                gc.fillRect(x + 2, y + 8, 12, 4);
+                break;
+        }
+    }
+
+    private Color getPowerUpColor(PowerUp.Type type) {
+        return switch (type) {
+            case GUN -> Color.RED;
+            case STAR -> Color.YELLOW;
+            case CAR -> Color.LIME;
+            case SHIP -> Color.CYAN;
+            case SHOVEL -> Color.ORANGE;
+            case SAW -> Color.BROWN;
+            case TANK -> Color.GREEN;
+            case SHIELD -> Color.BLUE;
+        };
+    }
+
     private void renderUI() {
         gc.setFill(Color.WHITE);
         gc.fillText("Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
 
-        int playerNum = 1;
-        for (Tank player : playerTanks) {
-            gc.fillText("P" + playerNum + " Lives: " + player.getLives(), 10, 40 + (playerNum - 1) * 20);
-            playerNum++;
+        // Display player info and power-ups
+        for (int i = 0; i < playerTanks.size(); i++) {
+            Tank player = playerTanks.get(i);
+            int playerNum = i + 1;
+            double yOffset = 40 + i * 60;
+
+            // Display lives
+            gc.setFill(Color.WHITE);
+            gc.fillText("P" + playerNum + " Lives: " + player.getLives(), 10, yOffset);
+
+            // Display power-ups
+            double xOffset = 10;
+            yOffset += 10;
+
+            if (player.hasGun()) {
+                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.GUN);
+                xOffset += 20;
+            }
+            if (player.getStarCount() > 0) {
+                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.STAR);
+                gc.setFill(Color.WHITE);
+                gc.fillText("x" + player.getStarCount(), xOffset + 15, yOffset + 12);
+                xOffset += 35;
+            }
+            if (player.getCarCount() > 0) {
+                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.CAR);
+                gc.setFill(Color.WHITE);
+                gc.fillText("x" + player.getCarCount(), xOffset + 15, yOffset + 12);
+                xOffset += 35;
+            }
+            if (player.hasShip()) {
+                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SHIP);
+                xOffset += 20;
+            }
+            if (player.hasSaw()) {
+                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SAW);
+                xOffset += 20;
+            }
+            if (player.hasShield()) {
+                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SHIELD);
+                xOffset += 20;
+            }
         }
 
         if (gameOver) {

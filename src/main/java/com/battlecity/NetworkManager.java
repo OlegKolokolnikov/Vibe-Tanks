@@ -239,6 +239,15 @@ public class NetworkManager {
     public void close() {
         connected = false;
 
+        try {
+            // Close server socket FIRST to unblock accept() calls
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+            }
+        } catch (IOException e) {
+            System.err.println("Error closing server socket: " + e.getMessage());
+        }
+
         if (isHost) {
             for (ClientHandler client : clients) {
                 client.close();
@@ -250,8 +259,7 @@ public class NetworkManager {
             if (receiveThread != null) receiveThread.interrupt();
             if (out != null) out.close();
             if (in != null) in.close();
-            if (socket != null) socket.close();
-            if (serverSocket != null) serverSocket.close();
+            if (socket != null && !socket.isClosed()) socket.close();
         } catch (IOException e) {
             System.err.println("Error closing connection: " + e.getMessage());
         }

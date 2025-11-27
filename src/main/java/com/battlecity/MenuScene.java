@@ -213,7 +213,11 @@ public class MenuScene {
         // Close network when dialog is closed (user cancels)
         alert.setOnHidden(e -> {
             System.out.println("Host dialog closed - cleaning up network...");
-            network.close();
+            // Close in background thread to avoid blocking UI
+            new Thread(() -> {
+                network.close();
+                System.out.println("Network cleanup complete");
+            }).start();
         });
 
         // Start hosting

@@ -953,7 +953,7 @@ public class Game {
         if (playerTanks.size() >= 1 && state.p1Alive) {
             Tank p1 = playerTanks.get(0);
             p1.setPosition(state.p1X, state.p1Y);
-            // Note: Lives are not synced as Tank doesn't have setLives()
+            p1.setDirection(Direction.values()[state.p1Direction]);
             if (state.p1HasShield && !p1.hasShield()) {
                 p1.applyShield();
             }
@@ -963,7 +963,7 @@ public class Game {
         if (playerTanks.size() >= 2 && state.p2Alive) {
             Tank p2 = playerTanks.get(1);
             p2.setPosition(state.p2X, state.p2Y);
-            // Note: Lives are not synced as Tank doesn't have setLives()
+            p2.setDirection(Direction.values()[state.p2Direction]);
             if (state.p2HasShield && !p2.hasShield()) {
                 p2.applyShield();
             }
@@ -973,7 +973,7 @@ public class Game {
         if (playerTanks.size() >= 3 && state.p3Alive) {
             Tank p3 = playerTanks.get(2);
             p3.setPosition(state.p3X, state.p3Y);
-            // Note: Lives are not synced as Tank doesn't have setLives()
+            p3.setDirection(Direction.values()[state.p3Direction]);
             if (state.p3HasShield && !p3.hasShield()) {
                 p3.applyShield();
             }
@@ -983,9 +983,24 @@ public class Game {
         if (playerTanks.size() >= 4 && state.p4Alive) {
             Tank p4 = playerTanks.get(3);
             p4.setPosition(state.p4X, state.p4Y);
-            // Note: Lives are not synced as Tank doesn't have setLives()
+            p4.setDirection(Direction.values()[state.p4Direction]);
             if (state.p4HasShield && !p4.hasShield()) {
                 p4.applyShield();
+            }
+        }
+
+        // Update enemy tanks (recreate from state)
+        enemyTanks.clear();
+        for (GameState.EnemyData eData : state.enemies) {
+            if (eData.alive) {
+                Tank enemy = new Tank(
+                    eData.x, eData.y,
+                    Direction.values()[eData.direction],
+                    false, // not a player
+                    0, // player number not used for enemies
+                    Tank.EnemyType.values()[eData.enemyType]
+                );
+                enemyTanks.add(enemy);
             }
         }
 

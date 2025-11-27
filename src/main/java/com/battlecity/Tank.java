@@ -530,6 +530,10 @@ public class Tank {
     public int getLives() { return lives; }
     public boolean hasShield() { return hasShield; }
     public Direction getDirection() { return direction; }
+
+    public void setDirection(Direction direction) {
+        this.direction = direction;
+    }
     public EnemyType getEnemyType() { return enemyType; }
 
     // Power-up status getters for UI display

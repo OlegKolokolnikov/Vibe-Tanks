@@ -108,7 +108,7 @@ public class Tank {
         this.slideDistance = 0;
     }
 
-    public void update(GameMap map, List<Bullet> bullets, SoundManager soundManager) {
+    public void update(GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
         if (!alive) return;
 
         // Update cooldowns
@@ -127,9 +127,37 @@ public class Tank {
             double newY = y + slidingDirection.getDy() * slideStep;
 
             // Check boundaries and collisions
-            if (newX >= 0 && newX + SIZE <= map.getWidth() * 32 &&
-                newY >= 0 && newY + SIZE <= map.getHeight() * 32 &&
-                !map.checkTankCollision(newX, newY, SIZE, canSwim)) {
+            boolean canSlide = true;
+            if (newX < 0 || newX + SIZE > map.getWidth() * 32 ||
+                newY < 0 || newY + SIZE > map.getHeight() * 32) {
+                canSlide = false;
+            }
+
+            // Check collision with other tanks
+            if (canSlide) {
+                for (Tank other : allTanks) {
+                    if (other != this && other.isAlive()) {
+                        if (checkCollision(newX, newY, other.x, other.y, SIZE, SIZE)) {
+                            canSlide = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Check collision with base
+            if (canSlide && base.isAlive()) {
+                if (checkCollision(newX, newY, base.getX(), base.getY(), SIZE, 32)) {
+                    canSlide = false;
+                }
+            }
+
+            // Check collision with map tiles
+            if (canSlide && map.checkTankCollision(newX, newY, SIZE, canSwim)) {
+                canSlide = false;
+            }
+
+            if (canSlide) {
                 x = newX;
                 y = newY;
                 slideDistance -= slideStep;
@@ -145,7 +173,7 @@ public class Tank {
         }
     }
 
-    public void move(Direction newDirection, GameMap map) {
+    public void move(Direction newDirection, GameMap map, List<Tank> otherTanks, Base base) {
         if (!alive) return;
 
         this.direction = newDirection;
@@ -165,11 +193,34 @@ public class Tank {
             return;
         }
 
+        // Check collision with other tanks
+        for (Tank other : otherTanks) {
+            if (other != this && other.isAlive()) {
+                if (checkCollision(newX, newY, other.x, other.y, SIZE, SIZE)) {
+                    return; // Can't move through other tanks
+                }
+            }
+        }
+
+        // Check collision with base (only if base is still alive)
+        if (base.isAlive()) {
+            if (checkCollision(newX, newY, base.getX(), base.getY(), SIZE, 32)) {
+                return; // Can't move through base
+            }
+        }
+
         // Check collision with map tiles (pass canSwim for SHIP power-up)
         if (!map.checkTankCollision(newX, newY, SIZE, canSwim)) {
             x = newX;
             y = newY;
         }
+    }
+
+    private boolean checkCollision(double x1, double y1, double x2, double y2, int size1, int size2) {
+        return x1 < x2 + size2 &&
+               x1 + size1 > x2 &&
+               y1 < y2 + size2 &&
+               y1 + size1 > y2;
     }
 
     private boolean isOnIce(GameMap map) {
@@ -208,10 +259,10 @@ public class Tank {
         soundManager.playShoot();
     }
 
-    public void updateAI(GameMap map, List<Bullet> bullets, List<Tank> players, Base base, SoundManager soundManager) {
+    public void updateAI(GameMap map, List<Bullet> bullets, List<Tank> allTanks, Base base, SoundManager soundManager) {
         if (!alive) return;
 
-        update(map, bullets, soundManager);
+        update(map, bullets, soundManager, allTanks, base);
 
         // Detect if stuck (position hasn't changed)
         if (Math.abs(x - lastX) < 0.1 && Math.abs(y - lastY) < 0.1) {
@@ -257,7 +308,7 @@ public class Tank {
         }
 
         // Move in current direction
-        move(direction, map);
+        move(direction, map, allTanks, base);
     }
 
     private void moveTowardsBase(Base base) {

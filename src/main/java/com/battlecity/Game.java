@@ -152,8 +152,13 @@ public class Game {
             return;
         }
 
+        // Create combined list of all tanks for collision detection
+        List<Tank> allTanks = new ArrayList<>();
+        allTanks.addAll(playerTanks);
+        allTanks.addAll(enemyTanks);
+
         // Handle player input
-        inputHandler.handleInput(gameMap, bullets, soundManager);
+        inputHandler.handleInput(gameMap, bullets, soundManager, allTanks, base);
 
         // Update base protection from SHOVEL power-up
         if (baseProtectionDuration > 0) {
@@ -170,7 +175,7 @@ public class Game {
         for (int i = 0; i < playerTanks.size(); i++) {
             Tank player = playerTanks.get(i);
             if (player.isAlive()) {
-                player.update(gameMap, bullets, soundManager);
+                player.update(gameMap, bullets, soundManager, allTanks, base);
             } else if (player.getLives() > 0) {
                 // Player died but has lives left - respawn at start position
                 soundManager.playExplosion();
@@ -181,7 +186,7 @@ public class Game {
         // Update enemy tanks with AI
         for (Tank tank : enemyTanks) {
             if (tank.isAlive()) {
-                tank.updateAI(gameMap, bullets, playerTanks, base, soundManager);
+                tank.updateAI(gameMap, bullets, allTanks, base, soundManager);
             }
         }
 

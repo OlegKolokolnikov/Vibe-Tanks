@@ -40,34 +40,34 @@ public class InputHandler {
         pane.requestFocus();
     }
 
-    public void handleInput(GameMap map, List<Bullet> bullets, SoundManager soundManager) {
+    public void handleInput(GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
         if (playerTanks.size() >= 1) {
-            handlePlayer1Input(playerTanks.get(0), map, bullets, soundManager);
+            handlePlayer1Input(playerTanks.get(0), map, bullets, soundManager, allTanks, base);
         }
         if (playerTanks.size() >= 2) {
-            handlePlayer2Input(playerTanks.get(1), map, bullets, soundManager);
+            handlePlayer2Input(playerTanks.get(1), map, bullets, soundManager, allTanks, base);
         }
     }
 
-    private void handlePlayer1Input(Tank player, GameMap map, List<Bullet> bullets, SoundManager soundManager) {
+    private void handlePlayer1Input(Tank player, GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
         if (!player.isAlive()) return;
 
         boolean isMoving = false;
         // Movement
         if (pressedKeys.contains(KeyCode.W)) {
-            player.move(Direction.UP, map);
+            player.move(Direction.UP, map, allTanks, base);
             lastP1Direction = Direction.UP;
             isMoving = true;
         } else if (pressedKeys.contains(KeyCode.S)) {
-            player.move(Direction.DOWN, map);
+            player.move(Direction.DOWN, map, allTanks, base);
             lastP1Direction = Direction.DOWN;
             isMoving = true;
         } else if (pressedKeys.contains(KeyCode.A)) {
-            player.move(Direction.LEFT, map);
+            player.move(Direction.LEFT, map, allTanks, base);
             lastP1Direction = Direction.LEFT;
             isMoving = true;
         } else if (pressedKeys.contains(KeyCode.D)) {
-            player.move(Direction.RIGHT, map);
+            player.move(Direction.RIGHT, map, allTanks, base);
             lastP1Direction = Direction.RIGHT;
             isMoving = true;
         }
@@ -84,25 +84,25 @@ public class InputHandler {
         }
     }
 
-    private void handlePlayer2Input(Tank player, GameMap map, List<Bullet> bullets, SoundManager soundManager) {
+    private void handlePlayer2Input(Tank player, GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
         if (!player.isAlive()) return;
 
         boolean isMoving = false;
         // Movement
         if (pressedKeys.contains(KeyCode.UP)) {
-            player.move(Direction.UP, map);
+            player.move(Direction.UP, map, allTanks, base);
             lastP2Direction = Direction.UP;
             isMoving = true;
         } else if (pressedKeys.contains(KeyCode.DOWN)) {
-            player.move(Direction.DOWN, map);
+            player.move(Direction.DOWN, map, allTanks, base);
             lastP2Direction = Direction.DOWN;
             isMoving = true;
         } else if (pressedKeys.contains(KeyCode.LEFT)) {
-            player.move(Direction.LEFT, map);
+            player.move(Direction.LEFT, map, allTanks, base);
             lastP2Direction = Direction.LEFT;
             isMoving = true;
         } else if (pressedKeys.contains(KeyCode.RIGHT)) {
-            player.move(Direction.RIGHT, map);
+            player.move(Direction.RIGHT, map, allTanks, base);
             lastP2Direction = Direction.RIGHT;
             isMoving = true;
         }

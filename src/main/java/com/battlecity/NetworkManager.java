@@ -92,7 +92,9 @@ public class NetworkManager {
         playerNumber = 1; // Host is always Player 1
 
         try {
-            serverSocket = new ServerSocket(PORT);
+            serverSocket = new ServerSocket();
+            serverSocket.setReuseAddress(true); // Allow immediate port reuse
+            serverSocket.bind(new InetSocketAddress(PORT));
             System.out.println("Waiting for players to connect on port " + PORT + "...");
 
             // Accept connections in background

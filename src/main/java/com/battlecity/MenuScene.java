@@ -40,10 +40,10 @@ public class MenuScene {
         subtitle.setFont(Font.font("Arial", FontWeight.NORMAL, 20));
         subtitle.setTextFill(Color.WHITE);
 
-        // 1 Player button
-        Button onePlayerButton = new Button("1 PLAYER");
-        styleButton(onePlayerButton);
-        onePlayerButton.setOnAction(e -> startGame(1, 100));
+        // Play button
+        Button playButton = new Button("PLAY");
+        styleButton(playButton);
+        playButton.setOnAction(e -> startGame(1, 100));
 
         // Host Game button (Online Multiplayer)
         Button hostButton = new Button("HOST GAME (ONLINE)");
@@ -144,7 +144,7 @@ public class MenuScene {
         menuLayout.getChildren().addAll(
             title,
             subtitle,
-            onePlayerButton,
+            playButton,
             hostButton,
             joinButton,
             testButton,

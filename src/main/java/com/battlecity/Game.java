@@ -261,17 +261,20 @@ public class Game {
         base = new Base(12 * 32, 24 * 32);
 
         // Initialize player tanks based on player count
+        // For network games, start with 2 tanks (host + first client)
+        // Additional tanks will be added when more players connect
         playerTanks = new ArrayList<>();
-        if (playerCount >= 1) {
+        int initialPlayers = isNetworkGame ? 2 : playerCount; // Network games start with 2
+        if (initialPlayers >= 1) {
             playerTanks.add(new Tank(8 * 32, 24 * 32, Direction.UP, true, 1)); // Player 1
         }
-        if (playerCount >= 2) {
+        if (initialPlayers >= 2) {
             playerTanks.add(new Tank(16 * 32, 24 * 32, Direction.UP, true, 2)); // Player 2
         }
-        if (playerCount >= 3) {
+        if (initialPlayers >= 3) {
             playerTanks.add(new Tank(9 * 32, 24 * 32, Direction.UP, true, 3)); // Player 3 (next to Player 1)
         }
-        if (playerCount >= 4) {
+        if (initialPlayers >= 4) {
             playerTanks.add(new Tank(15 * 32, 24 * 32, Direction.UP, true, 4)); // Player 4 (next to Player 2)
         }
 
@@ -940,6 +943,7 @@ public class Game {
         state.victory = victory;
         state.remainingEnemies = enemySpawner.getRemainingEnemies();
         state.baseAlive = base.isAlive();
+        state.connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
 
         // Map changes
         state.tileChanges.addAll(mapChanges);
@@ -949,6 +953,20 @@ public class Game {
     }
 
     private void applyGameState(GameState state) {
+        // Dynamically add tanks if more players connected
+        while (playerTanks.size() < state.connectedPlayers && playerTanks.size() < 4) {
+            int playerNum = playerTanks.size() + 1;
+            double x, y;
+            switch (playerNum) {
+                case 2 -> { x = 16 * 32; y = 24 * 32; }
+                case 3 -> { x = 9 * 32; y = 24 * 32; }
+                case 4 -> { x = 15 * 32; y = 24 * 32; }
+                default -> { x = 8 * 32; y = 24 * 32; }
+            }
+            System.out.println("Adding Player " + playerNum + " tank (new player connected)");
+            playerTanks.add(new Tank(x, y, Direction.UP, true, playerNum));
+        }
+
         // Update Player 1
         if (playerTanks.size() >= 1 && state.p1Alive) {
             Tank p1 = playerTanks.get(0);

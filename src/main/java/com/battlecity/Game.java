@@ -20,6 +20,7 @@ public class Game {
     private final int width;
     private final int height;
     private final int playerCount;
+    private final int totalEnemies;
     private final Stage stage;
 
     private GameMap gameMap;
@@ -47,11 +48,12 @@ public class Game {
     // Victory dancing anime girl
     private ImageView victoryImageView;
 
-    public Game(Pane root, int width, int height, int playerCount, Stage stage) {
+    public Game(Pane root, int width, int height, int playerCount, int totalEnemies, Stage stage) {
         this.root = root;
         this.width = width;
         this.height = height;
         this.playerCount = playerCount;
+        this.totalEnemies = totalEnemies;
         this.stage = stage;
 
         canvas = new Canvas(width, height);
@@ -116,8 +118,8 @@ public class Game {
         // Initialize enemy tanks list
         enemyTanks = new ArrayList<>();
 
-        // Initialize enemy spawner (100 total enemies, max 10 on screen)
-        enemySpawner = new EnemySpawner(100, 10, gameMap);
+        // Initialize enemy spawner
+        enemySpawner = new EnemySpawner(totalEnemies, 10, gameMap);
 
         // Initialize input handler
         inputHandler = new InputHandler(root, playerTanks);

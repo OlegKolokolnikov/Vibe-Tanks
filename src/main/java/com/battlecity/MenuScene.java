@@ -41,12 +41,38 @@ public class MenuScene {
         // 1 Player button
         Button onePlayerButton = new Button("1 PLAYER");
         styleButton(onePlayerButton);
-        onePlayerButton.setOnAction(e -> startGame(1));
+        onePlayerButton.setOnAction(e -> startGame(1, 100));
 
         // 2 Players button
         Button twoPlayersButton = new Button("2 PLAYERS");
         styleButton(twoPlayersButton);
-        twoPlayersButton.setOnAction(e -> startGame(2));
+        twoPlayersButton.setOnAction(e -> startGame(2, 100));
+
+        // Test button
+        Button testButton = new Button("TEST (20 ENEMIES)");
+        styleButton(testButton);
+        testButton.setStyle(
+            "-fx-background-color: #555555;" +
+            "-fx-text-fill: orange;" +
+            "-fx-border-color: orange;" +
+            "-fx-border-width: 2px;" +
+            "-fx-cursor: hand;"
+        );
+        testButton.setOnMouseEntered(e -> testButton.setStyle(
+            "-fx-background-color: #777777;" +
+            "-fx-text-fill: orange;" +
+            "-fx-border-color: orange;" +
+            "-fx-border-width: 3px;" +
+            "-fx-cursor: hand;"
+        ));
+        testButton.setOnMouseExited(e -> testButton.setStyle(
+            "-fx-background-color: #555555;" +
+            "-fx-text-fill: orange;" +
+            "-fx-border-color: orange;" +
+            "-fx-border-width: 2px;" +
+            "-fx-cursor: hand;"
+        ));
+        testButton.setOnAction(e -> startGame(1, 20));
 
         // Explanation button
         Button explanationButton = new Button("EXPLANATION");
@@ -71,6 +97,7 @@ public class MenuScene {
             subtitle,
             onePlayerButton,
             twoPlayersButton,
+            testButton,
             explanationButton,
             instructions,
             controls1,
@@ -109,11 +136,11 @@ public class MenuScene {
         ));
     }
 
-    private void startGame(int playerCount) {
+    private void startGame(int playerCount, int totalEnemies) {
         javafx.scene.layout.Pane gameRoot = new javafx.scene.layout.Pane();
         Scene gameScene = new Scene(gameRoot, windowWidth, windowHeight);
 
-        Game game = new Game(gameRoot, windowWidth, windowHeight, playerCount, stage);
+        Game game = new Game(gameRoot, windowWidth, windowHeight, playerCount, totalEnemies, stage);
         game.start();
 
         stage.setScene(gameScene);

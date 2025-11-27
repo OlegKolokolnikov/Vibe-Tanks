@@ -37,7 +37,7 @@ public class Tank {
     private int bulletPower; // 1 = normal, 2 = can break steel
     private boolean canSwim; // SHIP power-up
     private boolean canDestroyTrees; // SAW power-up
-    private boolean hasMachinegun; // MACHINEGUN power-up (bullets wrap through destroyed borders)
+    private int machinegunCount; // MACHINEGUN power-up (each adds one extra bullet, max 5)
     private int shootCooldownReduction; // STAR power-up (each star reduces cooldown)
 
     private Random random;
@@ -98,7 +98,7 @@ public class Tank {
         this.bulletPower = 1;
         this.canSwim = false;
         this.canDestroyTrees = false;
-        this.hasMachinegun = false;
+        this.machinegunCount = 0;
         this.shootCooldownReduction = 0;
         this.random = new Random();
         this.aiMoveCooldown = 60;
@@ -335,7 +335,27 @@ public class Tank {
             case RIGHT -> bulletX = x + SIZE;
         }
 
-        bullets.add(new Bullet(bulletX, bulletY, direction, !isPlayer, bulletPower, canDestroyTrees, hasMachinegun));
+        // Calculate number of bullets to fire (1 base + machinegunCount, max 5)
+        int bulletCount = Math.min(1 + machinegunCount, 5);
+        double bulletSpacing = 24.0; // 3 bullets' worth of space (3 * 8 pixels)
+
+        // Fire bullets with spacing
+        for (int i = 0; i < bulletCount; i++) {
+            double offsetX = bulletX;
+            double offsetY = bulletY;
+
+            // Add spacing between bullets based on direction
+            double totalSpacing = i * bulletSpacing;
+            switch (direction) {
+                case UP -> offsetY -= totalSpacing;
+                case DOWN -> offsetY += totalSpacing;
+                case LEFT -> offsetX -= totalSpacing;
+                case RIGHT -> offsetX += totalSpacing;
+            }
+
+            bullets.add(new Bullet(offsetX, offsetY, direction, !isPlayer, bulletPower, canDestroyTrees));
+        }
+
         // Apply shoot cooldown reduction from STAR power-ups (min cooldown is 5 frames)
         shootCooldown = Math.max(5, SHOOT_COOLDOWN - (shootCooldownReduction * 5));
         soundManager.playShoot();
@@ -521,7 +541,7 @@ public class Tank {
     }
     public boolean hasShip() { return canSwim; }
     public boolean hasSaw() { return canDestroyTrees; }
-    public boolean hasMachinegun() { return hasMachinegun; }
+    public int getMachinegunCount() { return machinegunCount; }
 
     // Power-up effects
     public void applyGun() {
@@ -546,7 +566,10 @@ public class Tank {
     }
 
     public void applyMachinegun() {
-        hasMachinegun = true; // Bullets can wrap through destroyed borders
+        // Each MACHINEGUN adds one extra bullet (max 5 total bullets = 4 extra)
+        if (machinegunCount < 4) {
+            machinegunCount++;
+        }
     }
 
     public void applyTank() {
@@ -587,7 +610,7 @@ public class Tank {
         this.speedMultiplier = 1.0;
         this.canSwim = false;
         this.canDestroyTrees = false;
-        this.hasMachinegun = false;
+        this.machinegunCount = 0;
     }
 
     public void setPosition(double x, double y) {

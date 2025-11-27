@@ -13,16 +13,14 @@ public class Bullet {
     private boolean fromEnemy;
     private int power;
     private boolean canDestroyTrees;
-    private boolean canWrapAround; // MACHINEGUN power-up enables wraparound
 
-    public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, boolean canWrapAround) {
+    public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees) {
         this.x = x;
         this.y = y;
         this.direction = direction;
         this.fromEnemy = fromEnemy;
         this.power = power;
         this.canDestroyTrees = canDestroyTrees;
-        this.canWrapAround = canWrapAround;
     }
 
     public void update() {
@@ -63,15 +61,7 @@ public class Bullet {
     // Check and handle wraparound through destroyed borders
     // Returns true if bullet should continue, false if it should be removed
     public boolean handleWraparound(GameMap map, int width, int height) {
-        // If bullet doesn't have MACHINEGUN power-up, it stops at borders
-        if (!canWrapAround) {
-            if (x < 0 || x > width || y < 0 || y > height) {
-                return false; // Remove bullet at border
-            }
-            return true; // Bullet is within bounds
-        }
-
-        // MACHINEGUN power-up: bullets can wrap through destroyed borders
+        // Bullets can wrap through destroyed borders
         // Left edge
         if (x < 0) {
             int row = (int)((y + SIZE/2) / 32);

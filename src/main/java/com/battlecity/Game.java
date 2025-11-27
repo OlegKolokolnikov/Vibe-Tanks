@@ -722,9 +722,11 @@ public class Game {
                 renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SHIELD);
                 xOffset += 20;
             }
-            if (player.hasMachinegun()) {
+            if (player.getMachinegunCount() > 0) {
                 renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.MACHINEGUN);
-                xOffset += 20;
+                gc.setFill(Color.WHITE);
+                gc.fillText("x" + player.getMachinegunCount(), xOffset + 15, yOffset + 12);
+                xOffset += 35;
             }
         }
 

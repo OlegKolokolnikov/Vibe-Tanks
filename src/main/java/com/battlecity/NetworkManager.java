@@ -145,7 +145,10 @@ public class NetworkManager {
                 try {
                     // Accept up to 3 clients (Player 2, 3, 4)
                     for (int i = 2; i <= MAX_PLAYERS; i++) {
-                        if (!connected) break; // Stop accepting if host disconnected
+                        if (!isHosting || !serverSocket.isBound() || serverSocket.isClosed()) {
+                            System.out.println("Accept loop stopping - server closed");
+                            break;
+                        }
 
                         Socket clientSocket = serverSocket.accept();
                         System.out.println("Player " + i + " connected from: " + clientSocket.getInetAddress());
@@ -161,11 +164,12 @@ public class NetworkManager {
                     System.out.println("Maximum players reached (4/4)");
                 } catch (IOException e) {
                     if (isHosting) {
-                        System.err.println("Error accepting connections: " + e.getMessage());
+                        System.out.println("Accept loop ended: " + e.getMessage());
                     }
                 }
+                System.out.println("Accept thread exiting");
             });
-            acceptThread.setDaemon(true);
+            acceptThread.setDaemon(false); // Non-daemon so it properly cleans up
             acceptThread.start();
 
             return true;
@@ -288,31 +292,38 @@ public class NetworkManager {
     public void close() {
         System.out.println("NetworkManager.close() called");
         connected = false;
-        isHosting = false; // Reset hosting flag
+        isHosting = false; // Reset hosting flag to stop accept loop
 
         try {
             // Close server socket FIRST to unblock accept() calls
             if (serverSocket != null && !serverSocket.isClosed()) {
                 System.out.println("Closing server socket...");
                 serverSocket.close();
+                System.out.println("Server socket closed");
             }
         } catch (IOException e) {
             System.err.println("Error closing server socket: " + e.getMessage());
         }
 
-        // Interrupt accept thread and wait for it to finish
+        // Wait for accept thread to finish (it should exit when socket closes)
         if (acceptThread != null && acceptThread.isAlive()) {
-            System.out.println("Interrupting accept thread...");
-            acceptThread.interrupt();
+            System.out.println("Waiting for accept thread to exit...");
             try {
-                acceptThread.join(1000); // Wait up to 1 second for thread to exit
+                acceptThread.join(2000); // Wait up to 2 seconds for thread to exit
                 if (acceptThread.isAlive()) {
-                    System.err.println("Warning: accept thread did not exit cleanly");
+                    System.err.println("Warning: accept thread did not exit, interrupting...");
+                    acceptThread.interrupt();
+                    acceptThread.join(1000); // Wait another second after interrupt
                 }
+                System.out.println("Accept thread terminated");
             } catch (InterruptedException e) {
                 System.err.println("Interrupted while waiting for accept thread");
             }
         }
+
+        // Null out the socket to ensure it's garbage collected
+        serverSocket = null;
+        acceptThread = null;
 
         if (isHost) {
             for (ClientHandler client : clients) {

@@ -268,6 +268,12 @@ public class Game {
         if (playerCount >= 2) {
             playerTanks.add(new Tank(16 * 32, 24 * 32, Direction.UP, true, 2)); // Player 2
         }
+        if (playerCount >= 3) {
+            playerTanks.add(new Tank(9 * 32, 24 * 32, Direction.UP, true, 3)); // Player 3 (next to Player 1)
+        }
+        if (playerCount >= 4) {
+            playerTanks.add(new Tank(15 * 32, 24 * 32, Direction.UP, true, 4)); // Player 4 (next to Player 2)
+        }
 
         // Store player start positions for respawn
         playerStartPositions = new double[playerTanks.size()][2];
@@ -356,16 +362,18 @@ public class Game {
             }
 
             if (network.isHost()) {
-                // HOST: Receive and apply client input for Player 2
-                PlayerInput clientInput = network.getPlayerInput();
-                if (clientInput != null && playerTanks.size() >= 2) {
-                    applyPlayerInput(playerTanks.get(1), clientInput);
+                // HOST: Receive and apply client inputs for all players
+                for (int i = 2; i <= playerTanks.size(); i++) {
+                    PlayerInput clientInput = network.getPlayerInput(i);
+                    if (clientInput != null) {
+                        applyPlayerInput(playerTanks.get(i - 1), clientInput);
+                    }
                 }
                 // Host runs full game logic below
             } else {
-                // CLIENT: Send Player 2 input to host
-                if (playerTanks.size() >= 2) {
-                    PlayerInput input = capturePlayerInput(playerTanks.get(1));
+                // CLIENT: Send own input to host
+                if (playerTanks.size() >= 1) {
+                    PlayerInput input = capturePlayerInput(playerTanks.get(0));
                     network.sendInput(input);
                 }
 
@@ -862,6 +870,28 @@ public class Game {
             state.p2HasShield = p2.hasShield();
         }
 
+        // Player 3 data
+        if (playerTanks.size() >= 3) {
+            Tank p3 = playerTanks.get(2);
+            state.p3X = p3.getX();
+            state.p3Y = p3.getY();
+            state.p3Direction = p3.getDirection().ordinal();
+            state.p3Lives = p3.getLives();
+            state.p3Alive = p3.isAlive();
+            state.p3HasShield = p3.hasShield();
+        }
+
+        // Player 4 data
+        if (playerTanks.size() >= 4) {
+            Tank p4 = playerTanks.get(3);
+            state.p4X = p4.getX();
+            state.p4Y = p4.getY();
+            state.p4Direction = p4.getDirection().ordinal();
+            state.p4Lives = p4.getLives();
+            state.p4Alive = p4.isAlive();
+            state.p4HasShield = p4.hasShield();
+        }
+
         // Enemy tanks
         for (Tank enemy : enemyTanks) {
             if (enemy != null) {
@@ -934,6 +964,26 @@ public class Game {
             }
         }
 
+        // Update Player 3
+        if (playerTanks.size() >= 3 && state.p3Alive) {
+            Tank p3 = playerTanks.get(2);
+            p3.setPosition(state.p3X, state.p3Y);
+            // Note: Lives are not synced as Tank doesn't have setLives()
+            if (state.p3HasShield && !p3.hasShield()) {
+                p3.applyShield();
+            }
+        }
+
+        // Update Player 4
+        if (playerTanks.size() >= 4 && state.p4Alive) {
+            Tank p4 = playerTanks.get(3);
+            p4.setPosition(state.p4X, state.p4Y);
+            // Note: Lives are not synced as Tank doesn't have setLives()
+            if (state.p4HasShield && !p4.hasShield()) {
+                p4.applyShield();
+            }
+        }
+
         // Update bullets (recreate from state)
         bullets.clear();
         for (GameState.BulletData bData : state.bullets) {
@@ -971,14 +1021,8 @@ public class Game {
     }
 
     private PlayerInput capturePlayerInput(Tank tank) {
-        // Determine which player this is
-        if (playerTanks.size() >= 1 && tank == playerTanks.get(0)) {
-            return inputHandler.capturePlayer1Input();
-        } else if (playerTanks.size() >= 2 && tank == playerTanks.get(1)) {
-            return inputHandler.capturePlayer2Input();
-        }
-        // Default empty input if tank not found
-        return new PlayerInput();
+        // Capture current keyboard state (arrow keys + space)
+        return inputHandler.capturePlayerInput();
     }
 
     private void applyPlayerInput(Tank tank, PlayerInput input) {

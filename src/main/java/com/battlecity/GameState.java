@@ -7,19 +7,33 @@ import java.util.List;
 public class GameState implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    // Player 1 (host) data
+    // Player 1 data
     public double p1X, p1Y;
     public int p1Direction; // 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT
     public int p1Lives;
     public boolean p1Alive;
     public boolean p1HasShield;
 
-    // Player 2 (client) data
+    // Player 2 data
     public double p2X, p2Y;
     public int p2Direction;
     public int p2Lives;
     public boolean p2Alive;
     public boolean p2HasShield;
+
+    // Player 3 data
+    public double p3X, p3Y;
+    public int p3Direction;
+    public int p3Lives;
+    public boolean p3Alive;
+    public boolean p3HasShield;
+
+    // Player 4 data
+    public double p4X, p4Y;
+    public int p4Direction;
+    public int p4Lives;
+    public boolean p4Alive;
+    public boolean p4HasShield;
 
     // Enemy tanks
     public List<EnemyData> enemies = new ArrayList<>();

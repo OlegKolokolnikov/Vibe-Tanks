@@ -10,20 +10,16 @@ import java.util.Set;
 public class InputHandler {
     private Set<KeyCode> pressedKeys;
     private List<Tank> playerTanks;
-    private Direction lastP1Direction;
-    private Direction lastP2Direction;
-    private boolean wasP1Moving;
-    private boolean wasP2Moving;
+    private Direction lastDirection;
+    private boolean wasMoving;
     private GameMap gameMap;
 
-    // Player 1 controls: WASD + Space
-    // Player 2 controls: Arrow keys + Enter
+    // All players use: Arrow keys + Space
 
     public InputHandler(Pane pane, List<Tank> playerTanks) {
         this.playerTanks = playerTanks;
         this.pressedKeys = new HashSet<>();
-        this.wasP1Moving = false;
-        this.wasP2Moving = false;
+        this.wasMoving = false;
 
         pane.setOnKeyPressed(event -> {
             pressedKeys.add(event.getCode());
@@ -41,103 +37,55 @@ public class InputHandler {
     }
 
     public void handleInput(GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
+        // Handle single local player with arrow keys + space
         if (playerTanks.size() >= 1) {
-            handlePlayer1Input(playerTanks.get(0), map, bullets, soundManager, allTanks, base);
-        }
-        if (playerTanks.size() >= 2) {
-            handlePlayer2Input(playerTanks.get(1), map, bullets, soundManager, allTanks, base);
+            handlePlayerInput(playerTanks.get(0), map, bullets, soundManager, allTanks, base);
         }
     }
 
-    private void handlePlayer1Input(Tank player, GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
+    private void handlePlayerInput(Tank player, GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
         if (!player.isAlive()) return;
 
         boolean isMoving = false;
-        // Movement
-        if (pressedKeys.contains(KeyCode.W)) {
+        // Movement with arrow keys
+        if (pressedKeys.contains(KeyCode.UP)) {
             player.move(Direction.UP, map, allTanks, base);
-            lastP1Direction = Direction.UP;
+            lastDirection = Direction.UP;
             isMoving = true;
-        } else if (pressedKeys.contains(KeyCode.S)) {
+        } else if (pressedKeys.contains(KeyCode.DOWN)) {
             player.move(Direction.DOWN, map, allTanks, base);
-            lastP1Direction = Direction.DOWN;
+            lastDirection = Direction.DOWN;
             isMoving = true;
-        } else if (pressedKeys.contains(KeyCode.A)) {
+        } else if (pressedKeys.contains(KeyCode.LEFT)) {
             player.move(Direction.LEFT, map, allTanks, base);
-            lastP1Direction = Direction.LEFT;
+            lastDirection = Direction.LEFT;
             isMoving = true;
-        } else if (pressedKeys.contains(KeyCode.D)) {
+        } else if (pressedKeys.contains(KeyCode.RIGHT)) {
             player.move(Direction.RIGHT, map, allTanks, base);
-            lastP1Direction = Direction.RIGHT;
+            lastDirection = Direction.RIGHT;
             isMoving = true;
         }
 
         // Check if just stopped moving on ice - trigger sliding
-        if (wasP1Moving && !isMoving && lastP1Direction != null) {
-            player.startSliding(lastP1Direction, map);
+        if (wasMoving && !isMoving && lastDirection != null) {
+            player.startSliding(lastDirection, map);
         }
-        wasP1Moving = isMoving;
+        wasMoving = isMoving;
 
-        // Shooting
+        // Shooting with space
         if (pressedKeys.contains(KeyCode.SPACE)) {
             player.shoot(bullets, soundManager);
         }
     }
 
-    private void handlePlayer2Input(Tank player, GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
-        if (!player.isAlive()) return;
-
-        boolean isMoving = false;
-        // Movement
-        if (pressedKeys.contains(KeyCode.UP)) {
-            player.move(Direction.UP, map, allTanks, base);
-            lastP2Direction = Direction.UP;
-            isMoving = true;
-        } else if (pressedKeys.contains(KeyCode.DOWN)) {
-            player.move(Direction.DOWN, map, allTanks, base);
-            lastP2Direction = Direction.DOWN;
-            isMoving = true;
-        } else if (pressedKeys.contains(KeyCode.LEFT)) {
-            player.move(Direction.LEFT, map, allTanks, base);
-            lastP2Direction = Direction.LEFT;
-            isMoving = true;
-        } else if (pressedKeys.contains(KeyCode.RIGHT)) {
-            player.move(Direction.RIGHT, map, allTanks, base);
-            lastP2Direction = Direction.RIGHT;
-            isMoving = true;
-        }
-
-        // Check if just stopped moving on ice - trigger sliding
-        if (wasP2Moving && !isMoving && lastP2Direction != null) {
-            player.startSliding(lastP2Direction, map);
-        }
-        wasP2Moving = isMoving;
-
-        // Shooting
-        if (pressedKeys.contains(KeyCode.ENTER)) {
-            player.shoot(bullets, soundManager);
-        }
-    }
-
-    // Capture Player 1 input state (for network)
-    public PlayerInput capturePlayer1Input() {
-        return new PlayerInput(
-            pressedKeys.contains(KeyCode.W),
-            pressedKeys.contains(KeyCode.S),
-            pressedKeys.contains(KeyCode.A),
-            pressedKeys.contains(KeyCode.D),
-            pressedKeys.contains(KeyCode.SPACE)
-        );
-    }
-
-    // Capture Player 2 input state (for network)
-    public PlayerInput capturePlayer2Input() {
+    // Capture input state (for network) - arrow keys + space
+    public PlayerInput capturePlayerInput() {
         return new PlayerInput(
             pressedKeys.contains(KeyCode.UP),
             pressedKeys.contains(KeyCode.DOWN),
             pressedKeys.contains(KeyCode.LEFT),
             pressedKeys.contains(KeyCode.RIGHT),
-            pressedKeys.contains(KeyCode.ENTER)
+            pressedKeys.contains(KeyCode.SPACE)
         );
     }
 }

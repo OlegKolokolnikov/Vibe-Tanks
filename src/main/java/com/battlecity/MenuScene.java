@@ -45,11 +45,6 @@ public class MenuScene {
         styleButton(onePlayerButton);
         onePlayerButton.setOnAction(e -> startGame(1, 100));
 
-        // 2 Players button
-        Button twoPlayersButton = new Button("2 PLAYERS");
-        styleButton(twoPlayersButton);
-        twoPlayersButton.setOnAction(e -> startGame(2, 100));
-
         // Host Game button (Online Multiplayer)
         Button hostButton = new Button("HOST GAME (ONLINE)");
         styleButton(hostButton);
@@ -138,26 +133,25 @@ public class MenuScene {
         instructions.setFont(Font.font("Arial", FontWeight.NORMAL, 14));
         instructions.setTextFill(Color.LIGHTGRAY);
 
-        Label controls1 = new Label("Player 1: WASD + SPACE to shoot");
-        controls1.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
-        controls1.setTextFill(Color.LIGHTGRAY);
+        Label controls = new Label("Controls: Arrow Keys + SPACE to shoot");
+        controls.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
+        controls.setTextFill(Color.LIGHTGRAY);
 
-        Label controls2 = new Label("Player 2: Arrow Keys + ENTER to shoot");
-        controls2.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
-        controls2.setTextFill(Color.LIGHTGRAY);
+        Label multiplayerInfo = new Label("Online: Host game or join up to 4 players!");
+        multiplayerInfo.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
+        multiplayerInfo.setTextFill(Color.LIGHTBLUE);
 
         menuLayout.getChildren().addAll(
             title,
             subtitle,
             onePlayerButton,
-            twoPlayersButton,
             hostButton,
             joinButton,
             testButton,
             explanationButton,
             instructions,
-            controls1,
-            controls2
+            controls,
+            multiplayerInfo
         );
 
         scene = new Scene(menuLayout, windowWidth, windowHeight);
@@ -270,8 +264,10 @@ public class MenuScene {
         javafx.scene.layout.Pane gameRoot = new javafx.scene.layout.Pane();
         Scene gameScene = new Scene(gameRoot, windowWidth, windowHeight);
 
-        // Create network game (always 2 players, 100 enemies)
-        Game game = new Game(gameRoot, windowWidth, windowHeight, 2, 100, stage, network);
+        // Network game supports up to 4 players
+        // Host will have all connected players, clients will have 1 (themselves)
+        int playerCount = isHost ? 4 : 1;
+        Game game = new Game(gameRoot, windowWidth, windowHeight, playerCount, 100, stage, network);
         game.start();
 
         stage.setScene(gameScene);

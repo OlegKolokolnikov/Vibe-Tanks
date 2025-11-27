@@ -99,6 +99,56 @@ public class NetworkManager {
         }
     }
 
+    // Static method to clean up port at application startup
+    public static void cleanupPortOnStartup() {
+        NetworkManager temp = new NetworkManager();
+        temp.killProcessOnPort(PORT);
+    }
+
+    // Kill any process using the specified port
+    private void killProcessOnPort(int port) {
+        try {
+            System.out.println("Checking for process on port " + port + "...");
+
+            // Find process using the port
+            Process netstatProcess = Runtime.getRuntime().exec("netstat -ano");
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(netstatProcess.getInputStream())
+            );
+
+            String line;
+            String pid = null;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains(":" + port + " ") && line.contains("LISTENING")) {
+                    // Extract PID from the end of the line
+                    String[] parts = line.trim().split("\\s+");
+                    pid = parts[parts.length - 1];
+                    break;
+                }
+            }
+            reader.close();
+            netstatProcess.waitFor();
+
+            if (pid != null && !pid.isEmpty()) {
+                System.out.println("Found process " + pid + " using port " + port + ", killing it...");
+
+                // Kill the process using PowerShell
+                Process killProcess = Runtime.getRuntime().exec(
+                    "powershell -Command \"Stop-Process -Id " + pid + " -Force\""
+                );
+                killProcess.waitFor();
+
+                System.out.println("Process killed, waiting for port release...");
+                Thread.sleep(1000); // Wait for port to be released
+                System.out.println("Port should now be available");
+            } else {
+                System.out.println("No process found using port " + port);
+            }
+        } catch (Exception e) {
+            System.err.println("Error checking/killing process on port: " + e.getMessage());
+        }
+    }
+
     // Host mode - start server and accept up to 3 connections
     public boolean startHost() {
         // Prevent starting if already hosting
@@ -109,6 +159,12 @@ public class NetworkManager {
 
         // Debug: Check if port is available
         System.out.println("Attempting to start host on port " + PORT);
+
+        // Kill any process using the port
+        if (!isPortAvailable(PORT)) {
+            System.out.println("Port " + PORT + " is in use, attempting to free it...");
+            killProcessOnPort(PORT);
+        }
 
         // Wait for port to become available (up to 3 seconds)
         int attempts = 0;

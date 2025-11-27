@@ -13,6 +13,10 @@ public class Main extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Battle City");
 
+        // Clean up any zombie processes on port 25565 from previous runs
+        System.out.println("Performing startup port cleanup...");
+        NetworkManager.cleanupPortOnStartup();
+
         MenuScene menuScene = new MenuScene(primaryStage, WINDOW_WIDTH, WINDOW_HEIGHT);
 
         primaryStage.setScene(menuScene.getScene());

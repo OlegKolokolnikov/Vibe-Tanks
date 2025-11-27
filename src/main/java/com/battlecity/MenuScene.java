@@ -48,6 +48,11 @@ public class MenuScene {
         styleButton(twoPlayersButton);
         twoPlayersButton.setOnAction(e -> startGame(2));
 
+        // Explanation button
+        Button explanationButton = new Button("EXPLANATION");
+        styleButton(explanationButton);
+        explanationButton.setOnAction(e -> showExplanation());
+
         // Instructions
         Label instructions = new Label("Defend your base from 100 enemy tanks!");
         instructions.setFont(Font.font("Arial", FontWeight.NORMAL, 14));
@@ -66,6 +71,7 @@ public class MenuScene {
             subtitle,
             onePlayerButton,
             twoPlayersButton,
+            explanationButton,
             instructions,
             controls1,
             controls2
@@ -111,6 +117,11 @@ public class MenuScene {
         game.start();
 
         stage.setScene(gameScene);
+    }
+
+    private void showExplanation() {
+        ExplanationScene explanationScene = new ExplanationScene(stage, scene, windowWidth, windowHeight);
+        stage.setScene(explanationScene.getScene());
     }
 
     public Scene getScene() {

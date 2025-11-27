@@ -337,8 +337,8 @@ public class Tank {
         health--;
         boolean dropPowerUp = false;
 
-        // POWER type drops power-up on every hit
-        if (!isPlayer && enemyType == EnemyType.POWER && health > 0) {
+        // POWER type drops power-up on EVERY hit (including death)
+        if (!isPlayer && enemyType == EnemyType.POWER) {
             dropPowerUp = true;
         }
 

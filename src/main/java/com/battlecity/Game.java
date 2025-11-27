@@ -44,6 +44,11 @@ public class Game {
     // SHOVEL power-up - base protection with steel
     private int baseProtectionDuration = 0;
     private static final int BASE_PROTECTION_TIME = 3600; // 1 minute at 60 FPS
+    private boolean isFlashing = false;
+    private int flashCount = 0; // Counts the number of flashes (up to 10 for 5 complete flashes)
+    private int flashTimer = 0; // Timer for each flash state (60 frames = 1 second)
+    private static final int FLASH_DURATION = 60; // 1 second at 60 FPS
+    private static final int TOTAL_FLASHES = 10; // 5 complete flashes (10 state changes)
 
     // Victory dancing anime girl
     private ImageView victoryImageView;
@@ -338,7 +343,33 @@ public class Game {
         if (baseProtectionDuration > 0) {
             baseProtectionDuration--;
             if (baseProtectionDuration == 0) {
-                gameMap.resetBaseProtection();
+                // Start flashing when timer expires
+                isFlashing = true;
+                flashCount = 0;
+                flashTimer = 0;
+                gameMap.setBaseProtection(GameMap.TileType.STEEL); // Start with steel
+            }
+        }
+
+        // Handle flashing after protection expires
+        if (isFlashing) {
+            flashTimer++;
+            if (flashTimer >= FLASH_DURATION) {
+                flashTimer = 0;
+                flashCount++;
+
+                // Toggle between STEEL and BRICK (start with STEEL, then BRICK, etc.)
+                if (flashCount % 2 == 0) {
+                    gameMap.setBaseProtection(GameMap.TileType.STEEL);
+                } else {
+                    gameMap.setBaseProtection(GameMap.TileType.BRICK);
+                }
+
+                // Stop flashing after 5 complete flashes (10 state changes)
+                if (flashCount >= TOTAL_FLASHES) {
+                    isFlashing = false;
+                    gameMap.setBaseProtection(GameMap.TileType.BRICK); // Final state is brick
+                }
             }
         }
 
@@ -459,7 +490,10 @@ public class Game {
                     // Handle SHOVEL power-up specially (affects map, not tank)
                     if (powerUp.getType() == PowerUp.Type.SHOVEL) {
                         gameMap.setBaseProtection(GameMap.TileType.STEEL);
-                        baseProtectionDuration = BASE_PROTECTION_TIME;
+                        baseProtectionDuration = BASE_PROTECTION_TIME; // Reset timer to 1 minute
+                        isFlashing = false; // Stop flashing if it was flashing
+                        flashCount = 0;
+                        flashTimer = 0;
                     } else {
                         powerUp.applyEffect(player);
                     }
@@ -476,7 +510,10 @@ public class Game {
                         // Handle SHOVEL power-up specially (affects map, not tank)
                         if (powerUp.getType() == PowerUp.Type.SHOVEL) {
                             gameMap.setBaseProtection(GameMap.TileType.STEEL);
-                            baseProtectionDuration = BASE_PROTECTION_TIME;
+                            baseProtectionDuration = BASE_PROTECTION_TIME; // Reset timer to 1 minute
+                            isFlashing = false; // Stop flashing if it was flashing
+                            flashCount = 0;
+                            flashTimer = 0;
                         } else {
                             powerUp.applyEffect(enemy);
                         }

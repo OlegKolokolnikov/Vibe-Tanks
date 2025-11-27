@@ -195,33 +195,41 @@ public class NetworkManager {
             System.out.println("Successfully bound to port " + PORT);
             System.out.println("Waiting for players to connect on port " + PORT + "...");
 
-            // Accept connections in background
+            // Accept connections in background - keeps running during gameplay
             acceptThread = new Thread(() -> {
                 try {
-                    // Accept up to 3 clients (Player 2, 3, 4)
-                    for (int i = 2; i <= MAX_PLAYERS; i++) {
-                        if (!isHosting || !serverSocket.isBound() || serverSocket.isClosed()) {
-                            System.out.println("Accept loop stopping - server closed");
+                    // Keep accepting until max players or server closed
+                    while (isHosting && serverSocket.isBound() && !serverSocket.isClosed()) {
+                        // Check if we have room for more players
+                        if (clients.size() >= MAX_PLAYERS - 1) {
+                            System.out.println("Maximum players reached (4/4), stopping accept");
                             break;
                         }
 
                         Socket clientSocket = serverSocket.accept();
-                        System.out.println("Player " + i + " connected from: " + clientSocket.getInetAddress());
+                        int playerNum = clients.size() + 2; // Player 2, 3, or 4
+                        System.out.println("Player " + playerNum + " connected from: " + clientSocket.getInetAddress());
 
                         // Create ObjectOutputStream immediately so client can create its InputStream
                         ObjectOutputStream tempOut = new ObjectOutputStream(clientSocket.getOutputStream());
                         tempOut.flush();
-                        System.out.println("Server stream header sent to Player " + i);
+                        System.out.println("Server stream header sent to Player " + playerNum);
 
-                        ClientHandler client = new ClientHandler(clientSocket, i, tempOut);
+                        ClientHandler client = new ClientHandler(clientSocket, playerNum, tempOut);
                         clients.add(client);
+
+                        // Send player number to client so they know which player they are
+                        tempOut.writeObject(Integer.valueOf(playerNum));
+                        tempOut.flush();
+                        System.out.println("Sent player number " + playerNum + " to client");
 
                         // First connection establishes game as ready
                         if (!connected) {
                             connected = true;
                         }
+
+                        System.out.println("Player " + playerNum + " joined mid-game, total players: " + (clients.size() + 1));
                     }
-                    System.out.println("Maximum players reached (4/4)");
                 } catch (IOException e) {
                     if (isHosting) {
                         System.out.println("Accept loop ended: " + e.getMessage());
@@ -262,10 +270,12 @@ public class NetworkManager {
                 try {
                     // First message from host tells us our player number
                     Object firstObj = in.readObject();
-                    if (firstObj instanceof GameState) {
-                        GameState state = (GameState) firstObj;
-                        // Determine player number from state (simplified - would need better logic)
-                        receivedStates.offer(state);
+                    if (firstObj instanceof Integer) {
+                        playerNumber = (Integer) firstObj;
+                        System.out.println("Received player number from host: " + playerNumber);
+                    } else if (firstObj instanceof GameState) {
+                        // Fallback for backwards compatibility
+                        receivedStates.offer((GameState) firstObj);
                     }
 
                     while (connected && !Thread.interrupted()) {

@@ -210,14 +210,15 @@ public class MenuScene {
             System.out.println("Closing previous network manager...");
             currentNetworkManager.close();
 
-            // Wait for OS to release the port
+            // Wait longer for OS to release the port (Windows needs more time)
             try {
-                Thread.sleep(500);
+                Thread.sleep(1500);
             } catch (InterruptedException ex) {
                 System.err.println("Interrupted while waiting for port release");
             }
 
             currentNetworkManager = null;
+            System.out.println("Previous network manager cleanup complete");
         }
 
         currentNetworkManager = new NetworkManager();

@@ -88,6 +88,17 @@ public class NetworkManager {
         }
     }
 
+    // Check if port is available
+    private boolean isPortAvailable(int port) {
+        try (ServerSocket testSocket = new ServerSocket()) {
+            testSocket.setReuseAddress(true);
+            testSocket.bind(new InetSocketAddress(port));
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
     // Host mode - start server and accept up to 3 connections
     public boolean startHost() {
         // Prevent starting if already hosting
@@ -98,6 +109,24 @@ public class NetworkManager {
 
         // Debug: Check if port is available
         System.out.println("Attempting to start host on port " + PORT);
+
+        // Wait for port to become available (up to 3 seconds)
+        int attempts = 0;
+        while (!isPortAvailable(PORT) && attempts < 6) {
+            System.out.println("Port " + PORT + " not available yet, waiting... (attempt " + (attempts + 1) + "/6)");
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                System.err.println("Interrupted while waiting for port");
+                return false;
+            }
+            attempts++;
+        }
+
+        if (!isPortAvailable(PORT)) {
+            System.err.println("Port " + PORT + " is still not available after waiting");
+            return false;
+        }
 
         isHost = true;
         isHosting = true;

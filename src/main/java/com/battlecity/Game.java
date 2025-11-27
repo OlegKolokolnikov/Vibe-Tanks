@@ -3,6 +3,8 @@ package com.battlecity;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -42,6 +44,9 @@ public class Game {
     private int baseProtectionDuration = 0;
     private static final int BASE_PROTECTION_TIME = 3600; // 1 minute at 60 FPS
 
+    // Victory dancing anime girl
+    private ImageView victoryImageView;
+
     public Game(Pane root, int width, int height, int playerCount, Stage stage) {
         this.root = root;
         this.width = width;
@@ -54,7 +59,32 @@ public class Game {
         canvas.setFocusTraversable(false); // Canvas should not take focus
         root.getChildren().add(canvas);
 
+        // Load dancing anime girl GIF for victory screen
+        loadVictoryImage();
+
         initialize();
+    }
+
+    private void loadVictoryImage() {
+        try {
+            // Try to load a dancing anime girl GIF from URL
+            // Using a popular dancing anime girl GIF
+            String imageUrl = "https://i.imgur.com/7kZ8Lrb.gif"; // Famous dancing anime girl
+            Image victoryImage = new Image(imageUrl, true);
+
+            victoryImageView = new ImageView(victoryImage);
+            victoryImageView.setFitWidth(300);
+            victoryImageView.setFitHeight(300);
+            victoryImageView.setPreserveRatio(true);
+            victoryImageView.setLayoutX(width / 2 - 150);
+            victoryImageView.setLayoutY(height / 2 - 250);
+            victoryImageView.setVisible(false);
+
+            root.getChildren().add(victoryImageView);
+        } catch (Exception e) {
+            System.out.println("Could not load victory image: " + e.getMessage());
+            victoryImageView = null;
+        }
     }
 
     private void initialize() {
@@ -506,12 +536,22 @@ public class Game {
             gc.setFont(javafx.scene.text.Font.font(20));
             gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 40);
         } else if (victory) {
+            // Show dancing anime girl if available
+            if (victoryImageView != null) {
+                victoryImageView.setVisible(true);
+            }
+
             gc.setFill(Color.YELLOW);
             gc.setFont(javafx.scene.text.Font.font(40));
-            gc.fillText("VICTORY!", width / 2 - 100, height / 2);
+            gc.fillText("VICTORY!", width / 2 - 100, height / 2 + 100);
             gc.setFill(Color.WHITE);
             gc.setFont(javafx.scene.text.Font.font(20));
-            gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 40);
+            gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 140);
+        } else {
+            // Hide victory image when not in victory state
+            if (victoryImageView != null) {
+                victoryImageView.setVisible(false);
+            }
         }
     }
 

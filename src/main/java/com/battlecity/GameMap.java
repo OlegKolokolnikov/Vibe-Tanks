@@ -228,6 +228,76 @@ public class GameMap {
         }
     }
 
+    // Render only terrain (no trees) - trees will be rendered on top of tanks
+    public void renderWithoutTrees(GraphicsContext gc) {
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                TileType tile = tiles[row][col];
+                if (tile == TileType.TREES) {
+                    continue; // Skip trees - they'll be rendered later on top
+                }
+
+                double x = col * TILE_SIZE;
+                double y = row * TILE_SIZE;
+
+                switch (tile) {
+                    case BRICK:
+                        gc.setFill(Color.rgb(139, 69, 19));
+                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        gc.setStroke(Color.rgb(100, 50, 10));
+                        gc.strokeRect(x, y, TILE_SIZE / 2, TILE_SIZE / 2);
+                        gc.strokeRect(x + TILE_SIZE / 2, y, TILE_SIZE / 2, TILE_SIZE / 2);
+                        gc.strokeRect(x, y + TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2);
+                        gc.strokeRect(x + TILE_SIZE / 2, y + TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2);
+                        break;
+                    case STEEL:
+                        gc.setFill(Color.DARKGRAY);
+                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        gc.setStroke(Color.LIGHTGRAY);
+                        gc.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                        break;
+                    case WATER:
+                        gc.setFill(Color.BLUE);
+                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        gc.setFill(Color.LIGHTBLUE);
+                        gc.fillOval(x + 8, y + 8, 8, 8);
+                        gc.fillOval(x + 18, y + 18, 6, 6);
+                        break;
+                    case ICE:
+                        gc.setFill(Color.rgb(200, 230, 255));
+                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        gc.setStroke(Color.rgb(150, 200, 255));
+                        gc.setLineWidth(2);
+                        gc.strokeLine(x, y, x + TILE_SIZE, y + TILE_SIZE);
+                        gc.strokeLine(x + TILE_SIZE, y, x, y + TILE_SIZE);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+
+    // Render only trees - to be drawn on top of tanks
+    public void renderTrees(GraphicsContext gc) {
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                TileType tile = tiles[row][col];
+                if (tile == TileType.TREES) {
+                    double x = col * TILE_SIZE;
+                    double y = row * TILE_SIZE;
+
+                    gc.setFill(Color.DARKGREEN);
+                    gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                    gc.setFill(Color.GREEN);
+                    gc.fillOval(x + 4, y + 4, 10, 10);
+                    gc.fillOval(x + 18, y + 8, 10, 10);
+                    gc.fillOval(x + 8, y + 18, 10, 10);
+                }
+            }
+        }
+    }
+
     public int getWidth() { return width; }
     public int getHeight() { return height; }
     public TileType getTile(int row, int col) {

@@ -513,8 +513,8 @@ public class Game {
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, width, height);
 
-        // Render map
-        gameMap.render(gc);
+        // Render map WITHOUT trees (trees will be rendered on top of tanks)
+        gameMap.renderWithoutTrees(gc);
 
         // Render base
         base.render(gc);
@@ -542,6 +542,9 @@ public class Game {
                 tank.render(gc);
             }
         }
+
+        // Render trees ON TOP of tanks to make tanks partially visible in forest
+        gameMap.renderTrees(gc);
 
         // Render UI
         renderUI();

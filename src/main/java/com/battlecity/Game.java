@@ -512,9 +512,10 @@ public class Game {
                     if (enemy.isAlive() && powerUp.collidesWith(enemy)) {
                         // Handle SHOVEL power-up specially (affects map, not tank)
                         if (powerUp.getType() == PowerUp.Type.SHOVEL) {
-                            gameMap.setBaseProtection(GameMap.TileType.STEEL);
-                            baseProtectionDuration = BASE_PROTECTION_TIME; // Reset timer to 1 minute
-                            isFlashing = false; // Stop flashing if it was flashing
+                            // Enemy takes SHOVEL - remove base protection (make it "naked")
+                            gameMap.setBaseProtection(GameMap.TileType.EMPTY);
+                            baseProtectionDuration = 0; // Stop timer
+                            isFlashing = false; // Stop flashing
                             flashCount = 0;
                             flashTimer = 0;
                         } else {

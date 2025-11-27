@@ -232,13 +232,7 @@ public class Tank {
 
         if (health <= 0) {
             lives--;
-            if (lives > 0) {
-                health = maxHealth;
-                hasShield = true;
-                shieldDuration = 180;
-            } else {
-                alive = false;
-            }
+            alive = false; // Tank dies and needs to respawn
         }
 
         return dropPowerUp;
@@ -362,7 +356,7 @@ public class Tank {
         this.x = newX;
         this.y = newY;
         this.direction = Direction.UP;
-        this.health = 1;
+        this.health = maxHealth;
         this.hasShield = true;
         this.shieldDuration = 180;
         this.alive = true;

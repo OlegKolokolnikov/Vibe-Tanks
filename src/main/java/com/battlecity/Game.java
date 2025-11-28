@@ -47,6 +47,8 @@ public class Game {
 
     private boolean gameOver = false;
     private boolean victory = false;
+    private boolean paused = false;
+    private int pauseMenuSelection = 0; // 0 = Resume, 1 = Exit
 
     // Player kills and score tracking
     private int[] playerKills = new int[4];
@@ -478,14 +480,45 @@ public class Game {
         // Initialize input handler
         inputHandler = new InputHandler(root, playerTanks);
 
-        // Add key handlers for end game states
+        // Add key handlers for game states
         root.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE && (gameOver || victory)) {
-                returnToMenu();
+            // Pause menu handling
+            if (event.getCode() == KeyCode.ESCAPE) {
+                if (gameOver || victory) {
+                    returnToMenu();
+                } else {
+                    // Toggle pause
+                    paused = !paused;
+                    pauseMenuSelection = 0;
+                }
+                return;
             }
+
+            // Pause menu navigation
+            if (paused) {
+                if (event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) {
+                    pauseMenuSelection = (pauseMenuSelection + 1) % 2;
+                } else if (event.getCode() == KeyCode.ENTER) {
+                    if (pauseMenuSelection == 0) {
+                        // Resume
+                        paused = false;
+                    } else {
+                        // Exit
+                        returnToMenu();
+                    }
+                }
+                return;
+            }
+
             // ENTER to start next level after victory
             if (event.getCode() == KeyCode.ENTER && victory) {
                 startNextLevel();
+                return;
+            }
+
+            // ENTER to take life from another player (when dead)
+            if (event.getCode() == KeyCode.ENTER && !gameOver && !victory) {
+                tryTakeLifeFromTeammate();
             }
         });
 
@@ -498,6 +531,35 @@ public class Game {
         stop();
         MenuScene menuScene = new MenuScene(stage, width, height);
         stage.setScene(menuScene.getScene());
+    }
+
+    private void tryTakeLifeFromTeammate() {
+        // Find the player who is requesting (the one controlled by this instance)
+        int myPlayerIndex = isNetworkGame && network != null && !network.isHost()
+            ? network.getPlayerNumber() - 1
+            : 0; // Single player or host uses player 0
+
+        if (myPlayerIndex < 0 || myPlayerIndex >= playerTanks.size()) return;
+
+        Tank myTank = playerTanks.get(myPlayerIndex);
+
+        // Only allow if player is dead (no lives left)
+        if (myTank.isAlive() || myTank.getLives() > 0) return;
+
+        // Find a teammate with lives to spare (more than 1 life)
+        for (int i = 0; i < playerTanks.size(); i++) {
+            if (i == myPlayerIndex) continue;
+
+            Tank teammate = playerTanks.get(i);
+            if (teammate.getLives() > 1) {
+                // Transfer one life
+                teammate.setLives(teammate.getLives() - 1);
+                myTank.setLives(1);
+                myTank.respawn(playerStartPositions[myPlayerIndex][0], playerStartPositions[myPlayerIndex][1]);
+                System.out.println("Player " + (myPlayerIndex + 1) + " took a life from Player " + (i + 1));
+                return;
+            }
+        }
     }
 
     private void startNextLevel() {
@@ -586,7 +648,7 @@ public class Game {
     }
 
     private void update() {
-        if (gameOver || victory) {
+        if (gameOver || victory || paused) {
             return;
         }
 
@@ -1207,6 +1269,38 @@ public class Game {
             gc.setFill(Color.WHITE);
             gc.setFont(javafx.scene.text.Font.font(18));
             gc.fillText("Press ESC to return to menu", width / 2 - 115, height / 2 + 230);
+        } else if (paused) {
+            // Draw pause menu overlay
+            gc.setFill(Color.rgb(0, 0, 0, 0.7));
+            gc.fillRect(0, 0, width, height);
+
+            gc.setFill(Color.WHITE);
+            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 50));
+            gc.fillText("PAUSED", width / 2 - 100, height / 2 - 80);
+
+            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 30));
+
+            // Resume option
+            if (pauseMenuSelection == 0) {
+                gc.setFill(Color.YELLOW);
+                gc.fillText("> RESUME <", width / 2 - 80, height / 2);
+            } else {
+                gc.setFill(Color.WHITE);
+                gc.fillText("  RESUME  ", width / 2 - 80, height / 2);
+            }
+
+            // Exit option
+            if (pauseMenuSelection == 1) {
+                gc.setFill(Color.YELLOW);
+                gc.fillText("> EXIT <", width / 2 - 60, height / 2 + 50);
+            } else {
+                gc.setFill(Color.WHITE);
+                gc.fillText("  EXIT  ", width / 2 - 60, height / 2 + 50);
+            }
+
+            gc.setFill(Color.GRAY);
+            gc.setFont(javafx.scene.text.Font.font(16));
+            gc.fillText("Use UP/DOWN to select, ENTER to confirm", width / 2 - 150, height / 2 + 120);
         } else {
             // Hide images when not in end state
             if (victoryImageView != null) {
@@ -1214,6 +1308,28 @@ public class Game {
             }
             if (gameOverImageView != null) {
                 gameOverImageView.setVisible(false);
+            }
+
+            // Show hint to take life if player is dead and teammate has lives
+            int myPlayerIndex = isNetworkGame && network != null && !network.isHost()
+                ? network.getPlayerNumber() - 1 : 0;
+            if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
+                Tank myTank = playerTanks.get(myPlayerIndex);
+                if (!myTank.isAlive() && myTank.getLives() <= 0) {
+                    // Check if any teammate has spare lives
+                    boolean canTakeLife = false;
+                    for (int i = 0; i < playerTanks.size(); i++) {
+                        if (i != myPlayerIndex && playerTanks.get(i).getLives() > 1) {
+                            canTakeLife = true;
+                            break;
+                        }
+                    }
+                    if (canTakeLife) {
+                        gc.setFill(Color.YELLOW);
+                        gc.setFont(javafx.scene.text.Font.font(20));
+                        gc.fillText("Press ENTER to take life from teammate", width / 2 - 180, height / 2);
+                    }
+                }
             }
         }
     }

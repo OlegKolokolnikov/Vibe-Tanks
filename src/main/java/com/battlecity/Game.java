@@ -673,29 +673,32 @@ public class Game {
     }
 
     private void tryTakeLifeFromTeammate() {
-        // Find the player who is requesting (the one controlled by this instance)
+        // For local player (host or single player)
         int myPlayerIndex = isNetworkGame && network != null && !network.isHost()
             ? network.getPlayerNumber() - 1
             : 0; // Single player or host uses player 0
+        tryTakeLifeFromTeammate(myPlayerIndex);
+    }
 
-        if (myPlayerIndex < 0 || myPlayerIndex >= playerTanks.size()) return;
+    private void tryTakeLifeFromTeammate(int requestingPlayerIndex) {
+        if (requestingPlayerIndex < 0 || requestingPlayerIndex >= playerTanks.size()) return;
 
-        Tank myTank = playerTanks.get(myPlayerIndex);
+        Tank myTank = playerTanks.get(requestingPlayerIndex);
 
         // Only allow if player is dead (no lives left)
         if (myTank.isAlive() || myTank.getLives() > 0) return;
 
         // Find a teammate with lives to spare (more than 1 life)
         for (int i = 0; i < playerTanks.size(); i++) {
-            if (i == myPlayerIndex) continue;
+            if (i == requestingPlayerIndex) continue;
 
             Tank teammate = playerTanks.get(i);
             if (teammate.getLives() > 1) {
                 // Transfer one life
                 teammate.setLives(teammate.getLives() - 1);
                 myTank.setLives(1);
-                myTank.respawn(playerStartPositions[myPlayerIndex][0], playerStartPositions[myPlayerIndex][1]);
-                System.out.println("Player " + (myPlayerIndex + 1) + " took a life from Player " + (i + 1));
+                myTank.respawn(playerStartPositions[requestingPlayerIndex][0], playerStartPositions[requestingPlayerIndex][1]);
+                System.out.println("Player " + (requestingPlayerIndex + 1) + " took a life from Player " + (i + 1));
                 return;
             }
         }
@@ -817,6 +820,10 @@ public class Game {
                     PlayerInput clientInput = network.getPlayerInput(i);
                     if (clientInput != null) {
                         applyPlayerInput(playerTanks.get(i - 1), clientInput);
+                        // Check if client is requesting a life transfer
+                        if (clientInput.requestLife) {
+                            tryTakeLifeFromTeammate(i - 1); // i-1 is the player index
+                        }
                     }
                 }
                 // Host runs full game logic below
@@ -825,11 +832,9 @@ public class Game {
                 int myPlayerIndex = network.getPlayerNumber() - 1;
                 if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
                     Tank myTank = playerTanks.get(myPlayerIndex);
-                    if (myTank.isAlive()) {
-                        // Capture and send input to host
-                        PlayerInput input = inputHandler.capturePlayerInput();
-                        network.sendInput(input);
-                    }
+                    // Capture and send input to host (even when dead, for life requests)
+                    PlayerInput input = inputHandler.capturePlayerInput();
+                    network.sendInput(input);
                 }
 
                 // CLIENT: Receive and apply game state from host

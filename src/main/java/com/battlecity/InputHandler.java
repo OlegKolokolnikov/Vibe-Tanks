@@ -85,14 +85,20 @@ public class InputHandler {
         }
     }
 
-    // Capture input state (for network) - arrow keys + space
+    // Capture input state (for network) - arrow keys + space + enter
     public PlayerInput capturePlayerInput() {
         return new PlayerInput(
             pressedKeys.contains(KeyCode.UP),
             pressedKeys.contains(KeyCode.DOWN),
             pressedKeys.contains(KeyCode.LEFT),
             pressedKeys.contains(KeyCode.RIGHT),
-            pressedKeys.contains(KeyCode.SPACE)
+            pressedKeys.contains(KeyCode.SPACE),
+            pressedKeys.contains(KeyCode.ENTER)
         );
+    }
+
+    // Check if ENTER is pressed (for life request)
+    public boolean isEnterPressed() {
+        return pressedKeys.contains(KeyCode.ENTER);
     }
 }

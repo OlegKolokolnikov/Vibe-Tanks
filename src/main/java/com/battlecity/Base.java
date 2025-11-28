@@ -10,12 +10,17 @@ public class Base {
     private double y;
     private boolean alive;
 
-    // Flag animation
+    // Flag animation (skull flag for game over)
     private boolean showFlag = false;
     private double flagHeight = 0;
     private static final double MAX_FLAG_HEIGHT = 50;
     private static final double FLAG_RISE_SPEED = 1.5;
     private int flagWaveFrame = 0;
+
+    // Victory flag animation (Soviet flag)
+    private boolean showVictoryFlag = false;
+    private double victoryFlagHeight = 0;
+    private int victoryFlagWaveFrame = 0;
 
     public Base(double x, double y) {
         this.x = x;
@@ -31,9 +36,18 @@ public class Base {
         showFlag = true;
     }
 
+    public void raiseVictoryFlag() {
+        showVictoryFlag = true;
+    }
+
     public void setFlagState(boolean show, double height) {
         this.showFlag = show;
         this.flagHeight = height;
+    }
+
+    public void setVictoryFlagState(boolean show, double height) {
+        this.showVictoryFlag = show;
+        this.victoryFlagHeight = height;
     }
 
     public boolean isShowingFlag() {
@@ -42,6 +56,14 @@ public class Base {
 
     public double getFlagHeight() {
         return flagHeight;
+    }
+
+    public boolean isShowingVictoryFlag() {
+        return showVictoryFlag;
+    }
+
+    public double getVictoryFlagHeight() {
+        return victoryFlagHeight;
     }
 
     public void render(GraphicsContext gc) {
@@ -69,6 +91,82 @@ public class Base {
             gc.fillRect(x + 10, y + 16, 4, 4);
             gc.fillRect(x + 18, y + 16, 4, 4);
             gc.fillRect(x + 14, y + 12, 4, 8);
+
+            // Draw rising Soviet victory flag
+            if (showVictoryFlag) {
+                // Animate flag rising
+                if (victoryFlagHeight < MAX_FLAG_HEIGHT) {
+                    victoryFlagHeight += FLAG_RISE_SPEED;
+                }
+                victoryFlagWaveFrame++;
+
+                double poleX = x + SIZE / 2;
+                double poleBottom = y;
+                double poleTop = poleBottom - victoryFlagHeight;
+
+                // Flag pole
+                gc.setStroke(Color.SADDLEBROWN);
+                gc.setLineWidth(3);
+                gc.strokeLine(poleX, poleBottom, poleX, poleTop);
+
+                // Pole ball on top (golden star)
+                gc.setFill(Color.GOLD);
+                gc.fillOval(poleX - 4, poleTop - 8, 8, 8);
+
+                // Only draw flag when pole is high enough
+                if (victoryFlagHeight > 20) {
+                    // Flag waving effect
+                    double wave = Math.sin(victoryFlagWaveFrame * 0.15) * 4;
+
+                    // Soviet red flag
+                    double flagWidth = 42;
+                    double flagH = 28;
+                    double flagX = poleX + 2;
+                    double flagY = poleTop;
+
+                    // Red flag background
+                    gc.setFill(Color.rgb(204, 0, 0)); // Soviet red
+                    gc.beginPath();
+                    gc.moveTo(flagX, flagY);
+                    gc.lineTo(flagX + flagWidth + wave, flagY + 2);
+                    gc.lineTo(flagX + flagWidth + wave * 0.5, flagY + flagH / 2);
+                    gc.lineTo(flagX + flagWidth - wave, flagY + flagH - 2);
+                    gc.lineTo(flagX, flagY + flagH);
+                    gc.closePath();
+                    gc.fill();
+
+                    // Gold hammer and sickle
+                    double symbolX = flagX + 8 + wave * 0.3;
+                    double symbolY = flagY + 5;
+
+                    gc.setFill(Color.GOLD);
+                    gc.setStroke(Color.GOLD);
+                    gc.setLineWidth(2);
+
+                    // Sickle (curved arc)
+                    gc.strokeArc(symbolX, symbolY, 12, 12, 45, 180, javafx.scene.shape.ArcType.OPEN);
+
+                    // Hammer handle
+                    gc.fillRect(symbolX + 6, symbolY + 4, 3, 14);
+
+                    // Hammer head
+                    gc.fillRect(symbolX + 2, symbolY + 14, 10, 4);
+
+                    // Gold star above
+                    double starX = symbolX + 6;
+                    double starY = symbolY - 2;
+                    double starSize = 6;
+                    double[] starXPoints = new double[10];
+                    double[] starYPoints = new double[10];
+                    for (int i = 0; i < 10; i++) {
+                        double angle = Math.PI / 2 + (Math.PI * i / 5);
+                        double r = (i % 2 == 0) ? starSize : starSize * 0.4;
+                        starXPoints[i] = starX + r * Math.cos(angle);
+                        starYPoints[i] = starY - r * Math.sin(angle);
+                    }
+                    gc.fillPolygon(starXPoints, starYPoints, 10);
+                }
+            }
         } else {
             // Draw destroyed base - rubble
             gc.setFill(Color.rgb(80, 48, 0)); // Dark brown

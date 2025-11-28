@@ -14,6 +14,11 @@ public class GameState implements Serializable {
     public boolean p1Alive;
     public boolean p1HasShield;
     public boolean p1HasShip;
+    public boolean p1HasGun;
+    public int p1StarCount;
+    public int p1CarCount;
+    public boolean p1HasSaw;
+    public int p1MachinegunCount;
 
     // Player 2 data
     public double p2X, p2Y;
@@ -22,6 +27,11 @@ public class GameState implements Serializable {
     public boolean p2Alive;
     public boolean p2HasShield;
     public boolean p2HasShip;
+    public boolean p2HasGun;
+    public int p2StarCount;
+    public int p2CarCount;
+    public boolean p2HasSaw;
+    public int p2MachinegunCount;
 
     // Player 3 data
     public double p3X, p3Y;
@@ -30,6 +40,11 @@ public class GameState implements Serializable {
     public boolean p3Alive;
     public boolean p3HasShield;
     public boolean p3HasShip;
+    public boolean p3HasGun;
+    public int p3StarCount;
+    public int p3CarCount;
+    public boolean p3HasSaw;
+    public int p3MachinegunCount;
 
     // Player 4 data
     public double p4X, p4Y;
@@ -38,6 +53,11 @@ public class GameState implements Serializable {
     public boolean p4Alive;
     public boolean p4HasShield;
     public boolean p4HasShip;
+    public boolean p4HasGun;
+    public int p4StarCount;
+    public int p4CarCount;
+    public boolean p4HasSaw;
+    public int p4MachinegunCount;
 
     // Enemy tanks
     public List<EnemyData> enemies = new ArrayList<>();
@@ -58,6 +78,8 @@ public class GameState implements Serializable {
     public boolean baseAlive;
     public boolean baseShowFlag;
     public double baseFlagHeight;
+    public boolean baseShowVictoryFlag;
+    public double baseVictoryFlagHeight;
 
     // Map changes (for destructible tiles)
     public List<TileChange> tileChanges = new ArrayList<>();
@@ -78,6 +100,10 @@ public class GameState implements Serializable {
     public List<DancingCharacterData> dancingCharacters = new ArrayList<>();
     public boolean dancingInitialized;
 
+    // Dancing girls for victory animation
+    public List<DancingGirlData> victoryDancingGirls = new ArrayList<>();
+    public boolean victoryDancingInitialized;
+
     public static class DancingCharacterData implements Serializable {
         public double x, y;
         public boolean isAlien;
@@ -92,6 +118,23 @@ public class GameState implements Serializable {
             this.animFrame = animFrame;
             this.danceStyle = danceStyle;
             this.colorIndex = colorIndex;
+        }
+    }
+
+    public static class DancingGirlData implements Serializable {
+        public double x, y;
+        public int animFrame;
+        public int danceStyle;
+        public int dressColorIndex;
+        public int hairColorIndex;
+
+        public DancingGirlData(double x, double y, int animFrame, int danceStyle, int dressColorIndex, int hairColorIndex) {
+            this.x = x;
+            this.y = y;
+            this.animFrame = animFrame;
+            this.danceStyle = danceStyle;
+            this.dressColorIndex = dressColorIndex;
+            this.hairColorIndex = hairColorIndex;
         }
     }
 

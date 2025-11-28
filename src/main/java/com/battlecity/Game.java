@@ -78,6 +78,10 @@ public class Game {
     private List<DancingCharacter> dancingCharacters = new ArrayList<>();
     private boolean dancingInitialized = false;
 
+    // Victory dancing girls
+    private List<DancingGirl> victoryDancingGirls = new ArrayList<>();
+    private boolean victoryDancingInitialized = false;
+
     // Inner class for dancing characters
     private static class DancingCharacter {
         static final Color[] ALIEN_COLORS = {Color.LIME, Color.CYAN, Color.MAGENTA, Color.YELLOW};
@@ -245,6 +249,136 @@ public class Game {
             gc.setFill(Color.BLACK);
             gc.fillRect(-6 + legSwing/2, 18 + bob, 5, 4);
             gc.fillRect(1 - legSwing/2, 18 + bob, 5, 4);
+        }
+    }
+
+    // Inner class for victory dancing girls
+    private static class DancingGirl {
+        static final Color[] DRESS_COLORS = {Color.RED, Color.HOTPINK, Color.CYAN, Color.YELLOW, Color.LIME, Color.ORANGE};
+        static final Color[] HAIR_COLORS = {Color.BLACK, Color.BROWN, Color.SADDLEBROWN, Color.GOLD, Color.ORANGERED};
+
+        double x, y;
+        int animFrame;
+        int danceStyle;
+        Color dressColor;
+        Color hairColor;
+        int dressColorIndex;
+        int hairColorIndex;
+
+        DancingGirl(double x, double y, int danceStyle) {
+            this.x = x;
+            this.y = y;
+            this.animFrame = (int)(Math.random() * 60); // Random start frame for variety
+            this.danceStyle = danceStyle;
+            this.dressColorIndex = (int)(Math.random() * DRESS_COLORS.length);
+            this.hairColorIndex = (int)(Math.random() * HAIR_COLORS.length);
+            this.dressColor = DRESS_COLORS[dressColorIndex];
+            this.hairColor = HAIR_COLORS[hairColorIndex];
+        }
+
+        // Constructor for network sync
+        DancingGirl(double x, double y, int animFrame, int danceStyle, int dressColorIndex, int hairColorIndex) {
+            this.x = x;
+            this.y = y;
+            this.animFrame = animFrame;
+            this.danceStyle = danceStyle;
+            this.dressColorIndex = dressColorIndex;
+            this.hairColorIndex = hairColorIndex;
+            this.dressColor = DRESS_COLORS[dressColorIndex % DRESS_COLORS.length];
+            this.hairColor = HAIR_COLORS[hairColorIndex % HAIR_COLORS.length];
+        }
+
+        void update() {
+            animFrame++;
+        }
+
+        void render(GraphicsContext gc) {
+            gc.save();
+            gc.translate(x, y);
+
+            double bob = Math.sin(animFrame * 0.2 + danceStyle) * 3;
+            double sway = Math.sin(animFrame * 0.15 + danceStyle * 0.5) * 5;
+
+            // Hair (long, flowing)
+            gc.setFill(hairColor);
+            double hairSway = Math.sin(animFrame * 0.1) * 8;
+            gc.fillOval(-12 + hairSway * 0.3, -38 + bob, 24, 20);
+            // Hair strands flowing down
+            gc.fillRect(-10 + hairSway * 0.2, -28 + bob, 6, 25);
+            gc.fillRect(4 + hairSway * 0.4, -28 + bob, 6, 25);
+
+            // Face
+            gc.setFill(Color.PEACHPUFF);
+            gc.fillOval(-8, -36 + bob, 16, 18);
+
+            // Eyes (cute anime style)
+            gc.setFill(Color.WHITE);
+            gc.fillOval(-6, -32 + bob, 5, 6);
+            gc.fillOval(1, -32 + bob, 5, 6);
+            gc.setFill(Color.rgb(50, 50, 150)); // Blue eyes
+            gc.fillOval(-5, -31 + bob, 3, 4);
+            gc.fillOval(2, -31 + bob, 3, 4);
+            gc.setFill(Color.WHITE); // Eye shine
+            gc.fillOval(-4, -31 + bob, 1, 1);
+            gc.fillOval(3, -31 + bob, 1, 1);
+
+            // Blush
+            gc.setFill(Color.rgb(255, 180, 180, 0.6));
+            gc.fillOval(-8, -27 + bob, 4, 2);
+            gc.fillOval(4, -27 + bob, 4, 2);
+
+            // Smile
+            gc.setStroke(Color.rgb(200, 100, 100));
+            gc.setLineWidth(1);
+            gc.strokeArc(-3, -26 + bob, 6, 4, 180, 180, javafx.scene.shape.ArcType.OPEN);
+
+            // Body/Dress (flowing)
+            gc.setFill(dressColor);
+            // Top of dress
+            gc.fillRect(-8 + sway * 0.2, -18 + bob, 16, 12);
+
+            // Skirt (swaying)
+            double skirtSway = Math.sin(animFrame * 0.25 + danceStyle) * 8;
+            gc.beginPath();
+            gc.moveTo(-8 + sway * 0.2, -6 + bob);
+            gc.lineTo(8 + sway * 0.2, -6 + bob);
+            gc.lineTo(14 + skirtSway, 20 + bob);
+            gc.lineTo(-14 - skirtSway, 20 + bob);
+            gc.closePath();
+            gc.fill();
+
+            // Skirt folds
+            gc.setStroke(dressColor.darker());
+            gc.setLineWidth(1);
+            gc.strokeLine(-4 + sway * 0.1, -6 + bob, -6 - skirtSway * 0.3, 18 + bob);
+            gc.strokeLine(4 + sway * 0.1, -6 + bob, 6 + skirtSway * 0.3, 18 + bob);
+
+            // Arms (dancing motion)
+            double armAngle = Math.sin(animFrame * 0.3 + danceStyle) * 50;
+            gc.setFill(Color.PEACHPUFF);
+            gc.save();
+            gc.translate(-8 + sway * 0.2, -14 + bob);
+            gc.rotate(-60 + armAngle);
+            gc.fillRect(0, 0, 4, 16);
+            gc.restore();
+            gc.save();
+            gc.translate(8 + sway * 0.2, -14 + bob);
+            gc.rotate(60 - armAngle);
+            gc.fillRect(-4, 0, 4, 16);
+            gc.restore();
+
+            // Legs (under skirt, slight movement)
+            double legMove = Math.sin(animFrame * 0.2 + danceStyle * 0.5) * 3;
+            gc.setFill(Color.PEACHPUFF);
+            gc.fillRect(-5 + legMove, 18 + bob, 4, 10);
+            gc.fillRect(1 - legMove, 18 + bob, 4, 10);
+
+            // Shoes
+            gc.setFill(dressColor.darker());
+            gc.fillRect(-6 + legMove, 27 + bob, 5, 3);
+            gc.fillRect(0 - legMove, 27 + bob, 5, 3);
+
+            gc.restore();
         }
     }
 
@@ -572,7 +706,14 @@ public class Game {
         gameOverSoundPlayed = false;
         dancingInitialized = false;
         dancingCharacters.clear();
+        victoryDancingInitialized = false;
+        victoryDancingGirls.clear();
         winnerBonusAwarded = false;
+
+        // Reset kills for new round (scores persist)
+        for (int i = 0; i < playerKills.length; i++) {
+            playerKills[i] = 0;
+        }
 
         // Reset base
         base = new Base(12 * 32, 24 * 32);
@@ -1161,6 +1302,40 @@ public class Game {
         }
     }
 
+    private void initializeVictoryCelebration() {
+        if (victoryDancingInitialized) return;
+        victoryDancingInitialized = true;
+
+        // Raise the Soviet victory flag on the base
+        base.raiseVictoryFlag();
+
+        Random random = new Random();
+
+        // Get number of connected players
+        int connectedCount = isNetworkGame && network != null ? network.getConnectedPlayerCount() : playerTanks.size();
+        int activePlayers = Math.min(playerTanks.size(), connectedCount);
+
+        // Spawn dancing girls based on player count (1-2 girls per player)
+        int girlCount = activePlayers + random.nextInt(activePlayers + 1); // Players to 2x players
+
+        // Position girls around the base
+        double baseX = base.getX() + 16;
+        double baseY = base.getY() - 20; // Above the base
+
+        for (int i = 0; i < girlCount; i++) {
+            // Spread girls in a semi-circle above the base
+            double angle = Math.PI + (Math.PI * (i + 0.5) / girlCount); // Semi-circle above
+            double radius = 80 + random.nextDouble() * 40;
+            double x = baseX + Math.cos(angle) * radius;
+            double y = baseY + Math.sin(angle) * radius * 0.6; // Flatten the vertical spread
+            int danceStyle = random.nextInt(4);
+
+            victoryDancingGirls.add(new DancingGirl(x, y, danceStyle));
+        }
+
+        System.out.println("Victory celebration initialized with " + girlCount + " dancing girls for " + activePlayers + " players");
+    }
+
     private void renderUI() {
         gc.setFill(Color.WHITE);
         gc.fillText("Level: " + gameMap.getLevelNumber() + "  Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
@@ -1172,9 +1347,9 @@ public class Game {
             int playerNum = i + 1;
             double yOffset = 40 + i * 60;
 
-            // Display lives and kills
+            // Display lives, kills and score
             gc.setFill(Color.WHITE);
-            gc.fillText("P" + playerNum + " Lives: " + player.getLives() + "  Kills: " + playerKills[i], 10, yOffset);
+            gc.fillText("P" + playerNum + " Lives: " + player.getLives() + "  Kills: " + playerKills[i] + "  Score: " + playerScores[i], 10, yOffset);
 
             // Display power-ups
             double xOffset = 10;
@@ -1250,6 +1425,17 @@ public class Game {
             gc.setFont(javafx.scene.text.Font.font(20));
             gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 220);
         } else if (victory) {
+            // Initialize victory celebration (Soviet flag + dancing girls)
+            if (!victoryDancingInitialized) {
+                initializeVictoryCelebration();
+            }
+
+            // Update and render dancing girls
+            for (DancingGirl girl : victoryDancingGirls) {
+                girl.update();
+                girl.render(gc);
+            }
+
             // Show dancing anime girl if available
             if (victoryImageView != null) {
                 victoryImageView.setVisible(true);
@@ -1343,19 +1529,19 @@ public class Game {
         int connectedCount = isNetworkGame && network != null ? network.getConnectedPlayerCount() : playerTanks.size();
         int activePlayers = Math.min(playerTanks.size(), connectedCount);
 
-        // Find winner (highest score) - only if victory and more than 1 player
+        // Find winner (highest kills) - only if victory and more than 1 player
         int winnerIndex = -1;
-        int highestScore = -1;
+        int highestKills = -1;
         boolean isTie = false;
 
         if (victory && activePlayers > 1) {
             for (int i = 0; i < activePlayers; i++) {
-                int score = playerScores[i];
-                if (score > highestScore) {
-                    highestScore = score;
+                int kills = playerKills[i];
+                if (kills > highestKills) {
+                    highestKills = kills;
                     winnerIndex = i;
                     isTie = false;
-                } else if (score == highestScore) {
+                } else if (kills == highestKills) {
                     isTie = true;
                 }
             }
@@ -1427,6 +1613,11 @@ public class Game {
             state.p1Alive = p1.isAlive();
             state.p1HasShield = p1.hasShield();
             state.p1HasShip = p1.hasShip();
+            state.p1HasGun = p1.hasGun();
+            state.p1StarCount = p1.getStarCount();
+            state.p1CarCount = p1.getCarCount();
+            state.p1HasSaw = p1.hasSaw();
+            state.p1MachinegunCount = p1.getMachinegunCount();
         }
 
         // Player 2 data
@@ -1439,6 +1630,11 @@ public class Game {
             state.p2Alive = p2.isAlive();
             state.p2HasShield = p2.hasShield();
             state.p2HasShip = p2.hasShip();
+            state.p2HasGun = p2.hasGun();
+            state.p2StarCount = p2.getStarCount();
+            state.p2CarCount = p2.getCarCount();
+            state.p2HasSaw = p2.hasSaw();
+            state.p2MachinegunCount = p2.getMachinegunCount();
         }
 
         // Player 3 data
@@ -1451,6 +1647,11 @@ public class Game {
             state.p3Alive = p3.isAlive();
             state.p3HasShield = p3.hasShield();
             state.p3HasShip = p3.hasShip();
+            state.p3HasGun = p3.hasGun();
+            state.p3StarCount = p3.getStarCount();
+            state.p3CarCount = p3.getCarCount();
+            state.p3HasSaw = p3.hasSaw();
+            state.p3MachinegunCount = p3.getMachinegunCount();
         }
 
         // Player 4 data
@@ -1463,6 +1664,11 @@ public class Game {
             state.p4Alive = p4.isAlive();
             state.p4HasShield = p4.hasShield();
             state.p4HasShip = p4.hasShip();
+            state.p4HasGun = p4.hasGun();
+            state.p4StarCount = p4.getStarCount();
+            state.p4CarCount = p4.getCarCount();
+            state.p4HasSaw = p4.hasSaw();
+            state.p4MachinegunCount = p4.getMachinegunCount();
         }
 
         // Enemy tanks
@@ -1512,6 +1718,8 @@ public class Game {
         state.baseAlive = base.isAlive();
         state.baseShowFlag = base.isShowingFlag();
         state.baseFlagHeight = base.getFlagHeight();
+        state.baseShowVictoryFlag = base.isShowingVictoryFlag();
+        state.baseVictoryFlagHeight = base.getVictoryFlagHeight();
         state.connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
 
         // Full map state for sync
@@ -1547,6 +1755,15 @@ public class Game {
             ));
         }
 
+        // Victory dancing girls
+        state.victoryDancingInitialized = victoryDancingInitialized;
+        for (DancingGirl girl : victoryDancingGirls) {
+            state.victoryDancingGirls.add(new GameState.DancingGirlData(
+                girl.x, girl.y, girl.animFrame,
+                girl.danceStyle, girl.dressColorIndex, girl.hairColorIndex
+            ));
+        }
+
         // Map changes (legacy, keeping for compatibility)
         state.tileChanges.addAll(mapChanges);
         mapChanges.clear(); // Clear after sending
@@ -1574,39 +1791,71 @@ public class Game {
         double correctionThreshold = 32.0; // Snap to server position if drift > 1 tile
 
         // Update Player 1 - server authoritative
-        if (playerTanks.size() >= 1 && state.p1Alive) {
+        if (playerTanks.size() >= 1) {
             Tank p1 = playerTanks.get(0);
-            p1.setPosition(state.p1X, state.p1Y);
-            p1.setDirection(Direction.values()[state.p1Direction]);
+            p1.setLives(state.p1Lives);
+            if (state.p1Alive) {
+                p1.setPosition(state.p1X, state.p1Y);
+                p1.setDirection(Direction.values()[state.p1Direction]);
+            }
             p1.setShield(state.p1HasShield);
             p1.setShip(state.p1HasShip);
+            p1.setGun(state.p1HasGun);
+            p1.setStarCount(state.p1StarCount);
+            p1.setCarCount(state.p1CarCount);
+            p1.setSaw(state.p1HasSaw);
+            p1.setMachinegunCount(state.p1MachinegunCount);
         }
 
         // Update Player 2 - server authoritative
-        if (playerTanks.size() >= 2 && state.p2Alive) {
+        if (playerTanks.size() >= 2) {
             Tank p2 = playerTanks.get(1);
-            p2.setPosition(state.p2X, state.p2Y);
-            p2.setDirection(Direction.values()[state.p2Direction]);
+            p2.setLives(state.p2Lives);
+            if (state.p2Alive) {
+                p2.setPosition(state.p2X, state.p2Y);
+                p2.setDirection(Direction.values()[state.p2Direction]);
+            }
             p2.setShield(state.p2HasShield);
             p2.setShip(state.p2HasShip);
+            p2.setGun(state.p2HasGun);
+            p2.setStarCount(state.p2StarCount);
+            p2.setCarCount(state.p2CarCount);
+            p2.setSaw(state.p2HasSaw);
+            p2.setMachinegunCount(state.p2MachinegunCount);
         }
 
         // Update Player 3 - server authoritative
-        if (playerTanks.size() >= 3 && state.p3Alive) {
+        if (playerTanks.size() >= 3) {
             Tank p3 = playerTanks.get(2);
-            p3.setPosition(state.p3X, state.p3Y);
-            p3.setDirection(Direction.values()[state.p3Direction]);
+            p3.setLives(state.p3Lives);
+            if (state.p3Alive) {
+                p3.setPosition(state.p3X, state.p3Y);
+                p3.setDirection(Direction.values()[state.p3Direction]);
+            }
             p3.setShield(state.p3HasShield);
             p3.setShip(state.p3HasShip);
+            p3.setGun(state.p3HasGun);
+            p3.setStarCount(state.p3StarCount);
+            p3.setCarCount(state.p3CarCount);
+            p3.setSaw(state.p3HasSaw);
+            p3.setMachinegunCount(state.p3MachinegunCount);
         }
 
         // Update Player 4 - server authoritative
-        if (playerTanks.size() >= 4 && state.p4Alive) {
+        if (playerTanks.size() >= 4) {
             Tank p4 = playerTanks.get(3);
-            p4.setPosition(state.p4X, state.p4Y);
-            p4.setDirection(Direction.values()[state.p4Direction]);
+            p4.setLives(state.p4Lives);
+            if (state.p4Alive) {
+                p4.setPosition(state.p4X, state.p4Y);
+                p4.setDirection(Direction.values()[state.p4Direction]);
+            }
             p4.setShield(state.p4HasShield);
             p4.setShip(state.p4HasShip);
+            p4.setGun(state.p4HasGun);
+            p4.setStarCount(state.p4StarCount);
+            p4.setCarCount(state.p4CarCount);
+            p4.setSaw(state.p4HasSaw);
+            p4.setMachinegunCount(state.p4MachinegunCount);
         }
 
         // Update enemy tanks - reuse existing tanks to preserve animation state
@@ -1699,6 +1948,18 @@ public class Game {
             }
         }
 
+        // Sync victory dancing girls
+        victoryDancingInitialized = state.victoryDancingInitialized;
+        if (state.victoryDancingGirls != null && !state.victoryDancingGirls.isEmpty()) {
+            victoryDancingGirls.clear();
+            for (GameState.DancingGirlData gData : state.victoryDancingGirls) {
+                victoryDancingGirls.add(new DancingGirl(
+                    gData.x, gData.y, gData.animFrame,
+                    gData.danceStyle, gData.dressColorIndex, gData.hairColorIndex
+                ));
+            }
+        }
+
         // Update game state
         gameOver = state.gameOver;
         victory = state.victory;
@@ -1712,8 +1973,10 @@ public class Game {
             soundManager.playExplosion();
         }
 
-        // Sync flag state
+        // Sync flag state (skull flag for game over)
         base.setFlagState(state.baseShowFlag, state.baseFlagHeight);
+        // Sync victory flag state
+        base.setVictoryFlagState(state.baseShowVictoryFlag, state.baseVictoryFlagHeight);
 
         // Play explosion sound when enemy dies
         int currentEnemyCount = enemyTanks.size();

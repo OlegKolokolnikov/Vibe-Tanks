@@ -633,6 +633,28 @@ public class Tank {
     public void setShip(boolean ship) {
         this.canSwim = ship;
     }
+
+    // Setters for network sync of power-ups
+    public void setGun(boolean hasGun) {
+        this.bulletPower = hasGun ? 2 : 1;
+    }
+
+    public void setStarCount(int count) {
+        this.shootCooldownReduction = count;
+    }
+
+    public void setCarCount(int count) {
+        this.speedMultiplier = 1.0 + (count * 0.3);
+    }
+
+    public void setSaw(boolean hasSaw) {
+        this.canDestroyTrees = hasSaw;
+    }
+
+    public void setMachinegunCount(int count) {
+        this.machinegunCount = count;
+    }
+
     public EnemyType getEnemyType() { return enemyType; }
     public void setEnemyType(EnemyType type) { this.enemyType = type; }
 

@@ -670,7 +670,15 @@ public class Tank {
     }
 
     public EnemyType getEnemyType() { return enemyType; }
-    public void setEnemyType(EnemyType type) { this.enemyType = type; }
+    public void setEnemyType(EnemyType type) {
+        this.enemyType = type;
+        // Update size for BOSS tanks (needed for network sync)
+        if (type == EnemyType.BOSS) {
+            this.size = BASE_SIZE * 4;
+        } else {
+            this.size = BASE_SIZE;
+        }
+    }
 
     // Power-up status getters for UI display
     public boolean hasGun() { return bulletPower >= 2; }

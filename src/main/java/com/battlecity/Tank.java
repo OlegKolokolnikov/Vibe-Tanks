@@ -511,13 +511,14 @@ public class Tank {
                 case REGULAR -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
                 case ARMORED -> { tankColor = Color.DARKRED; darkColor = Color.rgb(80, 0, 0); }
                 case FAST -> { tankColor = Color.rgb(255, 100, 100); darkColor = Color.rgb(200, 60, 60); }
-                case POWER -> {
+                case POWER, BOSS -> {
+                    // Rainbow color animation for POWER and BOSS tanks
                     int frame = (int) (System.currentTimeMillis() / 100) % 7;
                     Color[] rainbow = { Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.PURPLE };
                     tankColor = rainbow[frame];
                     darkColor = tankColor.darker();
                 }
-                case HEAVY, BOSS -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
+                case HEAVY -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
                 default -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
             }
         }
@@ -585,8 +586,8 @@ public class Tank {
                     gc.fillRect(8 * scale, 6 * scale, size - 16 * scale, 3 * scale);
                     gc.fillRect(8 * scale, size - 9 * scale, size - 16 * scale, 3 * scale);
                 }
-                case HEAVY, BOSS -> {
-                    // White dot indicator (larger for BOSS)
+                case HEAVY -> {
+                    // White dot indicator
                     gc.setFill(Color.WHITE);
                     gc.fillOval(size / 2.0 - 3 * scale, size / 2.0 - 3 * scale, 6 * scale, 6 * scale);
                 }
@@ -597,6 +598,7 @@ public class Tank {
                     gc.strokeLine(10 * scale, size - 6 * scale, 14 * scale, size - 6 * scale);
                     gc.strokeLine(size - 14 * scale, size - 6 * scale, size - 10 * scale, size - 6 * scale);
                 }
+                // POWER and BOSS have rainbow colors - no extra markings needed
             }
         }
 

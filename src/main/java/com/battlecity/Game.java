@@ -972,6 +972,7 @@ public class Game {
             state.p1Lives = p1.getLives();
             state.p1Alive = p1.isAlive();
             state.p1HasShield = p1.hasShield();
+            state.p1HasShip = p1.hasShip();
         }
 
         // Player 2 data
@@ -983,6 +984,7 @@ public class Game {
             state.p2Lives = p2.getLives();
             state.p2Alive = p2.isAlive();
             state.p2HasShield = p2.hasShield();
+            state.p2HasShip = p2.hasShip();
         }
 
         // Player 3 data
@@ -994,6 +996,7 @@ public class Game {
             state.p3Lives = p3.getLives();
             state.p3Alive = p3.isAlive();
             state.p3HasShield = p3.hasShield();
+            state.p3HasShip = p3.hasShip();
         }
 
         // Player 4 data
@@ -1005,6 +1008,7 @@ public class Game {
             state.p4Lives = p4.getLives();
             state.p4Alive = p4.isAlive();
             state.p4HasShield = p4.hasShield();
+            state.p4HasShip = p4.hasShip();
         }
 
         // Enemy tanks
@@ -1103,9 +1107,8 @@ public class Game {
                 p1.setPosition(state.p1X, state.p1Y);
             }
             p1.setDirection(Direction.values()[state.p1Direction]);
-            if (state.p1HasShield && !p1.hasShield()) {
-                p1.applyShield();
-            }
+            p1.setShield(state.p1HasShield);
+            p1.setShip(state.p1HasShip);
         }
 
         // Update Player 2
@@ -1121,9 +1124,8 @@ public class Game {
                 p2.setPosition(state.p2X, state.p2Y);
             }
             p2.setDirection(Direction.values()[state.p2Direction]);
-            if (state.p2HasShield && !p2.hasShield()) {
-                p2.applyShield();
-            }
+            p2.setShield(state.p2HasShield);
+            p2.setShip(state.p2HasShip);
         }
 
         // Update Player 3
@@ -1139,9 +1141,8 @@ public class Game {
                 p3.setPosition(state.p3X, state.p3Y);
             }
             p3.setDirection(Direction.values()[state.p3Direction]);
-            if (state.p3HasShield && !p3.hasShield()) {
-                p3.applyShield();
-            }
+            p3.setShield(state.p3HasShield);
+            p3.setShip(state.p3HasShip);
         }
 
         // Update Player 4
@@ -1157,9 +1158,8 @@ public class Game {
                 p4.setPosition(state.p4X, state.p4Y);
             }
             p4.setDirection(Direction.values()[state.p4Direction]);
-            if (state.p4HasShield && !p4.hasShield()) {
-                p4.applyShield();
-            }
+            p4.setShield(state.p4HasShield);
+            p4.setShip(state.p4HasShip);
         }
 
         // Update enemy tanks (recreate from state)

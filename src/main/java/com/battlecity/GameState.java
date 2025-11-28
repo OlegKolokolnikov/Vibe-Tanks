@@ -13,6 +13,7 @@ public class GameState implements Serializable {
     public int p1Lives;
     public boolean p1Alive;
     public boolean p1HasShield;
+    public boolean p1HasShip;
 
     // Player 2 data
     public double p2X, p2Y;
@@ -20,6 +21,7 @@ public class GameState implements Serializable {
     public int p2Lives;
     public boolean p2Alive;
     public boolean p2HasShield;
+    public boolean p2HasShip;
 
     // Player 3 data
     public double p3X, p3Y;
@@ -27,6 +29,7 @@ public class GameState implements Serializable {
     public int p3Lives;
     public boolean p3Alive;
     public boolean p3HasShield;
+    public boolean p3HasShip;
 
     // Player 4 data
     public double p4X, p4Y;
@@ -34,6 +37,7 @@ public class GameState implements Serializable {
     public int p4Lives;
     public boolean p4Alive;
     public boolean p4HasShield;
+    public boolean p4HasShip;
 
     // Enemy tanks
     public List<EnemyData> enemies = new ArrayList<>();

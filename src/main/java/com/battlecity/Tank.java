@@ -551,6 +551,18 @@ public class Tank {
     public void setDirection(Direction direction) {
         this.direction = direction;
     }
+
+    // Setters for network sync
+    public void setShield(boolean shield) {
+        this.hasShield = shield;
+        if (!shield) {
+            this.shieldDuration = 0;
+        }
+    }
+
+    public void setShip(boolean ship) {
+        this.canSwim = ship;
+    }
     public EnemyType getEnemyType() { return enemyType; }
 
     // Power-up status getters for UI display

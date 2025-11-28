@@ -307,6 +307,33 @@ public class GameMap {
         return tiles[row][col];
     }
 
+    public void setTile(int row, int col, TileType type) {
+        if (row >= 0 && row < height && col >= 0 && col < width) {
+            tiles[row][col] = type;
+        }
+    }
+
+    // Export all tiles as int array for network sync
+    public int[][] exportTiles() {
+        int[][] result = new int[height][width];
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                result[row][col] = tiles[row][col].ordinal();
+            }
+        }
+        return result;
+    }
+
+    // Import all tiles from int array for network sync
+    public void importTiles(int[][] tileData) {
+        if (tileData == null) return;
+        for (int row = 0; row < Math.min(height, tileData.length); row++) {
+            for (int col = 0; col < Math.min(width, tileData[row].length); col++) {
+                tiles[row][col] = TileType.values()[tileData[row][col]];
+            }
+        }
+    }
+
     // Base protection management (for SHOVEL power-up)
     public void setBaseProtection(TileType protectionType) {
         // Top wall

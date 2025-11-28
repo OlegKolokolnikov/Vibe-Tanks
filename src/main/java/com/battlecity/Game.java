@@ -48,6 +48,13 @@ public class Game {
     private boolean gameOver = false;
     private boolean victory = false;
 
+    // Player kills tracking
+    private int[] playerKills = new int[4];
+
+    // For client sound effects (track previous state to detect changes)
+    private int prevEnemyCount = 0;
+    private int prevBulletCount = 0;
+
     // SHOVEL power-up - base protection with steel
     private int baseProtectionDuration = 0;
     private static final int BASE_PROTECTION_TIME = 3600; // 1 minute at 60 FPS
@@ -492,6 +499,11 @@ public class Game {
 
                         if (!enemy.isAlive()) {
                             soundManager.playExplosion();
+                            // Track kill for the player who fired the bullet
+                            int killerPlayer = bullet.getOwnerPlayerNumber();
+                            if (killerPlayer >= 1 && killerPlayer <= 4) {
+                                playerKills[killerPlayer - 1]++;
+                            }
                         }
                         bulletIterator.remove();
                         bulletRemoved = true;
@@ -750,14 +762,15 @@ public class Game {
         gc.fillText("Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
 
         // Display player info and power-ups
-        for (int i = 0; i < playerTanks.size(); i++) {
+        int connectedCount = isNetworkGame && network != null ? network.getConnectedPlayerCount() : playerTanks.size();
+        for (int i = 0; i < Math.min(playerTanks.size(), connectedCount); i++) {
             Tank player = playerTanks.get(i);
             int playerNum = i + 1;
             double yOffset = 40 + i * 60;
 
-            // Display lives
+            // Display lives and kills
             gc.setFill(Color.WHITE);
-            gc.fillText("P" + playerNum + " Lives: " + player.getLives(), 10, yOffset);
+            gc.fillText("P" + playerNum + " Lives: " + player.getLives() + "  Kills: " + playerKills[i], 10, yOffset);
 
             // Display power-ups
             double xOffset = 10;
@@ -813,10 +826,14 @@ public class Game {
 
             gc.setFill(Color.RED);
             gc.setFont(javafx.scene.text.Font.font(40));
-            gc.fillText("GAME OVER", width / 2 - 120, height / 2 + 100);
+            gc.fillText("GAME OVER", width / 2 - 120, height / 2 + 50);
+
+            // Show statistics
+            renderEndGameStats(height / 2 + 90);
+
             gc.setFill(Color.WHITE);
             gc.setFont(javafx.scene.text.Font.font(20));
-            gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 140);
+            gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 220);
         } else if (victory) {
             // Show dancing anime girl if available
             if (victoryImageView != null) {
@@ -825,10 +842,14 @@ public class Game {
 
             gc.setFill(Color.YELLOW);
             gc.setFont(javafx.scene.text.Font.font(40));
-            gc.fillText("VICTORY!", width / 2 - 100, height / 2 + 100);
+            gc.fillText("VICTORY!", width / 2 - 100, height / 2 + 50);
+
+            // Show statistics
+            renderEndGameStats(height / 2 + 90);
+
             gc.setFill(Color.WHITE);
             gc.setFont(javafx.scene.text.Font.font(20));
-            gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 140);
+            gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 220);
         } else {
             // Hide images when not in end state
             if (victoryImageView != null) {
@@ -838,6 +859,27 @@ public class Game {
                 gameOverImageView.setVisible(false);
             }
         }
+    }
+
+    private void renderEndGameStats(double startY) {
+        gc.setFont(javafx.scene.text.Font.font(18));
+        gc.setFill(Color.WHITE);
+        gc.fillText("=== STATISTICS ===", width / 2 - 80, startY);
+
+        int totalKills = 0;
+        int connectedCount = isNetworkGame && network != null ? network.getConnectedPlayerCount() : playerTanks.size();
+
+        for (int i = 0; i < Math.min(playerTanks.size(), connectedCount); i++) {
+            Tank player = playerTanks.get(i);
+            int kills = playerKills[i];
+            totalKills += kills;
+
+            gc.setFill(Color.CYAN);
+            gc.fillText("Player " + (i + 1) + ": " + kills + " kills", width / 2 - 60, startY + 25 + i * 22);
+        }
+
+        gc.setFill(Color.YELLOW);
+        gc.fillText("Total: " + totalKills + " kills", width / 2 - 60, startY + 25 + connectedCount * 22 + 10);
     }
 
     public void stop() {
@@ -922,7 +964,8 @@ public class Game {
                     bullet.getDirection().ordinal(),
                     bullet.isFromEnemy(),
                     bullet.getPower(),
-                    bullet.canDestroyTrees()
+                    bullet.canDestroyTrees(),
+                    bullet.getOwnerPlayerNumber()
                 ));
             }
         }
@@ -945,7 +988,16 @@ public class Game {
         state.baseAlive = base.isAlive();
         state.connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
 
-        // Map changes
+        // Full map state for sync
+        state.mapTiles = gameMap.exportTiles();
+
+        // Player kills
+        state.p1Kills = playerKills[0];
+        state.p2Kills = playerKills[1];
+        state.p3Kills = playerKills[2];
+        state.p4Kills = playerKills[3];
+
+        // Map changes (legacy, keeping for compatibility)
         state.tileChanges.addAll(mapChanges);
         mapChanges.clear(); // Clear after sending
 
@@ -1030,7 +1082,8 @@ public class Game {
                 Direction.values()[bData.direction],
                 bData.fromEnemy,
                 bData.power,
-                bData.canDestroyTrees
+                bData.canDestroyTrees,
+                bData.ownerPlayerNumber
             );
             bullets.add(bullet);
         }
@@ -1045,8 +1098,16 @@ public class Game {
             powerUps.add(powerUp);
         }
 
-        // Map changes: GameMap doesn't have setTile(), skip for now
-        // TODO: Implement map synchronization if needed
+        // Sync full map state from host
+        if (state.mapTiles != null) {
+            gameMap.importTiles(state.mapTiles);
+        }
+
+        // Update kills tracking
+        playerKills[0] = state.p1Kills;
+        playerKills[1] = state.p2Kills;
+        playerKills[2] = state.p3Kills;
+        playerKills[3] = state.p4Kills;
 
         // Update game state
         gameOver = state.gameOver;
@@ -1055,7 +1116,25 @@ public class Game {
         // Update base
         if (!state.baseAlive && base.isAlive()) {
             base.destroy();
+            soundManager.playExplosion();
         }
+
+        // Play sounds for client based on state changes
+        int currentEnemyCount = enemyTanks.size();
+        int currentBulletCount = bullets.size();
+
+        // Explosion sound when enemy dies
+        if (currentEnemyCount < prevEnemyCount) {
+            soundManager.playExplosion();
+        }
+
+        // Shoot sound when new bullets appear
+        if (currentBulletCount > prevBulletCount) {
+            soundManager.playShoot();
+        }
+
+        prevEnemyCount = currentEnemyCount;
+        prevBulletCount = currentBulletCount;
     }
 
     private PlayerInput capturePlayerInput(Tank tank) {

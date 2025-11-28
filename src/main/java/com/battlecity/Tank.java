@@ -353,7 +353,7 @@ public class Tank {
                 case RIGHT -> offsetX += totalSpacing;
             }
 
-            bullets.add(new Bullet(offsetX, offsetY, direction, !isPlayer, bulletPower, canDestroyTrees));
+            bullets.add(new Bullet(offsetX, offsetY, direction, !isPlayer, bulletPower, canDestroyTrees, isPlayer ? playerNumber : 0));
         }
 
         // Apply shoot cooldown reduction from STAR power-ups (min cooldown is 5 frames)

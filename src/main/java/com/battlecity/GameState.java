@@ -56,6 +56,12 @@ public class GameState implements Serializable {
     // Map changes (for destructible tiles)
     public List<TileChange> tileChanges = new ArrayList<>();
 
+    // Full map state for syncing (stores tile type ordinals)
+    public int[][] mapTiles;
+
+    // Player kills count
+    public int p1Kills, p2Kills, p3Kills, p4Kills;
+
     public static class EnemyData implements Serializable {
         public double x, y;
         public int direction;
@@ -77,14 +83,16 @@ public class GameState implements Serializable {
         public boolean fromEnemy;
         public int power;
         public boolean canDestroyTrees;
+        public int ownerPlayerNumber;
 
-        public BulletData(double x, double y, int direction, boolean fromEnemy, int power, boolean canDestroyTrees) {
+        public BulletData(double x, double y, int direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber) {
             this.x = x;
             this.y = y;
             this.direction = direction;
             this.fromEnemy = fromEnemy;
             this.power = power;
             this.canDestroyTrees = canDestroyTrees;
+            this.ownerPlayerNumber = ownerPlayerNumber;
         }
     }
 

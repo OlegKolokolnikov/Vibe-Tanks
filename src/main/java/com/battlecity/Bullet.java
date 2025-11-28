@@ -13,14 +13,20 @@ public class Bullet {
     private boolean fromEnemy;
     private int power;
     private boolean canDestroyTrees;
+    private int ownerPlayerNumber; // 1-4 for player bullets, 0 for enemy
 
     public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees) {
+        this(x, y, direction, fromEnemy, power, canDestroyTrees, 0);
+    }
+
+    public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber) {
         this.x = x;
         this.y = y;
         this.direction = direction;
         this.fromEnemy = fromEnemy;
         this.power = power;
         this.canDestroyTrees = canDestroyTrees;
+        this.ownerPlayerNumber = ownerPlayerNumber;
     }
 
     public void update() {
@@ -76,4 +82,5 @@ public class Bullet {
     public boolean isFromEnemy() { return fromEnemy; }
     public int getPower() { return power; }
     public boolean canDestroyTrees() { return canDestroyTrees; }
+    public int getOwnerPlayerNumber() { return ownerPlayerNumber; }
 }

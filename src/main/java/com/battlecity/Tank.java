@@ -86,6 +86,7 @@ public class Tank {
                 case HEAVY -> {
                     this.maxHealth = 3;
                     this.speedMultiplier = 1.5;
+                    this.bulletPower = 2; // Can destroy iron/steel
                 }
             }
         } else {

@@ -65,8 +65,8 @@ public class EnemySpawner {
             int remaining = totalEnemies - spawnedCount;
             double rand = random.nextDouble();
 
-            if (remaining <= 5) {
-                // Last 5 enemies are HEAVY
+            if (remaining <= 10) {
+                // Last 10 enemies are HEAVY
                 type = Tank.EnemyType.HEAVY;
             } else if (rand < 0.5) {
                 // 50% REGULAR

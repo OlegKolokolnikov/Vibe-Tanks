@@ -381,10 +381,23 @@ public class Game {
                 }
                 // Host runs full game logic below
             } else {
-                // CLIENT: Send own input to host
-                if (playerTanks.size() >= 1) {
-                    PlayerInput input = capturePlayerInput(playerTanks.get(0));
-                    network.sendInput(input);
+                // CLIENT: Apply own input locally for immediate response (client-side prediction)
+                int myPlayerIndex = network.getPlayerNumber() - 1;
+                if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
+                    Tank myTank = playerTanks.get(myPlayerIndex);
+                    if (myTank.isAlive()) {
+                        // Create combined list for collision detection
+                        List<Tank> allTanks = new ArrayList<>();
+                        allTanks.addAll(playerTanks);
+                        allTanks.addAll(enemyTanks);
+
+                        // Apply local input immediately
+                        PlayerInput input = inputHandler.capturePlayerInput();
+                        applyPlayerInput(myTank, input);
+
+                        // Send input to host
+                        network.sendInput(input);
+                    }
                 }
 
                 // CLIENT: Receive and apply game state from host
@@ -392,7 +405,7 @@ public class Game {
                 if (state != null) {
                     applyGameState(state);
                 }
-                // Client skips game logic and only renders
+                // Client skips rest of game logic
                 return;
             }
         }
@@ -1072,10 +1085,23 @@ public class Game {
             playerTanks.add(new Tank(x, y, Direction.UP, true, playerNum));
         }
 
+        // Get local player index for client-side prediction
+        int myPlayerIndex = network != null ? network.getPlayerNumber() - 1 : -1;
+        double correctionThreshold = 32.0; // Snap to server position if drift > 1 tile
+
         // Update Player 1
         if (playerTanks.size() >= 1 && state.p1Alive) {
             Tank p1 = playerTanks.get(0);
-            p1.setPosition(state.p1X, state.p1Y);
+            // For local player, only correct if too far from server position
+            if (myPlayerIndex == 0) {
+                double dx = Math.abs(p1.getX() - state.p1X);
+                double dy = Math.abs(p1.getY() - state.p1Y);
+                if (dx > correctionThreshold || dy > correctionThreshold) {
+                    p1.setPosition(state.p1X, state.p1Y);
+                }
+            } else {
+                p1.setPosition(state.p1X, state.p1Y);
+            }
             p1.setDirection(Direction.values()[state.p1Direction]);
             if (state.p1HasShield && !p1.hasShield()) {
                 p1.applyShield();
@@ -1085,7 +1111,15 @@ public class Game {
         // Update Player 2
         if (playerTanks.size() >= 2 && state.p2Alive) {
             Tank p2 = playerTanks.get(1);
-            p2.setPosition(state.p2X, state.p2Y);
+            if (myPlayerIndex == 1) {
+                double dx = Math.abs(p2.getX() - state.p2X);
+                double dy = Math.abs(p2.getY() - state.p2Y);
+                if (dx > correctionThreshold || dy > correctionThreshold) {
+                    p2.setPosition(state.p2X, state.p2Y);
+                }
+            } else {
+                p2.setPosition(state.p2X, state.p2Y);
+            }
             p2.setDirection(Direction.values()[state.p2Direction]);
             if (state.p2HasShield && !p2.hasShield()) {
                 p2.applyShield();
@@ -1095,7 +1129,15 @@ public class Game {
         // Update Player 3
         if (playerTanks.size() >= 3 && state.p3Alive) {
             Tank p3 = playerTanks.get(2);
-            p3.setPosition(state.p3X, state.p3Y);
+            if (myPlayerIndex == 2) {
+                double dx = Math.abs(p3.getX() - state.p3X);
+                double dy = Math.abs(p3.getY() - state.p3Y);
+                if (dx > correctionThreshold || dy > correctionThreshold) {
+                    p3.setPosition(state.p3X, state.p3Y);
+                }
+            } else {
+                p3.setPosition(state.p3X, state.p3Y);
+            }
             p3.setDirection(Direction.values()[state.p3Direction]);
             if (state.p3HasShield && !p3.hasShield()) {
                 p3.applyShield();
@@ -1105,7 +1147,15 @@ public class Game {
         // Update Player 4
         if (playerTanks.size() >= 4 && state.p4Alive) {
             Tank p4 = playerTanks.get(3);
-            p4.setPosition(state.p4X, state.p4Y);
+            if (myPlayerIndex == 3) {
+                double dx = Math.abs(p4.getX() - state.p4X);
+                double dy = Math.abs(p4.getY() - state.p4Y);
+                if (dx > correctionThreshold || dy > correctionThreshold) {
+                    p4.setPosition(state.p4X, state.p4Y);
+                }
+            } else {
+                p4.setPosition(state.p4X, state.p4Y);
+            }
             p4.setDirection(Direction.values()[state.p4Direction]);
             if (state.p4HasShield && !p4.hasShield()) {
                 p4.applyShield();

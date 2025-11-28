@@ -56,6 +56,8 @@ public class GameState implements Serializable {
 
     // Base
     public boolean baseAlive;
+    public boolean baseShowFlag;
+    public double baseFlagHeight;
 
     // Map changes (for destructible tiles)
     public List<TileChange> tileChanges = new ArrayList<>();
@@ -68,6 +70,27 @@ public class GameState implements Serializable {
 
     // Player kills count
     public int p1Kills, p2Kills, p3Kills, p4Kills;
+
+    // Dancing characters for game over animation (when base is destroyed)
+    public List<DancingCharacterData> dancingCharacters = new ArrayList<>();
+    public boolean dancingInitialized;
+
+    public static class DancingCharacterData implements Serializable {
+        public double x, y;
+        public boolean isAlien;
+        public int animFrame;
+        public int danceStyle;
+        public int colorIndex; // Index for color arrays
+
+        public DancingCharacterData(double x, double y, boolean isAlien, int animFrame, int danceStyle, int colorIndex) {
+            this.x = x;
+            this.y = y;
+            this.isAlien = isAlien;
+            this.animFrame = animFrame;
+            this.danceStyle = danceStyle;
+            this.colorIndex = colorIndex;
+        }
+    }
 
     public static class BurningTileData implements Serializable {
         public int row, col;

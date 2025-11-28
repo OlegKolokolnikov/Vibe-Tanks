@@ -8,7 +8,7 @@ public class EnemySpawner {
     private int maxOnScreen;
     private int spawnedCount;
     private int spawnCooldown;
-    private static final int SPAWN_DELAY = 180; // 3 seconds
+    private static final int SPAWN_DELAY = 90; // 1.5 seconds
 
     private Random random;
     private GameMap map;

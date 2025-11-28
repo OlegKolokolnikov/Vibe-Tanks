@@ -70,6 +70,180 @@ public class Game {
     private ImageView gameOverImageView;
     private boolean gameOverSoundPlayed = false;
 
+    // Dancing aliens/humans when enemies destroy base
+    private List<DancingCharacter> dancingCharacters = new ArrayList<>();
+    private boolean dancingInitialized = false;
+
+    // Inner class for dancing characters
+    private static class DancingCharacter {
+        static final Color[] ALIEN_COLORS = {Color.LIME, Color.CYAN, Color.MAGENTA, Color.YELLOW};
+        static final Color[] HUMAN_COLORS = {Color.PEACHPUFF, Color.TAN, Color.SANDYBROWN, Color.WHEAT};
+
+        double x, y;
+        boolean isAlien;
+        int animFrame;
+        int danceStyle; // 0-2 different dance moves
+        int colorIndex;
+        Color color;
+
+        DancingCharacter(double x, double y, boolean isAlien, int danceStyle) {
+            this.x = x;
+            this.y = y;
+            this.isAlien = isAlien;
+            this.animFrame = 0;
+            this.danceStyle = danceStyle;
+            // Random colors for variety
+            if (isAlien) {
+                this.colorIndex = (int)(Math.random() * ALIEN_COLORS.length);
+                this.color = ALIEN_COLORS[colorIndex];
+            } else {
+                this.colorIndex = (int)(Math.random() * HUMAN_COLORS.length);
+                this.color = HUMAN_COLORS[colorIndex];
+            }
+        }
+
+        // Constructor for network sync (with specific colorIndex)
+        DancingCharacter(double x, double y, boolean isAlien, int animFrame, int danceStyle, int colorIndex) {
+            this.x = x;
+            this.y = y;
+            this.isAlien = isAlien;
+            this.animFrame = animFrame;
+            this.danceStyle = danceStyle;
+            this.colorIndex = colorIndex;
+            if (isAlien) {
+                this.color = ALIEN_COLORS[colorIndex % ALIEN_COLORS.length];
+            } else {
+                this.color = HUMAN_COLORS[colorIndex % HUMAN_COLORS.length];
+            }
+        }
+
+        void update() {
+            animFrame++;
+        }
+
+        void render(GraphicsContext gc) {
+            int cycle = (animFrame / 8) % 4; // Animation cycle
+
+            gc.save();
+            gc.translate(x, y);
+
+            if (isAlien) {
+                renderAlien(gc, cycle);
+            } else {
+                renderHuman(gc, cycle);
+            }
+
+            gc.restore();
+        }
+
+        private void renderAlien(GraphicsContext gc, int cycle) {
+            // Body bobbing
+            double bob = Math.sin(animFrame * 0.3) * 3;
+
+            // Alien body (oval)
+            gc.setFill(color);
+            gc.fillOval(-10, -20 + bob, 20, 25);
+
+            // Big eyes
+            gc.setFill(Color.BLACK);
+            gc.fillOval(-7, -15 + bob, 6, 8);
+            gc.fillOval(1, -15 + bob, 6, 8);
+            gc.setFill(Color.WHITE);
+            gc.fillOval(-5, -13 + bob, 2, 2);
+            gc.fillOval(3, -13 + bob, 2, 2);
+
+            // Antennae bobbing
+            gc.setStroke(color);
+            gc.setLineWidth(2);
+            double antennaBob = Math.sin(animFrame * 0.5) * 5;
+            gc.strokeLine(-5, -20 + bob, -8 + antennaBob, -30 + bob);
+            gc.strokeLine(5, -20 + bob, 8 - antennaBob, -30 + bob);
+            gc.setFill(color.brighter());
+            gc.fillOval(-10 + antennaBob, -33 + bob, 5, 5);
+            gc.fillOval(6 - antennaBob, -33 + bob, 5, 5);
+
+            // Arms dancing
+            double armAngle = Math.sin(animFrame * 0.4 + danceStyle) * 45;
+            gc.setStroke(color);
+            gc.setLineWidth(3);
+            gc.save();
+            gc.translate(-10, -10 + bob);
+            gc.rotate(-45 + armAngle);
+            gc.strokeLine(0, 0, -12, 0);
+            gc.restore();
+            gc.save();
+            gc.translate(10, -10 + bob);
+            gc.rotate(45 - armAngle);
+            gc.strokeLine(0, 0, 12, 0);
+            gc.restore();
+
+            // Legs dancing
+            double legMove = Math.sin(animFrame * 0.3 + danceStyle * 0.5) * 8;
+            gc.strokeLine(-5, 5 + bob, -5 + legMove, 20);
+            gc.strokeLine(5, 5 + bob, 5 - legMove, 20);
+        }
+
+        private void renderHuman(GraphicsContext gc, int cycle) {
+            double bob = Math.sin(animFrame * 0.25) * 2;
+
+            // Head
+            gc.setFill(color);
+            gc.fillOval(-8, -28 + bob, 16, 16);
+
+            // Hair
+            gc.setFill(Color.BROWN);
+            gc.fillRect(-8, -28 + bob, 16, 6);
+
+            // Eyes
+            gc.setFill(Color.BLACK);
+            gc.fillOval(-5, -22 + bob, 3, 3);
+            gc.fillOval(2, -22 + bob, 3, 3);
+
+            // Smile
+            gc.setStroke(Color.BLACK);
+            gc.setLineWidth(1);
+            gc.strokeArc(-4, -18 + bob, 8, 6, 180, 180, javafx.scene.shape.ArcType.OPEN);
+
+            // Body
+            gc.setFill(Color.DARKGREEN); // Military uniform
+            gc.fillRect(-7, -12 + bob, 14, 18);
+
+            // Arms dancing
+            double armSwing = Math.sin(animFrame * 0.35 + danceStyle) * 40;
+            gc.setStroke(color);
+            gc.setLineWidth(4);
+            gc.save();
+            gc.translate(-7, -8 + bob);
+            gc.rotate(-30 + armSwing);
+            gc.strokeLine(0, 0, -10, 0);
+            gc.restore();
+            gc.save();
+            gc.translate(7, -8 + bob);
+            gc.rotate(30 - armSwing);
+            gc.strokeLine(0, 0, 10, 0);
+            gc.restore();
+
+            // Legs dancing
+            double legSwing = Math.sin(animFrame * 0.3 + danceStyle * 0.7) * 10;
+            gc.setFill(Color.DARKGREEN);
+            gc.save();
+            gc.translate(-4, 6 + bob);
+            gc.rotate(legSwing);
+            gc.fillRect(-2, 0, 4, 14);
+            gc.restore();
+            gc.save();
+            gc.translate(4, 6 + bob);
+            gc.rotate(-legSwing);
+            gc.fillRect(-2, 0, 4, 14);
+            gc.restore();
+
+            // Boots
+            gc.setFill(Color.BLACK);
+            gc.fillRect(-6 + legSwing/2, 18 + bob, 5, 4);
+            gc.fillRect(1 - legSwing/2, 18 + bob, 5, 4);
+        }
+    }
+
     // Constructor for local game
     public Game(Pane root, int width, int height, int playerCount, int totalEnemies, Stage stage) {
         this(root, width, height, playerCount, totalEnemies, stage, null);
@@ -820,6 +994,50 @@ public class Game {
         };
     }
 
+    private void initializeDancingCharacters() {
+        if (dancingInitialized) return;
+        dancingInitialized = true;
+
+        // Raise the skull flag on the destroyed base
+        base.raiseFlag();
+
+        Random random = new Random();
+
+        // Create dancing aliens/humans from enemy tank positions
+        // If there are enemy tanks, use their positions; otherwise spawn around the destroyed base
+        if (!enemyTanks.isEmpty()) {
+            for (Tank enemy : enemyTanks) {
+                // Each enemy tank spawns 1-2 characters
+                int numCharacters = 1 + random.nextInt(2);
+                for (int i = 0; i < numCharacters; i++) {
+                    double offsetX = (random.nextDouble() - 0.5) * 40;
+                    double offsetY = (random.nextDouble() - 0.5) * 40;
+                    boolean isAlien = random.nextBoolean();
+                    int danceStyle = random.nextInt(3);
+                    dancingCharacters.add(new DancingCharacter(
+                        enemy.getX() + 16 + offsetX,
+                        enemy.getY() + 16 + offsetY,
+                        isAlien,
+                        danceStyle
+                    ));
+                }
+            }
+        }
+
+        // Also spawn some around the destroyed base
+        double baseX = base.getX() + 32;
+        double baseY = base.getY() + 32;
+        for (int i = 0; i < 6; i++) {
+            double angle = (Math.PI * 2 * i) / 6;
+            double radius = 60 + random.nextDouble() * 30;
+            double x = baseX + Math.cos(angle) * radius;
+            double y = baseY + Math.sin(angle) * radius;
+            boolean isAlien = random.nextBoolean();
+            int danceStyle = random.nextInt(3);
+            dancingCharacters.add(new DancingCharacter(x, y, isAlien, danceStyle));
+        }
+    }
+
     private void renderUI() {
         gc.setFill(Color.WHITE);
         gc.fillText("Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
@@ -876,6 +1094,17 @@ public class Game {
         }
 
         if (gameOver) {
+            // Initialize dancing characters when base was destroyed (not when players died)
+            if (!base.isAlive() && !dancingInitialized) {
+                initializeDancingCharacters();
+            }
+
+            // Update and render dancing characters
+            for (DancingCharacter dancer : dancingCharacters) {
+                dancer.update();
+                dancer.render(gc);
+            }
+
             // Show dancing death if available
             if (gameOverImageView != null) {
                 gameOverImageView.setVisible(true);
@@ -1054,6 +1283,8 @@ public class Game {
         state.victory = victory;
         state.remainingEnemies = enemySpawner.getRemainingEnemies();
         state.baseAlive = base.isAlive();
+        state.baseShowFlag = base.isShowingFlag();
+        state.baseFlagHeight = base.getFlagHeight();
         state.connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
 
         // Full map state for sync
@@ -1073,6 +1304,15 @@ public class Game {
         state.p2Kills = playerKills[1];
         state.p3Kills = playerKills[2];
         state.p4Kills = playerKills[3];
+
+        // Dancing characters for game over animation
+        state.dancingInitialized = dancingInitialized;
+        for (DancingCharacter dancer : dancingCharacters) {
+            state.dancingCharacters.add(new GameState.DancingCharacterData(
+                dancer.x, dancer.y, dancer.isAlien, dancer.animFrame,
+                dancer.danceStyle, dancer.colorIndex
+            ));
+        }
 
         // Map changes (legacy, keeping for compatibility)
         state.tileChanges.addAll(mapChanges);
@@ -1208,6 +1448,18 @@ public class Game {
         playerKills[2] = state.p3Kills;
         playerKills[3] = state.p4Kills;
 
+        // Sync dancing characters for game over animation
+        dancingInitialized = state.dancingInitialized;
+        if (state.dancingCharacters != null && !state.dancingCharacters.isEmpty()) {
+            dancingCharacters.clear();
+            for (GameState.DancingCharacterData dData : state.dancingCharacters) {
+                dancingCharacters.add(new DancingCharacter(
+                    dData.x, dData.y, dData.isAlien, dData.animFrame,
+                    dData.danceStyle, dData.colorIndex
+                ));
+            }
+        }
+
         // Update game state
         gameOver = state.gameOver;
         victory = state.victory;
@@ -1220,6 +1472,9 @@ public class Game {
             base.destroy();
             soundManager.playExplosion();
         }
+
+        // Sync flag state
+        base.setFlagState(state.baseShowFlag, state.baseFlagHeight);
 
         // Play explosion sound when enemy dies
         int currentEnemyCount = enemyTanks.size();

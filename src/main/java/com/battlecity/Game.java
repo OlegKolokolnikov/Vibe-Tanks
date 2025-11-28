@@ -2089,18 +2089,20 @@ public class Game {
         allTanks.addAll(playerTanks);
         allTanks.addAll(enemyTanks);
 
-        // Apply movement
-        if (input.up) {
-            tank.move(Direction.UP, gameMap, allTanks, base);
-        } else if (input.down) {
-            tank.move(Direction.DOWN, gameMap, allTanks, base);
-        } else if (input.left) {
-            tank.move(Direction.LEFT, gameMap, allTanks, base);
-        } else if (input.right) {
-            tank.move(Direction.RIGHT, gameMap, allTanks, base);
+        // Apply movement (only if not frozen)
+        if (playerFreezeDuration <= 0) {
+            if (input.up) {
+                tank.move(Direction.UP, gameMap, allTanks, base);
+            } else if (input.down) {
+                tank.move(Direction.DOWN, gameMap, allTanks, base);
+            } else if (input.left) {
+                tank.move(Direction.LEFT, gameMap, allTanks, base);
+            } else if (input.right) {
+                tank.move(Direction.RIGHT, gameMap, allTanks, base);
+            }
         }
 
-        // Apply shooting
+        // Apply shooting (always allowed, even when frozen)
         if (input.shoot) {
             tank.shoot(bullets, soundManager);
         }

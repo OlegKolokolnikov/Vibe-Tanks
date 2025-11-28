@@ -1074,6 +1074,13 @@ public class Game {
             }
         }
 
+        // Play shoot sound if new bullets appeared (compare before clearing)
+        int newBulletCount = state.bullets.size();
+        if (newBulletCount > prevBulletCount) {
+            soundManager.playShoot();
+        }
+        prevBulletCount = newBulletCount;
+
         // Update bullets (recreate from state)
         bullets.clear();
         for (GameState.BulletData bData : state.bullets) {
@@ -1119,22 +1126,12 @@ public class Game {
             soundManager.playExplosion();
         }
 
-        // Play sounds for client based on state changes
+        // Play explosion sound when enemy dies
         int currentEnemyCount = enemyTanks.size();
-        int currentBulletCount = bullets.size();
-
-        // Explosion sound when enemy dies
         if (currentEnemyCount < prevEnemyCount) {
             soundManager.playExplosion();
         }
-
-        // Shoot sound when new bullets appear
-        if (currentBulletCount > prevBulletCount) {
-            soundManager.playShoot();
-        }
-
         prevEnemyCount = currentEnemyCount;
-        prevBulletCount = currentBulletCount;
     }
 
     private PlayerInput capturePlayerInput(Tank tank) {

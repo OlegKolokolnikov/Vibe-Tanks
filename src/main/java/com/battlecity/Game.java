@@ -1489,8 +1489,9 @@ public class Game {
                 gameOverImageView.setVisible(true);
             }
 
-            // Play sad sound once
+            // Play sad sound once and stop gameplay sounds
             if (!gameOverSoundPlayed) {
+                soundManager.stopGameplaySounds();
                 soundManager.playSad();
                 gameOverSoundPlayed = true;
             }
@@ -1508,6 +1509,7 @@ public class Game {
         } else if (victory) {
             // Initialize victory celebration (Soviet flag + dancing girls)
             if (!victoryDancingInitialized) {
+                soundManager.stopGameplaySounds();
                 initializeVictoryCelebration();
             }
 

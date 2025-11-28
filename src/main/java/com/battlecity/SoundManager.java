@@ -111,6 +111,20 @@ public class SoundManager {
         }
     }
 
+    public void stopGameplaySounds() {
+        // Stop shoot and explosion sounds (used when game ends)
+        try {
+            if (shootLine != null && shootLine.isOpen()) {
+                shootLine.flush();
+            }
+            if (explosionLine != null && explosionLine.isOpen()) {
+                explosionLine.flush();
+            }
+        } catch (Exception e) {
+            // Ignore errors
+        }
+    }
+
     private void generateSoundsIfNeeded() {
         File shootFile = new File("src/main/resources/sounds/shoot.wav");
         File explosionFile = new File("src/main/resources/sounds/explosion.wav");

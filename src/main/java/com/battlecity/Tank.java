@@ -716,6 +716,11 @@ public class Tank {
     }
 
     public void setPosition(double x, double y) {
+        // Animate tracks if position changed (for network sync)
+        if (this.x != x || this.y != y) {
+            trackAnimationFrame++;
+            isMoving = true;
+        }
         this.x = x;
         this.y = y;
     }

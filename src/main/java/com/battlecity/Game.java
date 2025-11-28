@@ -1120,6 +1120,9 @@ public class Game {
         gameOver = state.gameOver;
         victory = state.victory;
 
+        // Update remaining enemies count
+        enemySpawner.setRemainingEnemies(state.remainingEnemies);
+
         // Update base
         if (!state.baseAlive && base.isAlive()) {
             base.destroy();

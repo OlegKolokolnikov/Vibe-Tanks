@@ -92,6 +92,10 @@ public class EnemySpawner {
         return totalEnemies - spawnedCount;
     }
 
+    public void setRemainingEnemies(int remaining) {
+        this.spawnedCount = totalEnemies - remaining;
+    }
+
     public boolean allEnemiesSpawned() {
         return spawnedCount >= totalEnemies;
     }

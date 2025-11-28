@@ -5,7 +5,7 @@ import javafx.scene.paint.Color;
 
 public class Bullet {
     private static final int SIZE = 8;
-    private static final double SPEED = 4.0;
+    private static final double SPEED = 6.0;
     private static long nextId = 1; // Global bullet ID counter
 
     private long id;

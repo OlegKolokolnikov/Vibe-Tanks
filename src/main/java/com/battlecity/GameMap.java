@@ -6,6 +6,7 @@ import javafx.scene.paint.Color;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 
 public class GameMap {
     private static final int TILE_SIZE = 32;
@@ -14,6 +15,8 @@ public class GameMap {
     private int width;
     private int height;
     private TileType[][] tiles;
+    private Random random = new Random();
+    private int levelNumber = 1;
 
     // Track burning trees: key = row*1000+col, value = frames remaining
     private Map<Integer, Integer> burningTiles = new HashMap<>();
@@ -32,6 +35,16 @@ public class GameMap {
         this.height = height;
         this.tiles = new TileType[height][width];
         generateLevel1();
+    }
+
+    public int getLevelNumber() {
+        return levelNumber;
+    }
+
+    public void nextLevel() {
+        levelNumber++;
+        burningTiles.clear();
+        generateRandomLevel();
     }
 
     private void generateLevel1() {
@@ -109,19 +122,247 @@ public class GameMap {
             }
         }
 
-        // Completely surround base with bricks (base is at row 24, col 12)
-        // Top wall
+        // Surround base with bricks
         tiles[23][11] = TileType.BRICK;
         tiles[23][12] = TileType.BRICK;
         tiles[23][13] = TileType.BRICK;
-        // Left wall
         tiles[24][11] = TileType.BRICK;
-        // Right wall
         tiles[24][13] = TileType.BRICK;
-        // Bottom wall
         tiles[25][11] = TileType.BRICK;
         tiles[25][12] = TileType.BRICK;
         tiles[25][13] = TileType.BRICK;
+    }
+
+    public void generateRandomLevel() {
+        // Initialize with empty tiles
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                tiles[row][col] = TileType.EMPTY;
+            }
+        }
+
+        // Create border walls (steel)
+        for (int i = 0; i < width; i++) {
+            tiles[0][i] = TileType.STEEL;
+            tiles[height - 1][i] = TileType.STEEL;
+        }
+        for (int i = 0; i < height; i++) {
+            tiles[i][0] = TileType.STEEL;
+            tiles[i][width - 1] = TileType.STEEL;
+        }
+
+        // Define reserved areas (keep empty for tank movement)
+        // Player spawn area (bottom, rows 23-25, cols 7-17)
+        // Enemy spawn areas (top, row 1-2, cols around 1, 12, 24)
+        // Base area (bottom center, rows 23-25, cols 11-14)
+
+        // Generate random structures
+        int numStructures = 8 + random.nextInt(6); // 8-13 structures
+        for (int s = 0; s < numStructures; s++) {
+            generateRandomStructure();
+        }
+
+        // Add some water pools (2-4)
+        int numWater = 2 + random.nextInt(3);
+        for (int w = 0; w < numWater; w++) {
+            generateWaterPool();
+        }
+
+        // Add some tree patches (2-4)
+        int numTrees = 2 + random.nextInt(3);
+        for (int t = 0; t < numTrees; t++) {
+            generateTreePatch();
+        }
+
+        // Add some ice patches (1-3)
+        int numIce = 1 + random.nextInt(3);
+        for (int i = 0; i < numIce; i++) {
+            generateIcePatch();
+        }
+
+        // Ensure base is surrounded by bricks
+        createBaseProtection();
+
+        // Clear spawn areas to ensure tanks can move
+        clearSpawnAreas();
+    }
+
+    private void generateRandomStructure() {
+        // Random structure size
+        int structWidth = 2 + random.nextInt(4); // 2-5 tiles wide
+        int structHeight = 2 + random.nextInt(3); // 2-4 tiles high
+
+        // Random position (avoid borders and reserved areas)
+        int startCol = 2 + random.nextInt(width - 4 - structWidth);
+        int startRow = 3 + random.nextInt(height - 10 - structHeight); // Avoid bottom area
+
+        // Choose tile type (mostly brick, some steel)
+        TileType type = random.nextDouble() < 0.8 ? TileType.BRICK : TileType.STEEL;
+
+        // Create structure
+        for (int row = startRow; row < startRow + structHeight; row++) {
+            for (int col = startCol; col < startCol + structWidth; col++) {
+                if (isValidForObstacle(row, col)) {
+                    tiles[row][col] = type;
+                }
+            }
+        }
+
+        // Sometimes add a gap in the middle for variety
+        if (random.nextDouble() < 0.3 && structWidth >= 3 && structHeight >= 2) {
+            int gapCol = startCol + structWidth / 2;
+            int gapRow = startRow + structHeight / 2;
+            if (isValidForObstacle(gapRow, gapCol)) {
+                tiles[gapRow][gapCol] = TileType.EMPTY;
+            }
+        }
+    }
+
+    private void generateWaterPool() {
+        int poolWidth = 2 + random.nextInt(4);
+        int poolHeight = 2 + random.nextInt(3);
+        int startCol = 2 + random.nextInt(width - 4 - poolWidth);
+        int startRow = 5 + random.nextInt(height - 12 - poolHeight);
+
+        for (int row = startRow; row < startRow + poolHeight; row++) {
+            for (int col = startCol; col < startCol + poolWidth; col++) {
+                if (isValidForObstacle(row, col) && tiles[row][col] == TileType.EMPTY) {
+                    tiles[row][col] = TileType.WATER;
+                }
+            }
+        }
+    }
+
+    private void generateTreePatch() {
+        int patchWidth = 2 + random.nextInt(4);
+        int patchHeight = 2 + random.nextInt(3);
+        int startCol = 2 + random.nextInt(width - 4 - patchWidth);
+        int startRow = 4 + random.nextInt(height - 10 - patchHeight);
+
+        for (int row = startRow; row < startRow + patchHeight; row++) {
+            for (int col = startCol; col < startCol + patchWidth; col++) {
+                if (isValidForObstacle(row, col) && tiles[row][col] == TileType.EMPTY) {
+                    tiles[row][col] = TileType.TREES;
+                }
+            }
+        }
+    }
+
+    private void generateIcePatch() {
+        int patchWidth = 2 + random.nextInt(4);
+        int patchHeight = 2 + random.nextInt(3);
+        int startCol = 2 + random.nextInt(width - 4 - patchWidth);
+        int startRow = 5 + random.nextInt(height - 12 - patchHeight);
+
+        for (int row = startRow; row < startRow + patchHeight; row++) {
+            for (int col = startCol; col < startCol + patchWidth; col++) {
+                if (isValidForObstacle(row, col) && tiles[row][col] == TileType.EMPTY) {
+                    tiles[row][col] = TileType.ICE;
+                }
+            }
+        }
+    }
+
+    private boolean isValidForObstacle(int row, int col) {
+        // Don't place in border
+        if (row <= 0 || row >= height - 1 || col <= 0 || col >= width - 1) {
+            return false;
+        }
+
+        // Don't place in enemy spawn areas (top)
+        if (row <= 2) {
+            // Spawn points at cols 1, 12, 24
+            if ((col >= 1 && col <= 3) || (col >= 11 && col <= 14) || (col >= 23 && col <= 25)) {
+                return false;
+            }
+        }
+
+        // Don't place in player spawn area (bottom)
+        if (row >= 23) {
+            // Player spawns around cols 8, 9, 15, 16
+            if (col >= 7 && col <= 17) {
+                return false;
+            }
+        }
+
+        // Don't place too close to base (bottom center)
+        if (row >= 22 && col >= 10 && col <= 15) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void createBaseProtection() {
+        // Base is at row 24, col 12-13 (2x2 area typically)
+        // Surround with bricks
+        tiles[23][11] = TileType.BRICK;
+        tiles[23][12] = TileType.BRICK;
+        tiles[23][13] = TileType.BRICK;
+        tiles[23][14] = TileType.BRICK;
+        tiles[24][11] = TileType.BRICK;
+        tiles[24][14] = TileType.BRICK;
+        tiles[25][11] = TileType.BRICK;
+        tiles[25][12] = TileType.BRICK;
+        tiles[25][13] = TileType.BRICK;
+        tiles[25][14] = TileType.BRICK;
+    }
+
+    private void clearSpawnAreas() {
+        // Clear enemy spawn points (top, 2 tiles deep, 2 tiles wide each)
+        // Spawn 1: col 1-2
+        for (int row = 1; row <= 2; row++) {
+            for (int col = 1; col <= 3; col++) {
+                tiles[row][col] = TileType.EMPTY;
+            }
+        }
+        // Spawn 2: col 12-13 (center)
+        for (int row = 1; row <= 2; row++) {
+            for (int col = 11; col <= 14; col++) {
+                tiles[row][col] = TileType.EMPTY;
+            }
+        }
+        // Spawn 3: col 24-25
+        for (int row = 1; row <= 2; row++) {
+            for (int col = 23; col <= 25; col++) {
+                tiles[row][col] = TileType.EMPTY;
+            }
+        }
+
+        // Clear player spawn points (bottom)
+        // Player 1: col 8
+        for (int row = 23; row <= 25; row++) {
+            for (int col = 7; col <= 10; col++) {
+                if (tiles[row][col] != TileType.BRICK || row < 23 || col < 11) {
+                    tiles[row][col] = TileType.EMPTY;
+                }
+            }
+        }
+        // Player 2: col 16
+        for (int row = 23; row <= 25; row++) {
+            for (int col = 15; col <= 18; col++) {
+                if (tiles[row][col] != TileType.BRICK || row < 23 || col > 14) {
+                    tiles[row][col] = TileType.EMPTY;
+                }
+            }
+        }
+
+        // Ensure paths from spawns are clear (create corridors)
+        // Vertical corridor from top spawns
+        for (int row = 1; row <= 5; row++) {
+            tiles[row][2] = TileType.EMPTY;
+            tiles[row][12] = TileType.EMPTY;
+            tiles[row][13] = TileType.EMPTY;
+            tiles[row][24] = TileType.EMPTY;
+        }
+
+        // Vertical corridor from bottom spawns
+        for (int row = 20; row <= 24; row++) {
+            tiles[row][8] = TileType.EMPTY;
+            tiles[row][9] = TileType.EMPTY;
+            tiles[row][16] = TileType.EMPTY;
+            tiles[row][17] = TileType.EMPTY;
+        }
     }
 
     public boolean checkTankCollision(double x, double y, int tankSize) {

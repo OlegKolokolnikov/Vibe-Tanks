@@ -476,10 +476,14 @@ public class Game {
         // Initialize input handler
         inputHandler = new InputHandler(root, playerTanks);
 
-        // Add ESC key handler to return to menu - combine with existing handler
+        // Add key handlers for end game states
         root.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ESCAPE && (gameOver || victory)) {
                 returnToMenu();
+            }
+            // ENTER to start next level after victory
+            if (event.getCode() == KeyCode.ENTER && victory) {
+                startNextLevel();
             }
         });
 
@@ -492,6 +496,53 @@ public class Game {
         stop();
         MenuScene menuScene = new MenuScene(stage, width, height);
         stage.setScene(menuScene.getScene());
+    }
+
+    private void startNextLevel() {
+        // Generate new random level
+        gameMap.nextLevel();
+
+        // Reset game state
+        victory = false;
+        gameOver = false;
+        gameOverSoundPlayed = false;
+        dancingInitialized = false;
+        dancingCharacters.clear();
+
+        // Reset base
+        base = new Base(12 * 32, 24 * 32);
+
+        // Clear bullets and power-ups
+        bullets.clear();
+        powerUps.clear();
+
+        // Reset player tanks (keep power-ups but reset position and give shield)
+        for (int i = 0; i < playerTanks.size(); i++) {
+            Tank player = playerTanks.get(i);
+            player.setPosition(playerStartPositions[i][0], playerStartPositions[i][1]);
+            player.setDirection(Direction.UP);
+            player.giveTemporaryShield(); // Brief spawn protection
+        }
+
+        // Clear enemy tanks and reset spawner
+        enemyTanks.clear();
+        enemySpawner = new EnemySpawner(totalEnemies, 10, gameMap);
+
+        // Reset base protection state
+        baseProtectionDuration = 0;
+        isFlashing = false;
+        flashCount = 0;
+        flashTimer = 0;
+
+        // Hide victory image
+        if (victoryImageView != null) {
+            victoryImageView.setVisible(false);
+        }
+
+        // Play intro sound for new level
+        soundManager.playIntro();
+
+        System.out.println("Starting Level " + gameMap.getLevelNumber());
     }
 
     public void start() {
@@ -1040,7 +1091,7 @@ public class Game {
 
     private void renderUI() {
         gc.setFill(Color.WHITE);
-        gc.fillText("Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
+        gc.fillText("Level: " + gameMap.getLevelNumber() + "  Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
 
         // Display player info and power-ups
         int connectedCount = isNetworkGame && network != null ? network.getConnectedPlayerCount() : playerTanks.size();
@@ -1134,14 +1185,18 @@ public class Game {
 
             gc.setFill(Color.YELLOW);
             gc.setFont(javafx.scene.text.Font.font(40));
-            gc.fillText("VICTORY!", width / 2 - 100, height / 2 + 50);
+            gc.fillText("LEVEL " + gameMap.getLevelNumber() + " COMPLETE!", width / 2 - 180, height / 2 + 50);
 
             // Show statistics
             renderEndGameStats(height / 2 + 90);
 
+            gc.setFill(Color.LIME);
+            gc.setFont(javafx.scene.text.Font.font(22));
+            gc.fillText("Press ENTER for next level", width / 2 - 130, height / 2 + 200);
+
             gc.setFill(Color.WHITE);
-            gc.setFont(javafx.scene.text.Font.font(20));
-            gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 220);
+            gc.setFont(javafx.scene.text.Font.font(18));
+            gc.fillText("Press ESC to return to menu", width / 2 - 115, height / 2 + 230);
         } else {
             // Hide images when not in end state
             if (victoryImageView != null) {

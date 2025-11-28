@@ -716,6 +716,11 @@ public class Tank {
         this.machinegunCount = 0;
     }
 
+    public void giveTemporaryShield() {
+        this.hasShield = true;
+        this.shieldDuration = 180; // 3 seconds at 60 FPS
+    }
+
     public void setPosition(double x, double y) {
         // Animate tracks if position changed (for network sync)
         if (this.x != x || this.y != y) {

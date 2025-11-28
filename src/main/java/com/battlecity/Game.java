@@ -1877,6 +1877,7 @@ public class Game {
         if (playerTanks.size() >= 1) {
             Tank p1 = playerTanks.get(0);
             p1.setLives(state.p1Lives);
+            p1.setAlive(state.p1Alive);
             if (state.p1Alive) {
                 p1.setPosition(state.p1X, state.p1Y);
                 p1.setDirection(Direction.values()[state.p1Direction]);
@@ -1894,6 +1895,7 @@ public class Game {
         if (playerTanks.size() >= 2) {
             Tank p2 = playerTanks.get(1);
             p2.setLives(state.p2Lives);
+            p2.setAlive(state.p2Alive);
             if (state.p2Alive) {
                 p2.setPosition(state.p2X, state.p2Y);
                 p2.setDirection(Direction.values()[state.p2Direction]);
@@ -1911,6 +1913,7 @@ public class Game {
         if (playerTanks.size() >= 3) {
             Tank p3 = playerTanks.get(2);
             p3.setLives(state.p3Lives);
+            p3.setAlive(state.p3Alive);
             if (state.p3Alive) {
                 p3.setPosition(state.p3X, state.p3Y);
                 p3.setDirection(Direction.values()[state.p3Direction]);
@@ -1928,6 +1931,7 @@ public class Game {
         if (playerTanks.size() >= 4) {
             Tank p4 = playerTanks.get(3);
             p4.setLives(state.p4Lives);
+            p4.setAlive(state.p4Alive);
             if (state.p4Alive) {
                 p4.setPosition(state.p4X, state.p4Y);
                 p4.setDirection(Direction.values()[state.p4Direction]);

@@ -613,6 +613,7 @@ public class Tank {
     public double getY() { return y; }
     public int getSize() { return SIZE; }
     public boolean isAlive() { return alive; }
+    public void setAlive(boolean alive) { this.alive = alive; }
     public int getLives() { return lives; }
     public void setLives(int lives) { this.lives = lives; }
     public boolean hasShield() { return hasShield; }

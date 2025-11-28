@@ -1096,17 +1096,13 @@ public class Game {
         // Update Player 1
         if (playerTanks.size() >= 1 && state.p1Alive) {
             Tank p1 = playerTanks.get(0);
-            // For local player, only correct if too far from server position
-            if (myPlayerIndex == 0) {
-                double dx = Math.abs(p1.getX() - state.p1X);
-                double dy = Math.abs(p1.getY() - state.p1Y);
-                if (dx > correctionThreshold || dy > correctionThreshold) {
-                    p1.setPosition(state.p1X, state.p1Y);
-                }
-            } else {
+            // For local player, don't override position (client-side prediction)
+            // Only sync position for other players
+            if (myPlayerIndex != 0) {
                 p1.setPosition(state.p1X, state.p1Y);
+                p1.setDirection(Direction.values()[state.p1Direction]);
             }
-            p1.setDirection(Direction.values()[state.p1Direction]);
+            // Always sync shield/ship status from server (authoritative)
             p1.setShield(state.p1HasShield);
             p1.setShip(state.p1HasShip);
         }
@@ -1114,16 +1110,10 @@ public class Game {
         // Update Player 2
         if (playerTanks.size() >= 2 && state.p2Alive) {
             Tank p2 = playerTanks.get(1);
-            if (myPlayerIndex == 1) {
-                double dx = Math.abs(p2.getX() - state.p2X);
-                double dy = Math.abs(p2.getY() - state.p2Y);
-                if (dx > correctionThreshold || dy > correctionThreshold) {
-                    p2.setPosition(state.p2X, state.p2Y);
-                }
-            } else {
+            if (myPlayerIndex != 1) {
                 p2.setPosition(state.p2X, state.p2Y);
+                p2.setDirection(Direction.values()[state.p2Direction]);
             }
-            p2.setDirection(Direction.values()[state.p2Direction]);
             p2.setShield(state.p2HasShield);
             p2.setShip(state.p2HasShip);
         }
@@ -1131,16 +1121,10 @@ public class Game {
         // Update Player 3
         if (playerTanks.size() >= 3 && state.p3Alive) {
             Tank p3 = playerTanks.get(2);
-            if (myPlayerIndex == 2) {
-                double dx = Math.abs(p3.getX() - state.p3X);
-                double dy = Math.abs(p3.getY() - state.p3Y);
-                if (dx > correctionThreshold || dy > correctionThreshold) {
-                    p3.setPosition(state.p3X, state.p3Y);
-                }
-            } else {
+            if (myPlayerIndex != 2) {
                 p3.setPosition(state.p3X, state.p3Y);
+                p3.setDirection(Direction.values()[state.p3Direction]);
             }
-            p3.setDirection(Direction.values()[state.p3Direction]);
             p3.setShield(state.p3HasShield);
             p3.setShip(state.p3HasShip);
         }
@@ -1148,16 +1132,10 @@ public class Game {
         // Update Player 4
         if (playerTanks.size() >= 4 && state.p4Alive) {
             Tank p4 = playerTanks.get(3);
-            if (myPlayerIndex == 3) {
-                double dx = Math.abs(p4.getX() - state.p4X);
-                double dy = Math.abs(p4.getY() - state.p4Y);
-                if (dx > correctionThreshold || dy > correctionThreshold) {
-                    p4.setPosition(state.p4X, state.p4Y);
-                }
-            } else {
+            if (myPlayerIndex != 3) {
                 p4.setPosition(state.p4X, state.p4Y);
+                p4.setDirection(Direction.values()[state.p4Direction]);
             }
-            p4.setDirection(Direction.values()[state.p4Direction]);
             p4.setShield(state.p4HasShield);
             p4.setShip(state.p4HasShip);
         }

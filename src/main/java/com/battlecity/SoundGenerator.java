@@ -19,8 +19,8 @@ public class SoundGenerator {
                 soundsDir.mkdirs();
             }
 
-            // Generate shoot sound - short high-pitched beep
-            generateSound("src/main/resources/sounds/shoot.wav", 800, 0.1, 0.3);
+            // Generate shoot sound - gunshot with noise burst
+            generateShootSound("src/main/resources/sounds/shoot.wav");
 
             // Generate explosion sound - lower pitched longer sound
             generateSound("src/main/resources/sounds/explosion.wav", 200, 0.3, 0.5);
@@ -35,6 +35,49 @@ public class SoundGenerator {
         } catch (Exception e) {
             System.err.println("Error generating sounds: " + e.getMessage());
         }
+    }
+
+    private static void generateShootSound(String filename) throws Exception {
+        // Create a realistic gunshot sound with:
+        // 1. Initial sharp attack (noise burst)
+        // 2. Quick decay
+        // 3. Low frequency thump
+
+        double duration = 0.15; // Short, punchy
+        int numSamples = (int) (duration * SAMPLE_RATE);
+        byte[] buffer = new byte[numSamples * 2];
+        java.util.Random random = new java.util.Random(42);
+
+        for (int i = 0; i < numSamples; i++) {
+            double t = (double) i / numSamples;
+
+            // Sharp exponential decay envelope
+            double envelope = Math.exp(-t * 25);
+
+            // Initial click/crack (white noise with fast decay)
+            double noise = (random.nextDouble() * 2 - 1) * Math.exp(-t * 40);
+
+            // Low frequency thump (gives body to the shot)
+            double thump = Math.sin(2.0 * Math.PI * i * 80 / SAMPLE_RATE) * Math.exp(-t * 15);
+
+            // Mid frequency punch
+            double punch = Math.sin(2.0 * Math.PI * i * 200 / SAMPLE_RATE) * Math.exp(-t * 30);
+
+            // High frequency crack
+            double crack = Math.sin(2.0 * Math.PI * i * 800 / SAMPLE_RATE) * Math.exp(-t * 50);
+
+            // Mix components
+            double sample = (noise * 0.5 + thump * 0.3 + punch * 0.15 + crack * 0.05) * envelope;
+
+            // Clip and convert to short
+            sample = Math.max(-1.0, Math.min(1.0, sample));
+            short shortSample = (short) (sample * 0.7 * Short.MAX_VALUE);
+
+            buffer[i * 2] = (byte) (shortSample & 0xFF);
+            buffer[i * 2 + 1] = (byte) ((shortSample >> 8) & 0xFF);
+        }
+
+        saveWav(filename, buffer);
     }
 
     private static void generateSound(String filename, double frequency, double duration, double volume) throws Exception {

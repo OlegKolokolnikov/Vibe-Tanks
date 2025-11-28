@@ -38,40 +38,66 @@ public class SoundGenerator {
     }
 
     private static void generateShootSound(String filename) throws Exception {
-        // Create a realistic gunshot sound with:
-        // 1. Initial sharp attack (noise burst)
-        // 2. Quick decay
-        // 3. Low frequency thump
+        // Realistic cannon/tank shot sound
+        // Components: initial blast, pressure wave, mechanical click, echo tail
 
-        double duration = 0.15; // Short, punchy
+        double duration = 0.25;
         int numSamples = (int) (duration * SAMPLE_RATE);
         byte[] buffer = new byte[numSamples * 2];
         java.util.Random random = new java.util.Random(42);
 
         for (int i = 0; i < numSamples; i++) {
-            double t = (double) i / numSamples;
+            double t = (double) i / SAMPLE_RATE; // Time in seconds
+            double tNorm = (double) i / numSamples; // Normalized 0-1
 
-            // Sharp exponential decay envelope
-            double envelope = Math.exp(-t * 25);
+            double sample = 0;
 
-            // Initial click/crack (white noise with fast decay)
-            double noise = (random.nextDouble() * 2 - 1) * Math.exp(-t * 40);
+            // 1. Initial BLAST - very loud white noise burst (first 10ms)
+            if (t < 0.01) {
+                double blastEnv = 1.0 - (t / 0.01);
+                sample += (random.nextDouble() * 2 - 1) * blastEnv * 1.2;
+            }
 
-            // Low frequency thump (gives body to the shot)
-            double thump = Math.sin(2.0 * Math.PI * i * 80 / SAMPLE_RATE) * Math.exp(-t * 15);
+            // 2. Pressure wave - low frequency boom (20-60 Hz)
+            double pressureFreq = 40 - t * 100; // Frequency drops
+            if (pressureFreq > 20) {
+                double pressureEnv = Math.exp(-t * 8);
+                sample += Math.sin(2.0 * Math.PI * t * pressureFreq) * pressureEnv * 0.8;
+            }
 
-            // Mid frequency punch
-            double punch = Math.sin(2.0 * Math.PI * i * 200 / SAMPLE_RATE) * Math.exp(-t * 30);
+            // 3. Main body - filtered noise with resonance
+            double bodyEnv = Math.exp(-t * 12);
+            double filteredNoise = 0;
+            // Simulate low-pass filtered noise
+            for (int h = 1; h <= 5; h++) {
+                double freq = 100 + random.nextDouble() * 200;
+                filteredNoise += Math.sin(2.0 * Math.PI * t * freq * h) / h;
+            }
+            sample += filteredNoise * bodyEnv * 0.3;
 
-            // High frequency crack
-            double crack = Math.sin(2.0 * Math.PI * i * 800 / SAMPLE_RATE) * Math.exp(-t * 50);
+            // 4. Mechanical "clack" - sharp transient at 1-2kHz
+            if (t < 0.02) {
+                double clackEnv = Math.exp(-t * 150);
+                sample += Math.sin(2.0 * Math.PI * t * 1500) * clackEnv * 0.4;
+                sample += Math.sin(2.0 * Math.PI * t * 2200) * clackEnv * 0.2;
+            }
 
-            // Mix components
-            double sample = (noise * 0.5 + thump * 0.3 + punch * 0.15 + crack * 0.05) * envelope;
+            // 5. Sub-bass thump (felt more than heard)
+            double subEnv = Math.exp(-t * 6);
+            sample += Math.sin(2.0 * Math.PI * t * 30) * subEnv * 0.5;
 
-            // Clip and convert to short
-            sample = Math.max(-1.0, Math.min(1.0, sample));
-            short shortSample = (short) (sample * 0.7 * Short.MAX_VALUE);
+            // 6. Echo/reverb tail - quieter delayed noise
+            if (t > 0.05) {
+                double echoT = t - 0.05;
+                double echoEnv = Math.exp(-echoT * 5) * 0.15;
+                sample += (random.nextDouble() * 2 - 1) * echoEnv;
+            }
+
+            // Soft clipping for natural distortion
+            sample = Math.tanh(sample * 0.8);
+
+            // Convert to short
+            short shortSample = (short) (sample * 0.85 * Short.MAX_VALUE);
 
             buffer[i * 2] = (byte) (shortSample & 0xFF);
             buffer[i * 2 + 1] = (byte) ((shortSample >> 8) & 0xFF);

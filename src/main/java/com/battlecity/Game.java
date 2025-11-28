@@ -655,6 +655,12 @@ public class Game {
                 return;
             }
 
+            // ENTER to restart game after game over
+            if (event.getCode() == KeyCode.ENTER && gameOver) {
+                restartGame();
+                return;
+            }
+
             // ENTER to take life from another player (when dead)
             if (event.getCode() == KeyCode.ENTER && !gameOver && !victory) {
                 tryTakeLifeFromTeammate();
@@ -761,6 +767,65 @@ public class Game {
         soundManager.playIntro();
 
         System.out.println("Starting Level " + gameMap.getLevelNumber());
+    }
+
+    private void restartGame() {
+        // Reset to level 1
+        gameMap.resetToLevel1();
+
+        // Reset game state
+        victory = false;
+        gameOver = false;
+        gameOverSoundPlayed = false;
+        dancingInitialized = false;
+        dancingCharacters.clear();
+        victoryDancingInitialized = false;
+        victoryDancingGirls.clear();
+        winnerBonusAwarded = false;
+
+        // Reset kills and scores for new game
+        for (int i = 0; i < playerKills.length; i++) {
+            playerKills[i] = 0;
+            playerScores[i] = 0;
+        }
+
+        // Reset base
+        base = new Base(12 * 32, 24 * 32);
+
+        // Clear bullets and power-ups
+        bullets.clear();
+        powerUps.clear();
+
+        // Reset player tanks (full reset including lives and power-ups)
+        for (int i = 0; i < playerTanks.size(); i++) {
+            Tank player = playerTanks.get(i);
+            player.setLives(3);
+            player.respawn(playerStartPositions[i][0], playerStartPositions[i][1]);
+        }
+
+        // Clear enemy tanks and reset spawner
+        enemyTanks.clear();
+        enemySpawner = new EnemySpawner(totalEnemies, 10, gameMap);
+
+        // Reset base protection state
+        baseProtectionDuration = 0;
+        isFlashing = false;
+        flashCount = 0;
+        flashTimer = 0;
+
+        // Reset freeze states
+        enemyFreezeDuration = 0;
+        playerFreezeDuration = 0;
+
+        // Hide game over image
+        if (gameOverImageView != null) {
+            gameOverImageView.setVisible(false);
+        }
+
+        // Play intro sound for new game
+        soundManager.playIntro();
+
+        System.out.println("Game restarted from Level 1");
     }
 
     public void start() {
@@ -1545,9 +1610,13 @@ public class Game {
             // Show statistics
             renderEndGameStats(height / 2 + 90);
 
+            gc.setFill(Color.YELLOW);
+            gc.setFont(javafx.scene.text.Font.font(22));
+            gc.fillText("Press ENTER to restart", width / 2 - 110, height / 2 + 200);
+
             gc.setFill(Color.WHITE);
-            gc.setFont(javafx.scene.text.Font.font(20));
-            gc.fillText("Press ESC to return to menu", width / 2 - 120, height / 2 + 220);
+            gc.setFont(javafx.scene.text.Font.font(18));
+            gc.fillText("Press ESC to return to menu", width / 2 - 115, height / 2 + 230);
         } else if (victory) {
             // Initialize victory celebration (Soviet flag + dancing girls)
             if (!victoryDancingInitialized) {

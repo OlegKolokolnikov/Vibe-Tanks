@@ -47,6 +47,12 @@ public class GameMap {
         generateRandomLevel();
     }
 
+    public void resetToLevel1() {
+        levelNumber = 1;
+        burningTiles.clear();
+        generateRandomLevel();
+    }
+
     private void generateLevel1() {
         // Initialize with empty tiles
         for (int row = 0; row < height; row++) {

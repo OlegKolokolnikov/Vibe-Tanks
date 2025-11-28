@@ -50,7 +50,12 @@ public class Bullet {
     }
 
     public void render(GraphicsContext gc) {
-        gc.setFill(fromEnemy ? Color.RED : Color.YELLOW);
+        if (fromEnemy) {
+            gc.setFill(Color.RED);
+        } else {
+            // Use player's tank color for their bullets
+            gc.setFill(Tank.getPlayerColor(ownerPlayerNumber));
+        }
         gc.fillOval(x, y, SIZE, SIZE);
     }
 

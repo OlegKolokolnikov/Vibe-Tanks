@@ -481,7 +481,7 @@ public class Tank {
 
         // Draw tank body based on type
         if (isPlayer) {
-            gc.setFill(playerNumber == 1 ? Color.YELLOW : Color.LIME);
+            gc.setFill(getPlayerColor(playerNumber));
             gc.fillRect(x, y, SIZE, SIZE);
         } else {
             // Draw different enemy types
@@ -537,6 +537,17 @@ public class Tank {
                x + SIZE > otherX &&
                y < otherY + otherSize &&
                y + SIZE > otherY;
+    }
+
+    // Get player color based on player number
+    public static Color getPlayerColor(int playerNum) {
+        return switch (playerNum) {
+            case 1 -> Color.YELLOW;
+            case 2 -> Color.LIME;
+            case 3 -> Color.CYAN;
+            case 4 -> Color.ORANGE;
+            default -> Color.WHITE;
+        };
     }
 
     // Getters and setters

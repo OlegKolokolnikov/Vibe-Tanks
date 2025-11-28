@@ -1127,18 +1127,22 @@ public class Game {
             p4.setShip(state.p4HasShip);
         }
 
-        // Update enemy tanks (recreate from state)
-        enemyTanks.clear();
-        for (GameState.EnemyData eData : state.enemies) {
+        // Update enemy tanks - reuse existing tanks to preserve animation state
+        // First, resize the list to match state
+        while (enemyTanks.size() > state.enemies.size()) {
+            enemyTanks.remove(enemyTanks.size() - 1);
+        }
+        while (enemyTanks.size() < state.enemies.size()) {
+            enemyTanks.add(new Tank(0, 0, Direction.UP, false, 0, Tank.EnemyType.REGULAR));
+        }
+        // Update each enemy tank's position (setPosition will animate tracks)
+        for (int i = 0; i < state.enemies.size(); i++) {
+            GameState.EnemyData eData = state.enemies.get(i);
+            Tank enemy = enemyTanks.get(i);
             if (eData.alive) {
-                Tank enemy = new Tank(
-                    eData.x, eData.y,
-                    Direction.values()[eData.direction],
-                    false, // not a player
-                    0, // player number not used for enemies
-                    Tank.EnemyType.values()[eData.enemyType]
-                );
-                enemyTanks.add(enemy);
+                enemy.setPosition(eData.x, eData.y);
+                enemy.setDirection(Direction.values()[eData.direction]);
+                enemy.setEnemyType(Tank.EnemyType.values()[eData.enemyType]);
             }
         }
 

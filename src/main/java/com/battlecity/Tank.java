@@ -633,6 +633,7 @@ public class Tank {
         this.canSwim = ship;
     }
     public EnemyType getEnemyType() { return enemyType; }
+    public void setEnemyType(EnemyType type) { this.enemyType = type; }
 
     // Power-up status getters for UI display
     public boolean hasGun() { return bulletPower >= 2; }

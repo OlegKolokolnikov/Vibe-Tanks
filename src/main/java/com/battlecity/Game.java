@@ -828,13 +828,36 @@ public class Game {
                 }
                 // Host runs full game logic below
             } else {
-                // CLIENT: Send input to host (server-authoritative model)
+                // CLIENT: Send input to host and apply locally for responsiveness
                 int myPlayerIndex = network.getPlayerNumber() - 1;
                 if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
                     Tank myTank = playerTanks.get(myPlayerIndex);
                     // Capture and send input to host (even when dead, for life requests)
                     PlayerInput input = inputHandler.capturePlayerInput();
                     network.sendInput(input);
+
+                    // Apply input locally for immediate responsiveness
+                    // Server state will correct any discrepancies
+                    if (myTank.isAlive() && playerFreezeDuration <= 0) {
+                        List<Tank> allTanks = new ArrayList<>();
+                        allTanks.addAll(playerTanks);
+                        allTanks.addAll(enemyTanks);
+
+                        if (input.up) {
+                            myTank.move(Direction.UP, gameMap, allTanks, base);
+                        } else if (input.down) {
+                            myTank.move(Direction.DOWN, gameMap, allTanks, base);
+                        } else if (input.left) {
+                            myTank.move(Direction.LEFT, gameMap, allTanks, base);
+                        } else if (input.right) {
+                            myTank.move(Direction.RIGHT, gameMap, allTanks, base);
+                        }
+                    }
+
+                    // Allow shooting locally too for responsiveness
+                    if (myTank.isAlive() && input.shoot) {
+                        myTank.shoot(bullets, soundManager);
+                    }
                 }
 
                 // CLIENT: Receive and apply game state from host

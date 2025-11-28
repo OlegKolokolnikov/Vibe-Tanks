@@ -71,6 +71,9 @@ public class GameState implements Serializable {
     // Player kills count
     public int p1Kills, p2Kills, p3Kills, p4Kills;
 
+    // Player scores
+    public int p1Score, p2Score, p3Score, p4Score;
+
     // Dancing characters for game over animation (when base is destroyed)
     public List<DancingCharacterData> dancingCharacters = new ArrayList<>();
     public boolean dancingInitialized;

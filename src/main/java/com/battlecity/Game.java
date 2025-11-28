@@ -48,8 +48,10 @@ public class Game {
     private boolean gameOver = false;
     private boolean victory = false;
 
-    // Player kills tracking
+    // Player kills and score tracking
     private int[] playerKills = new int[4];
+    private int[] playerScores = new int[4];
+    private boolean winnerBonusAwarded = false;
 
     // For client sound effects (track previous state to detect changes)
     private int prevEnemyCount = 0;
@@ -508,6 +510,7 @@ public class Game {
         gameOverSoundPlayed = false;
         dancingInitialized = false;
         dancingCharacters.clear();
+        winnerBonusAwarded = false;
 
         // Reset base
         base = new Base(12 * 32, 24 * 32);
@@ -732,10 +735,17 @@ public class Game {
 
                         if (!enemy.isAlive()) {
                             soundManager.playExplosion();
-                            // Track kill for the player who fired the bullet
+                            // Track kill and score for the player who fired the bullet
                             int killerPlayer = bullet.getOwnerPlayerNumber();
                             if (killerPlayer >= 1 && killerPlayer <= 4) {
                                 playerKills[killerPlayer - 1]++;
+                                // Award points based on enemy type
+                                int points = switch (enemy.getEnemyType()) {
+                                    case POWER -> 2;  // Rainbow tank
+                                    case HEAVY -> 5;  // Black tank
+                                    default -> 1;     // Regular, Armored, Fast
+                                };
+                                playerScores[killerPlayer - 1] += points;
                             }
                         }
                         bulletIterator.remove();
@@ -1215,18 +1225,64 @@ public class Game {
 
         int totalKills = 0;
         int connectedCount = isNetworkGame && network != null ? network.getConnectedPlayerCount() : playerTanks.size();
+        int activePlayers = Math.min(playerTanks.size(), connectedCount);
 
-        for (int i = 0; i < Math.min(playerTanks.size(), connectedCount); i++) {
-            Tank player = playerTanks.get(i);
+        // Find winner (highest score) - only if victory and more than 1 player
+        int winnerIndex = -1;
+        int highestScore = -1;
+        boolean isTie = false;
+
+        if (victory && activePlayers > 1) {
+            for (int i = 0; i < activePlayers; i++) {
+                int score = playerScores[i];
+                if (score > highestScore) {
+                    highestScore = score;
+                    winnerIndex = i;
+                    isTie = false;
+                } else if (score == highestScore) {
+                    isTie = true;
+                }
+            }
+
+            // Award winner bonus (10 points) if no tie - only once
+            if (!isTie && winnerIndex >= 0 && !winnerBonusAwarded) {
+                playerScores[winnerIndex] += 10;
+                winnerBonusAwarded = true;
+            }
+        }
+
+        for (int i = 0; i < activePlayers; i++) {
             int kills = playerKills[i];
+            int score = playerScores[i];
             totalKills += kills;
 
-            gc.setFill(Color.CYAN);
-            gc.fillText("Player " + (i + 1) + ": " + kills + " kills", width / 2 - 60, startY + 25 + i * 22);
+            // Determine status text
+            String status = "";
+            if (victory && activePlayers > 1) {
+                if (isTie) {
+                    status = " - TIE";
+                } else if (i == winnerIndex) {
+                    status = " - WINNER! (+10 bonus)";
+                } else {
+                    status = " - LOSER";
+                }
+            }
+
+            // Color based on status
+            if (i == winnerIndex && !isTie) {
+                gc.setFill(Color.LIME);
+            } else if (victory && activePlayers > 1 && !isTie) {
+                gc.setFill(Color.ORANGERED);
+            } else {
+                gc.setFill(Color.CYAN);
+            }
+
+            gc.fillText("P" + (i + 1) + ": " + kills + " kills, " + score + " pts" + status,
+                        width / 2 - 120, startY + 25 + i * 22);
         }
 
         gc.setFill(Color.YELLOW);
-        gc.fillText("Total: " + totalKills + " kills", width / 2 - 60, startY + 25 + connectedCount * 22 + 10);
+        gc.fillText("Total: " + totalKills + " kills", width / 2 - 60, startY + 25 + activePlayers * 22 + 10);
     }
 
     public void stop() {
@@ -1359,6 +1415,12 @@ public class Game {
         state.p2Kills = playerKills[1];
         state.p3Kills = playerKills[2];
         state.p4Kills = playerKills[3];
+
+        // Player scores
+        state.p1Score = playerScores[0];
+        state.p2Score = playerScores[1];
+        state.p3Score = playerScores[2];
+        state.p4Score = playerScores[3];
 
         // Dancing characters for game over animation
         state.dancingInitialized = dancingInitialized;
@@ -1502,6 +1564,12 @@ public class Game {
         playerKills[1] = state.p2Kills;
         playerKills[2] = state.p3Kills;
         playerKills[3] = state.p4Kills;
+
+        // Update scores tracking
+        playerScores[0] = state.p1Score;
+        playerScores[1] = state.p2Score;
+        playerScores[2] = state.p3Score;
+        playerScores[3] = state.p4Score;
 
         // Sync dancing characters for game over animation
         dancingInitialized = state.dancingInitialized;

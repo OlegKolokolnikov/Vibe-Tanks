@@ -52,6 +52,10 @@ public class Tank {
     private boolean isSliding;
     private Direction slidingDirection;
     private double slideDistance;
+
+    // Track animation
+    private int trackAnimationFrame;
+    private boolean isMoving;
     private static final double SLIDE_DISTANCE = 32.0; // One tile
 
     public Tank(double x, double y, Direction direction, boolean isPlayer, int playerNumber) {
@@ -295,6 +299,9 @@ public class Tank {
         if (!map.checkTankCollision(newX, newY, SIZE, canSwim)) {
             x = newX;
             y = newY;
+            // Animate tracks when moving
+            isMoving = true;
+            trackAnimationFrame++;
         }
     }
 
@@ -471,7 +478,6 @@ public class Tank {
             double bottomY = y + SIZE + 6;
             double leftX = x - 6;
             double rightX = x + SIZE + 6;
-            // Draw triangle pointing in movement direction
             gc.strokePolygon(
                 new double[]{leftX, rightX, centerX},
                 new double[]{bottomY, bottomY, topY},
@@ -479,57 +485,109 @@ public class Tank {
             );
         }
 
-        // Draw tank body based on type
+        // Get tank color
+        Color tankColor;
+        Color darkColor;
         if (isPlayer) {
-            gc.setFill(getPlayerColor(playerNumber));
-            gc.fillRect(x, y, SIZE, SIZE);
+            tankColor = getPlayerColor(playerNumber);
+            darkColor = tankColor.darker();
         } else {
-            // Draw different enemy types
             switch (enemyType) {
-                case REGULAR -> {
-                    gc.setFill(Color.RED);
-                    gc.fillRect(x, y, SIZE, SIZE);
-                }
-                case ARMORED -> {
-                    // Bigger, slightly darker tank
-                    gc.setFill(Color.DARKRED);
-                    gc.fillRect(x - 2, y - 2, SIZE + 4, SIZE + 4);
-                    gc.setFill(Color.RED);
-                    gc.fillRect(x, y, SIZE, SIZE);
-                }
-                case FAST -> {
-                    // Lighter red, sleeker
-                    gc.setFill(Color.rgb(255, 100, 100));
-                    gc.fillRect(x, y, SIZE, SIZE);
-                }
+                case REGULAR -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
+                case ARMORED -> { tankColor = Color.DARKRED; darkColor = Color.rgb(80, 0, 0); }
+                case FAST -> { tankColor = Color.rgb(255, 100, 100); darkColor = Color.rgb(200, 60, 60); }
                 case POWER -> {
-                    // Rainbow/animated colors
                     int frame = (int) (System.currentTimeMillis() / 100) % 7;
-                    Color[] rainbow = {
-                        Color.RED, Color.ORANGE, Color.YELLOW,
-                        Color.GREEN, Color.CYAN, Color.BLUE, Color.PURPLE
-                    };
-                    gc.setFill(rainbow[frame]);
-                    gc.fillRect(x, y, SIZE, SIZE);
+                    Color[] rainbow = { Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.PURPLE };
+                    tankColor = rainbow[frame];
+                    darkColor = tankColor.darker();
+                }
+                case HEAVY -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
+                default -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
+            }
+        }
+
+        // Calculate track animation offset (alternates every 4 frames)
+        int trackOffset = (trackAnimationFrame / 4) % 2 == 0 ? 0 : 3;
+
+        // Draw tank based on direction
+        gc.save();
+        gc.translate(x + SIZE / 2, y + SIZE / 2);
+
+        // Rotate based on direction
+        switch (direction) {
+            case UP -> gc.rotate(0);
+            case RIGHT -> gc.rotate(90);
+            case DOWN -> gc.rotate(180);
+            case LEFT -> gc.rotate(270);
+        }
+
+        gc.translate(-SIZE / 2, -SIZE / 2);
+
+        // Draw left track
+        gc.setFill(darkColor);
+        gc.fillRect(0, 0, 8, SIZE);
+        // Track details (animated)
+        gc.setFill(Color.rgb(40, 40, 40));
+        for (int i = 0; i < 5; i++) {
+            int ty = (i * 7 + trackOffset) % SIZE;
+            gc.fillRect(1, ty, 6, 3);
+        }
+
+        // Draw right track
+        gc.setFill(darkColor);
+        gc.fillRect(SIZE - 8, 0, 8, SIZE);
+        // Track details (animated)
+        gc.setFill(Color.rgb(40, 40, 40));
+        for (int i = 0; i < 5; i++) {
+            int ty = (i * 7 + trackOffset) % SIZE;
+            gc.fillRect(SIZE - 7, ty, 6, 3);
+        }
+
+        // Draw tank body (between tracks)
+        gc.setFill(tankColor);
+        gc.fillRect(6, 4, SIZE - 12, SIZE - 8);
+
+        // Draw turret (circular base)
+        gc.setFill(darkColor);
+        gc.fillOval(SIZE / 2 - 7, SIZE / 2 - 7, 14, 14);
+        gc.setFill(tankColor);
+        gc.fillOval(SIZE / 2 - 5, SIZE / 2 - 5, 10, 10);
+
+        // Draw cannon barrel
+        gc.setFill(Color.DARKGRAY);
+        gc.fillRect(SIZE / 2 - 2, -2, 4, SIZE / 2 + 2);
+        gc.setFill(Color.GRAY);
+        gc.fillRect(SIZE / 2 - 1, -2, 2, SIZE / 2);
+
+        // Special markings for enemy types
+        if (!isPlayer) {
+            switch (enemyType) {
+                case ARMORED -> {
+                    // Extra armor plates
+                    gc.setFill(Color.GRAY);
+                    gc.fillRect(8, 6, SIZE - 16, 3);
+                    gc.fillRect(8, SIZE - 9, SIZE - 16, 3);
                 }
                 case HEAVY -> {
-                    // Black tank with white dot in center
-                    gc.setFill(Color.BLACK);
-                    gc.fillRect(x - 3, y - 3, SIZE + 6, SIZE + 6);
+                    // White dot indicator
                     gc.setFill(Color.WHITE);
-                    gc.fillOval(x + SIZE / 2 - 4, y + SIZE / 2 - 4, 8, 8);
+                    gc.fillOval(SIZE / 2 - 3, SIZE / 2 - 3, 6, 6);
+                }
+                case FAST -> {
+                    // Speed stripes
+                    gc.setStroke(Color.WHITE);
+                    gc.setLineWidth(1);
+                    gc.strokeLine(10, SIZE - 6, 14, SIZE - 6);
+                    gc.strokeLine(SIZE - 14, SIZE - 6, SIZE - 10, SIZE - 6);
                 }
             }
         }
 
-        // Draw tank direction indicator
-        gc.setFill(Color.DARKGRAY);
-        switch (direction) {
-            case UP -> gc.fillRect(x + SIZE / 2 - 4, y, 8, 12);
-            case DOWN -> gc.fillRect(x + SIZE / 2 - 4, y + SIZE - 12, 8, 12);
-            case LEFT -> gc.fillRect(x, y + SIZE / 2 - 4, 12, 8);
-            case RIGHT -> gc.fillRect(x + SIZE - 12, y + SIZE / 2 - 4, 12, 8);
-        }
+        gc.restore();
+
+        // Reset moving flag (will be set again if tank moves next frame)
+        isMoving = false;
     }
 
     public boolean collidesWith(double otherX, double otherY, int otherSize) {

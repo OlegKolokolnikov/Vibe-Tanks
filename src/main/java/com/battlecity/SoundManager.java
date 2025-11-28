@@ -45,10 +45,31 @@ public class SoundManager {
                 System.out.println("Some sounds could not be loaded. Game will run without sound effects.");
             } else {
                 System.out.println("All sounds loaded successfully!");
+                // Warm up the audio system to eliminate first-play delay
+                warmUpAudioSystem();
             }
         } catch (Exception e) {
             System.out.println("Error initializing sounds: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private void warmUpAudioSystem() {
+        // Pre-initialize the audio system by opening and closing a line
+        // This eliminates the HDMI latency on first sound play
+        try {
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+            SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
+            line.open(audioFormat, 4096);
+            line.start();
+            // Write a tiny bit of silence to fully initialize
+            byte[] silence = new byte[1024];
+            line.write(silence, 0, silence.length);
+            line.drain();
+            line.close();
+            System.out.println("Audio system warmed up!");
+        } catch (Exception e) {
+            System.out.println("Could not warm up audio system: " + e.getMessage());
         }
     }
 

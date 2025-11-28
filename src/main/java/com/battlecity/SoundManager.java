@@ -16,6 +16,11 @@ public class SoundManager {
     private AudioFormat audioFormat;
     private ExecutorService soundExecutor;
 
+    // Pre-opened lines for low-latency playback (needed for HDMI)
+    private SourceDataLine shootLine;
+    private SourceDataLine explosionLine;
+    private volatile boolean shutdown = false;
+
     public SoundManager() {
         try {
             // Generate sounds if they don't exist
@@ -45,8 +50,10 @@ public class SoundManager {
                 System.out.println("Some sounds could not be loaded. Game will run without sound effects.");
             } else {
                 System.out.println("All sounds loaded successfully!");
-                // Warm up the audio system to eliminate first-play delay
-                warmUpAudioSystem();
+                // Pre-open audio lines for shoot and explosion (fixes HDMI latency)
+                initializeAudioLines();
+                // Register shutdown hook to clean up audio lines
+                registerShutdownHook();
             }
         } catch (Exception e) {
             System.out.println("Error initializing sounds: " + e.getMessage());
@@ -54,22 +61,53 @@ public class SoundManager {
         }
     }
 
-    private void warmUpAudioSystem() {
-        // Pre-initialize the audio system by opening and closing a line
-        // This eliminates the HDMI latency on first sound play
+    private void initializeAudioLines() {
         try {
             DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-            SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
-            line.open(audioFormat, 4096);
-            line.start();
-            // Write a tiny bit of silence to fully initialize
-            byte[] silence = new byte[1024];
-            line.write(silence, 0, silence.length);
-            line.drain();
-            line.close();
-            System.out.println("Audio system warmed up!");
+
+            // Pre-open lines for low latency
+            shootLine = (SourceDataLine) AudioSystem.getLine(info);
+            shootLine.open(audioFormat, 4096);
+            shootLine.start();
+
+            explosionLine = (SourceDataLine) AudioSystem.getLine(info);
+            explosionLine.open(audioFormat, 4096);
+            explosionLine.start();
+
+            System.out.println("Audio lines pre-opened for low latency!");
+        } catch (LineUnavailableException e) {
+            System.out.println("Could not pre-open audio lines: " + e.getMessage());
+            shootLine = null;
+            explosionLine = null;
+        }
+    }
+
+    private void registerShutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            shutdown = true;
+            closeAudioLines();
+        }));
+    }
+
+    private void closeAudioLines() {
+        try {
+            if (shootLine != null) {
+                shootLine.stop();
+                shootLine.flush();
+                shootLine.close();
+                shootLine = null;
+            }
+            if (explosionLine != null) {
+                explosionLine.stop();
+                explosionLine.flush();
+                explosionLine.close();
+                explosionLine = null;
+            }
+            if (soundExecutor != null) {
+                soundExecutor.shutdownNow();
+            }
         } catch (Exception e) {
-            System.out.println("Could not warm up audio system: " + e.getMessage());
+            // Ignore errors during shutdown
         }
     }
 
@@ -100,10 +138,6 @@ public class SoundManager {
             }
 
             if (audioStream != null) {
-                // Store the format from first file
-                if (audioFormat == null) {
-                    audioFormat = audioStream.getFormat();
-                }
                 byte[] data = audioStream.readAllBytes();
                 audioStream.close();
                 return data;
@@ -114,15 +148,29 @@ public class SoundManager {
         return null;
     }
 
-    private void playSound(byte[] soundData) {
-        if (soundData == null || audioFormat == null) return;
+    private void playSoundDirect(SourceDataLine line, byte[] soundData) {
+        if (shutdown || line == null || soundData == null) return;
+
+        soundExecutor.submit(() -> {
+            try {
+                if (!shutdown && line.isOpen()) {
+                    line.write(soundData, 0, soundData.length);
+                }
+            } catch (Exception e) {
+                // Ignore playback errors
+            }
+        });
+    }
+
+    private void playSoundNew(byte[] soundData) {
+        if (shutdown || soundData == null || audioFormat == null) return;
 
         soundExecutor.submit(() -> {
             SourceDataLine line = null;
             try {
                 DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
                 line = (SourceDataLine) AudioSystem.getLine(info);
-                line.open(audioFormat, 4096); // Small buffer for low latency
+                line.open(audioFormat, 4096);
                 line.start();
                 line.write(soundData, 0, soundData.length);
                 line.drain();
@@ -137,24 +185,31 @@ public class SoundManager {
     }
 
     public void playShoot() {
-        playSound(shootSoundData);
+        if (shootLine != null) {
+            playSoundDirect(shootLine, shootSoundData);
+        } else {
+            playSoundNew(shootSoundData);
+        }
     }
 
     public void playExplosion() {
-        playSound(explosionSoundData);
+        if (explosionLine != null) {
+            playSoundDirect(explosionLine, explosionSoundData);
+        } else {
+            playSoundNew(explosionSoundData);
+        }
     }
 
     public void playIntro() {
-        playSound(introSoundData);
+        playSoundNew(introSoundData);
     }
 
     public void playSad() {
-        playSound(sadSoundData);
+        playSoundNew(sadSoundData);
     }
 
     public void shutdown() {
-        if (soundExecutor != null) {
-            soundExecutor.shutdownNow();
-        }
+        shutdown = true;
+        closeAudioLines();
     }
 }

@@ -444,6 +444,9 @@ public class Game {
             }
         }
 
+        // Update map (burning tiles)
+        gameMap.update();
+
         // Spawn enemies if needed
         enemySpawner.update(enemyTanks);
 
@@ -672,6 +675,9 @@ public class Game {
 
         // Render trees ON TOP of tanks to make tanks partially visible in forest
         gameMap.renderTrees(gc);
+
+        // Render burning trees with fire animation (on top of everything)
+        gameMap.renderBurningTiles(gc);
 
         // Render UI
         renderUI();

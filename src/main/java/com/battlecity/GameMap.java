@@ -3,12 +3,20 @@ package com.battlecity;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 public class GameMap {
     private static final int TILE_SIZE = 32;
+    private static final int BURN_DURATION = 60; // frames (1 second at 60 FPS)
 
     private int width;
     private int height;
     private TileType[][] tiles;
+
+    // Track burning trees: key = row*1000+col, value = frames remaining
+    private Map<Integer, Integer> burningTiles = new HashMap<>();
 
     public enum TileType {
         EMPTY,
@@ -165,8 +173,11 @@ public class GameMap {
             }
             return true;
         } else if (tile == TileType.TREES && bullet.canDestroyTrees()) {
-            // Trees can be destroyed with SAW power-up
-            tiles[row][col] = TileType.EMPTY;
+            // Trees start burning with SAW power-up, then get destroyed
+            int key = row * 1000 + col;
+            if (!burningTiles.containsKey(key)) {
+                burningTiles.put(key, BURN_DURATION);
+            }
             return true;
         }
 
@@ -296,6 +307,73 @@ public class GameMap {
                 }
             }
         }
+    }
+
+    // Update burning tiles
+    public void update() {
+        Iterator<Map.Entry<Integer, Integer>> it = burningTiles.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Integer, Integer> entry = it.next();
+            int framesLeft = entry.getValue() - 1;
+            if (framesLeft <= 0) {
+                // Burn complete - destroy the tree
+                int key = entry.getKey();
+                int row = key / 1000;
+                int col = key % 1000;
+                tiles[row][col] = TileType.EMPTY;
+                it.remove();
+            } else {
+                entry.setValue(framesLeft);
+            }
+        }
+    }
+
+    // Render fire on burning tiles
+    public void renderBurningTiles(GraphicsContext gc) {
+        long time = System.currentTimeMillis();
+        for (Map.Entry<Integer, Integer> entry : burningTiles.entrySet()) {
+            int key = entry.getKey();
+            int row = key / 1000;
+            int col = key % 1000;
+            double x = col * TILE_SIZE;
+            double y = row * TILE_SIZE;
+
+            // Draw tree underneath
+            gc.setFill(Color.DARKGREEN);
+            gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+            gc.setFill(Color.GREEN);
+            gc.fillOval(x + 4, y + 4, 10, 10);
+            gc.fillOval(x + 18, y + 8, 10, 10);
+            gc.fillOval(x + 8, y + 18, 10, 10);
+
+            // Draw animated fire on top
+            int animFrame = (int)(time / 100) % 3;
+
+            // Fire base (orange/red)
+            gc.setFill(Color.ORANGE);
+            gc.fillOval(x + 4, y + 12 - animFrame, 12, 16 + animFrame);
+            gc.fillOval(x + 16, y + 14 - animFrame, 10, 14 + animFrame);
+
+            // Fire middle (yellow)
+            gc.setFill(Color.YELLOW);
+            gc.fillOval(x + 6, y + 14 - animFrame * 2, 8, 12 + animFrame);
+            gc.fillOval(x + 18, y + 16 - animFrame * 2, 6, 10 + animFrame);
+
+            // Fire tips (bright yellow/white)
+            gc.setFill(Color.rgb(255, 255, 200));
+            gc.fillOval(x + 8, y + 10 - animFrame * 2, 4, 8);
+            gc.fillOval(x + 19, y + 14 - animFrame * 2, 3, 6);
+
+            // Smoke particles
+            gc.setFill(Color.rgb(80, 80, 80, 0.6));
+            int smokeOffset = (int)(time / 50) % 10;
+            gc.fillOval(x + 10, y - smokeOffset, 6, 6);
+            gc.fillOval(x + 18, y + 2 - smokeOffset, 4, 4);
+        }
+    }
+
+    public boolean hasBurningTiles() {
+        return !burningTiles.isEmpty();
     }
 
     public int getWidth() { return width; }

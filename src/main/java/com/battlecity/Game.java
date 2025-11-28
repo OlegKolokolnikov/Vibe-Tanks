@@ -42,7 +42,7 @@ public class Game {
     private NetworkManager network;
     private boolean isNetworkGame = false;
     private long lastNetworkUpdate = 0;
-    private static final long NETWORK_UPDATE_INTERVAL = 50_000_000; // ~20 updates per second
+    private static final long NETWORK_UPDATE_INTERVAL = 16_666_667; // ~60 updates per second (match frame rate)
     private List<GameState.TileChange> mapChanges = new ArrayList<>();
 
     private boolean gameOver = false;
@@ -381,21 +381,13 @@ public class Game {
                 }
                 // Host runs full game logic below
             } else {
-                // CLIENT: Apply own input locally for immediate response (client-side prediction)
+                // CLIENT: Send input to host (server-authoritative model)
                 int myPlayerIndex = network.getPlayerNumber() - 1;
                 if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
                     Tank myTank = playerTanks.get(myPlayerIndex);
                     if (myTank.isAlive()) {
-                        // Create combined list for collision detection
-                        List<Tank> allTanks = new ArrayList<>();
-                        allTanks.addAll(playerTanks);
-                        allTanks.addAll(enemyTanks);
-
-                        // Apply local input immediately
+                        // Capture and send input to host
                         PlayerInput input = inputHandler.capturePlayerInput();
-                        applyPlayerInput(myTank, input);
-
-                        // Send input to host
                         network.sendInput(input);
                     }
                 }
@@ -1093,49 +1085,38 @@ public class Game {
         int myPlayerIndex = network != null ? network.getPlayerNumber() - 1 : -1;
         double correctionThreshold = 32.0; // Snap to server position if drift > 1 tile
 
-        // Update Player 1
+        // Update Player 1 - server authoritative
         if (playerTanks.size() >= 1 && state.p1Alive) {
             Tank p1 = playerTanks.get(0);
-            // For local player, don't override position (client-side prediction)
-            // Only sync position for other players
-            if (myPlayerIndex != 0) {
-                p1.setPosition(state.p1X, state.p1Y);
-                p1.setDirection(Direction.values()[state.p1Direction]);
-            }
-            // Always sync shield/ship status from server (authoritative)
+            p1.setPosition(state.p1X, state.p1Y);
+            p1.setDirection(Direction.values()[state.p1Direction]);
             p1.setShield(state.p1HasShield);
             p1.setShip(state.p1HasShip);
         }
 
-        // Update Player 2
+        // Update Player 2 - server authoritative
         if (playerTanks.size() >= 2 && state.p2Alive) {
             Tank p2 = playerTanks.get(1);
-            if (myPlayerIndex != 1) {
-                p2.setPosition(state.p2X, state.p2Y);
-                p2.setDirection(Direction.values()[state.p2Direction]);
-            }
+            p2.setPosition(state.p2X, state.p2Y);
+            p2.setDirection(Direction.values()[state.p2Direction]);
             p2.setShield(state.p2HasShield);
             p2.setShip(state.p2HasShip);
         }
 
-        // Update Player 3
+        // Update Player 3 - server authoritative
         if (playerTanks.size() >= 3 && state.p3Alive) {
             Tank p3 = playerTanks.get(2);
-            if (myPlayerIndex != 2) {
-                p3.setPosition(state.p3X, state.p3Y);
-                p3.setDirection(Direction.values()[state.p3Direction]);
-            }
+            p3.setPosition(state.p3X, state.p3Y);
+            p3.setDirection(Direction.values()[state.p3Direction]);
             p3.setShield(state.p3HasShield);
             p3.setShip(state.p3HasShip);
         }
 
-        // Update Player 4
+        // Update Player 4 - server authoritative
         if (playerTanks.size() >= 4 && state.p4Alive) {
             Tank p4 = playerTanks.get(3);
-            if (myPlayerIndex != 3) {
-                p4.setPosition(state.p4X, state.p4Y);
-                p4.setDirection(Direction.values()[state.p4Direction]);
-            }
+            p4.setPosition(state.p4X, state.p4Y);
+            p4.setDirection(Direction.values()[state.p4Direction]);
             p4.setShield(state.p4HasShield);
             p4.setShip(state.p4HasShip);
         }

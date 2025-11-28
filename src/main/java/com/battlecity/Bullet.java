@@ -4,7 +4,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 public class Bullet {
-    private static final int SIZE = 8;
+    private static final int DEFAULT_SIZE = 8;
     private static final double SPEED = 6.0;
     private static long nextId = 1; // Global bullet ID counter
 
@@ -16,12 +16,17 @@ public class Bullet {
     private int power;
     private boolean canDestroyTrees;
     private int ownerPlayerNumber; // 1-4 for player bullets, 0 for enemy
+    private int size; // Bullet size (bigger for BOSS)
 
     public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees) {
-        this(x, y, direction, fromEnemy, power, canDestroyTrees, 0);
+        this(x, y, direction, fromEnemy, power, canDestroyTrees, 0, DEFAULT_SIZE);
     }
 
     public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber) {
+        this(x, y, direction, fromEnemy, power, canDestroyTrees, ownerPlayerNumber, DEFAULT_SIZE);
+    }
+
+    public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber, int size) {
         this.id = nextId++;
         this.x = x;
         this.y = y;
@@ -30,10 +35,11 @@ public class Bullet {
         this.power = power;
         this.canDestroyTrees = canDestroyTrees;
         this.ownerPlayerNumber = ownerPlayerNumber;
+        this.size = size;
     }
 
     // Constructor with explicit ID (for network sync)
-    public Bullet(long id, double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber) {
+    public Bullet(long id, double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber, int size) {
         this.id = id;
         this.x = x;
         this.y = y;
@@ -42,6 +48,7 @@ public class Bullet {
         this.power = power;
         this.canDestroyTrees = canDestroyTrees;
         this.ownerPlayerNumber = ownerPlayerNumber;
+        this.size = size;
     }
 
     public void update() {
@@ -56,28 +63,28 @@ public class Bullet {
             // Use player's tank color for their bullets
             gc.setFill(Tank.getPlayerColor(ownerPlayerNumber));
         }
-        gc.fillOval(x, y, SIZE, SIZE);
+        gc.fillOval(x, y, size, size);
     }
 
     public boolean collidesWith(Tank tank) {
         return x < tank.getX() + tank.getSize() &&
-               x + SIZE > tank.getX() &&
+               x + size > tank.getX() &&
                y < tank.getY() + tank.getSize() &&
-               y + SIZE > tank.getY();
+               y + size > tank.getY();
     }
 
     public boolean collidesWith(Base base) {
         return x < base.getX() + base.getSize() &&
-               x + SIZE > base.getX() &&
+               x + size > base.getX() &&
                y < base.getY() + base.getSize() &&
-               y + SIZE > base.getY();
+               y + size > base.getY();
     }
 
     public boolean collidesWith(Bullet other) {
-        return x < other.x + SIZE &&
-               x + SIZE > other.x &&
-               y < other.y + SIZE &&
-               y + SIZE > other.y;
+        return x < other.x + other.size &&
+               x + size > other.x &&
+               y < other.y + other.size &&
+               y + size > other.y;
     }
 
     public boolean isOutOfBounds(int width, int height) {
@@ -98,7 +105,7 @@ public class Bullet {
     public long getId() { return id; }
     public double getX() { return x; }
     public double getY() { return y; }
-    public int getSize() { return SIZE; }
+    public int getSize() { return size; }
     public Direction getDirection() { return direction; }
     public boolean isFromEnemy() { return fromEnemy; }
     public int getPower() { return power; }

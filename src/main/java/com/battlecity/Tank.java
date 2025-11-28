@@ -340,20 +340,23 @@ public class Tank {
     public void shoot(List<Bullet> bullets, SoundManager soundManager) {
         if (!alive || shootCooldown > 0) return;
 
-        double bulletX = x + size / 2.0 - 4;
-        double bulletY = y + size / 2.0 - 4;
+        // BOSS tanks have bigger bullets (4x size = 32 pixels)
+        int bulletSize = (enemyType == EnemyType.BOSS) ? 32 : 8;
+
+        double bulletX = x + size / 2.0 - bulletSize / 2.0;
+        double bulletY = y + size / 2.0 - bulletSize / 2.0;
 
         // Adjust bullet spawn position based on direction
         switch (direction) {
-            case UP -> bulletY = y - 8;
+            case UP -> bulletY = y - bulletSize;
             case DOWN -> bulletY = y + size;
-            case LEFT -> bulletX = x - 8;
+            case LEFT -> bulletX = x - bulletSize;
             case RIGHT -> bulletX = x + size;
         }
 
         // Calculate number of bullets to fire (1 base + machinegunCount, max 5)
         int bulletCount = Math.min(1 + machinegunCount, 5);
-        double bulletSpacing = 24.0; // 3 bullets' worth of space (3 * 8 pixels)
+        double bulletSpacing = bulletSize * 3.0; // 3 bullets' worth of space
 
         // Fire bullets with spacing
         for (int i = 0; i < bulletCount; i++) {
@@ -369,7 +372,7 @@ public class Tank {
                 case RIGHT -> offsetX += totalSpacing;
             }
 
-            bullets.add(new Bullet(offsetX, offsetY, direction, !isPlayer, bulletPower, canDestroyTrees, isPlayer ? playerNumber : 0));
+            bullets.add(new Bullet(offsetX, offsetY, direction, !isPlayer, bulletPower, canDestroyTrees, isPlayer ? playerNumber : 0, bulletSize));
         }
 
         // Apply shoot cooldown reduction from STAR power-ups (min cooldown is 5 frames)

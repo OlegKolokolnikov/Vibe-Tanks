@@ -1776,7 +1776,8 @@ public class Game {
                     bullet.isFromEnemy(),
                     bullet.getPower(),
                     bullet.canDestroyTrees(),
-                    bullet.getOwnerPlayerNumber()
+                    bullet.getOwnerPlayerNumber(),
+                    bullet.getSize()
                 ));
             }
         }
@@ -1980,7 +1981,8 @@ public class Game {
                 bData.fromEnemy,
                 bData.power,
                 bData.canDestroyTrees,
-                bData.ownerPlayerNumber
+                bData.ownerPlayerNumber,
+                bData.size
             );
             bullets.add(bullet);
         }

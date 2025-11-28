@@ -176,8 +176,9 @@ public class GameState implements Serializable {
         public int power;
         public boolean canDestroyTrees;
         public int ownerPlayerNumber;
+        public int size; // Bullet size (bigger for BOSS)
 
-        public BulletData(long id, double x, double y, int direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber) {
+        public BulletData(long id, double x, double y, int direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber, int size) {
             this.id = id;
             this.x = x;
             this.y = y;
@@ -186,6 +187,7 @@ public class GameState implements Serializable {
             this.power = power;
             this.canDestroyTrees = canDestroyTrees;
             this.ownerPlayerNumber = ownerPlayerNumber;
+            this.size = size;
         }
     }
 

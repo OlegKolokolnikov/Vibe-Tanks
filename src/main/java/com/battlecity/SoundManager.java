@@ -67,7 +67,8 @@ public class SoundManager {
 
     public void playShoot() {
         if (shootSound != null) {
-            shootSound.play();
+            // Play with slight pitch variation for variety and ensure overlapping works
+            shootSound.play(0.5, 0, 0.95 + Math.random() * 0.1, 0, 1);
         }
     }
 

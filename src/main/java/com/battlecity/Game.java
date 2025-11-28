@@ -1900,17 +1900,20 @@ public class Game {
             playerTanks.add(new Tank(x, y, Direction.UP, true, playerNum));
         }
 
-        // Get local player index for client-side prediction
+        // Get local player index - skip position updates for local player unless drift is large
         int myPlayerIndex = network != null ? network.getPlayerNumber() - 1 : -1;
-        double correctionThreshold = 32.0; // Snap to server position if drift > 1 tile
+        double correctionThreshold = 16.0; // Only snap if drift > half tile
 
-        // Update Player 1 - server authoritative
+        // Update Player 1
         if (playerTanks.size() >= 1) {
             Tank p1 = playerTanks.get(0);
             p1.setLives(state.p1Lives);
             p1.setAlive(state.p1Alive);
             if (state.p1Alive) {
-                p1.setPosition(state.p1X, state.p1Y);
+                // For local player, only update position if drift is significant
+                if (myPlayerIndex != 0 || shouldCorrectPosition(p1, state.p1X, state.p1Y, correctionThreshold)) {
+                    p1.setPosition(state.p1X, state.p1Y);
+                }
                 p1.setDirection(Direction.values()[state.p1Direction]);
             }
             p1.setShield(state.p1HasShield);
@@ -1922,13 +1925,16 @@ public class Game {
             p1.setMachinegunCount(state.p1MachinegunCount);
         }
 
-        // Update Player 2 - server authoritative
+        // Update Player 2
         if (playerTanks.size() >= 2) {
             Tank p2 = playerTanks.get(1);
             p2.setLives(state.p2Lives);
             p2.setAlive(state.p2Alive);
             if (state.p2Alive) {
-                p2.setPosition(state.p2X, state.p2Y);
+                // For local player, only update position if drift is significant
+                if (myPlayerIndex != 1 || shouldCorrectPosition(p2, state.p2X, state.p2Y, correctionThreshold)) {
+                    p2.setPosition(state.p2X, state.p2Y);
+                }
                 p2.setDirection(Direction.values()[state.p2Direction]);
             }
             p2.setShield(state.p2HasShield);
@@ -1940,13 +1946,16 @@ public class Game {
             p2.setMachinegunCount(state.p2MachinegunCount);
         }
 
-        // Update Player 3 - server authoritative
+        // Update Player 3
         if (playerTanks.size() >= 3) {
             Tank p3 = playerTanks.get(2);
             p3.setLives(state.p3Lives);
             p3.setAlive(state.p3Alive);
             if (state.p3Alive) {
-                p3.setPosition(state.p3X, state.p3Y);
+                // For local player, only update position if drift is significant
+                if (myPlayerIndex != 2 || shouldCorrectPosition(p3, state.p3X, state.p3Y, correctionThreshold)) {
+                    p3.setPosition(state.p3X, state.p3Y);
+                }
                 p3.setDirection(Direction.values()[state.p3Direction]);
             }
             p3.setShield(state.p3HasShield);
@@ -1958,13 +1967,16 @@ public class Game {
             p3.setMachinegunCount(state.p3MachinegunCount);
         }
 
-        // Update Player 4 - server authoritative
+        // Update Player 4
         if (playerTanks.size() >= 4) {
             Tank p4 = playerTanks.get(3);
             p4.setLives(state.p4Lives);
             p4.setAlive(state.p4Alive);
             if (state.p4Alive) {
-                p4.setPosition(state.p4X, state.p4Y);
+                // For local player, only update position if drift is significant
+                if (myPlayerIndex != 3 || shouldCorrectPosition(p4, state.p4X, state.p4Y, correctionThreshold)) {
+                    p4.setPosition(state.p4X, state.p4Y);
+                }
                 p4.setDirection(Direction.values()[state.p4Direction]);
             }
             p4.setShield(state.p4HasShield);
@@ -2138,5 +2150,12 @@ public class Game {
         if (input.shoot) {
             tank.shoot(bullets, soundManager);
         }
+    }
+
+    // Check if position correction is needed (drift exceeds threshold)
+    private boolean shouldCorrectPosition(Tank tank, double serverX, double serverY, double threshold) {
+        double dx = Math.abs(tank.getX() - serverX);
+        double dy = Math.abs(tank.getY() - serverY);
+        return dx > threshold || dy > threshold;
     }
 }

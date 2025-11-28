@@ -675,70 +675,122 @@ public class Game {
     private void renderPowerUpIcon(double x, double y, PowerUp.Type type) {
         int size = 16;
 
-        // Background
+        // Background with border
         gc.setFill(Color.WHITE);
         gc.fillRect(x, y, size, size);
+        gc.setStroke(Color.DARKGRAY);
+        gc.setLineWidth(1);
+        gc.strokeRect(x, y, size, size);
 
-        // Draw icon based on type
-        gc.setFill(getPowerUpColor(type));
+        // Draw icon based on type (scaled down versions of PowerUp icons)
         switch (type) {
             case GUN:
-                gc.fillRect(x + 3, y + 6, 2, 5);
-                gc.fillRect(x + 5, y + 5, 4, 2);
-                gc.fillRect(x + 8, y + 7, 3, 3);
+                // Bullet breaking wall
+                gc.setFill(Color.DARKGRAY);
+                gc.fillRect(x + 1, y + 3, 4, 10); // Wall
+                gc.setFill(Color.RED);
+                gc.fillPolygon(
+                    new double[]{x + 14, x + 7, x + 7},
+                    new double[]{y + 8, y + 5, y + 11},
+                    3
+                ); // Bullet
                 break;
             case STAR:
-                double centerX = x + size / 2;
-                double centerY = y + size / 2;
-                double[] xPoints = new double[5];
-                double[] yPoints = new double[5];
-                for (int i = 0; i < 5; i++) {
-                    double angle = Math.PI / 2 + (2 * Math.PI * i / 5);
-                    xPoints[i] = centerX + 5 * Math.cos(angle);
-                    yPoints[i] = centerY - 5 * Math.sin(angle);
+                // 5-pointed star
+                gc.setFill(Color.YELLOW);
+                double cx = x + size / 2;
+                double cy = y + size / 2;
+                double outerR = 6;
+                double innerR = 2.5;
+                double[] starX = new double[10];
+                double[] starY = new double[10];
+                for (int i = 0; i < 10; i++) {
+                    double angle = Math.PI / 2 + (Math.PI * i / 5);
+                    double r = (i % 2 == 0) ? outerR : innerR;
+                    starX[i] = cx + r * Math.cos(angle);
+                    starY[i] = cy - r * Math.sin(angle);
                 }
-                gc.fillPolygon(xPoints, yPoints, 5);
+                gc.fillPolygon(starX, starY, 10);
                 break;
             case CAR:
-                gc.fillRect(x + 3, y + 6, 8, 5);
-                gc.fillOval(x + 3, y + 10, 3, 3);
-                gc.fillOval(x + 9, y + 10, 3, 3);
-                gc.fillRect(x + 6, y + 3, 3, 3);
-                break;
-            case SHIP:
+                // Speed arrow with lines
+                gc.setFill(Color.LIME);
                 gc.fillPolygon(
-                    new double[]{x + size / 2, x + 2, x + size - 2},
-                    new double[]{y + 3, y + size - 3, y + size - 3},
+                    new double[]{x + 12, x + 6, x + 6},
+                    new double[]{y + 8, y + 4, y + 12},
                     3
                 );
-                gc.fillRect(x + size / 2 - 1, y + 6, 2, 5);
+                gc.fillRect(x + 2, y + 5, 4, 1);
+                gc.fillRect(x + 2, y + 8, 4, 1);
+                gc.fillRect(x + 2, y + 11, 4, 1);
+                break;
+            case SHIP:
+                // Boat on water
+                gc.setFill(Color.BLUE);
+                gc.fillRect(x + 1, y + 11, 14, 3); // Water
+                gc.setFill(Color.CYAN);
+                gc.fillPolygon(
+                    new double[]{x + 3, x + 13, x + 12, x + 4},
+                    new double[]{y + 9, y + 9, y + 12, y + 12},
+                    4
+                ); // Hull
+                gc.fillPolygon(
+                    new double[]{x + 8, x + 8, x + 12},
+                    new double[]{y + 3, y + 9, y + 9},
+                    3
+                ); // Sail
                 break;
             case SAW:
-                gc.fillOval(x + 2, y + 2, 12, 12);
-                break;
-            case SHIELD:
-                gc.fillOval(x + 3, y + 3, 8, 10);
+                // Circular saw
+                gc.setFill(Color.BROWN);
+                gc.fillOval(x + 3, y + 3, 10, 10);
                 gc.setFill(Color.WHITE);
                 gc.fillOval(x + 6, y + 6, 4, 4);
                 break;
-            case SHOVEL:
-                gc.fillRect(x + size / 2 - 1, y + 2, 2, 8);
+            case SHIELD:
+                // Shield shape
+                gc.setFill(Color.BLUE);
                 gc.fillPolygon(
-                    new double[]{x + size / 2 - 2, x + size / 2 + 2, x + size / 2},
-                    new double[]{y + 9, y + 9, y + 13},
-                    3
+                    new double[]{x + 8, x + 3, x + 3, x + 8, x + 13, x + 13},
+                    new double[]{y + 14, y + 10, y + 3, y + 2, y + 3, y + 10},
+                    6
+                );
+                gc.setFill(Color.LIGHTBLUE);
+                gc.fillPolygon(
+                    new double[]{x + 8, x + 5, x + 5, x + 8, x + 11, x + 11},
+                    new double[]{y + 12, y + 9, y + 5, y + 4, y + 5, y + 9},
+                    6
                 );
                 break;
+            case SHOVEL:
+                // Shovel
+                gc.setFill(Color.ORANGE);
+                gc.fillRect(x + 7, y + 2, 2, 7); // Handle
+                gc.fillPolygon(
+                    new double[]{x + 4, x + 12, x + 11, x + 5},
+                    new double[]{y + 9, y + 9, y + 14, y + 14},
+                    4
+                ); // Blade
+                break;
             case TANK:
-                gc.fillOval(x + 3, y + 5, 8, 8);
-                gc.fillRect(x + 2, y + 8, 12, 4);
+                // Tank with +1
+                gc.setFill(Color.GREEN);
+                gc.fillRect(x + 2, y + 8, 7, 5); // Body
+                gc.fillRect(x + 4, y + 5, 3, 4); // Turret
+                gc.setFill(Color.DARKGREEN);
+                gc.fillRect(x + 11, y + 4, 1, 5); // +
+                gc.fillRect(x + 9, y + 6, 5, 1);
+                gc.fillRect(x + 11, y + 10, 1, 4); // 1
                 break;
             case MACHINEGUN:
-                gc.fillRect(x + 5, y + 7, 6, 3); // Gun barrel
-                gc.fillRect(x + 4, y + 8, 3, 4); // Gun grip
-                // Draw bullet stream
-                gc.fillRect(x + 11, y + 8, 2, 1);
-                gc.fillRect(x + 13, y + 8, 1, 1);
+                // Rapid fire
+                gc.setFill(Color.PURPLE);
+                gc.fillRect(x + 2, y + 7, 6, 3); // Gun
+                gc.setFill(Color.YELLOW);
+                gc.fillOval(x + 9, y + 7, 2, 2);
+                gc.fillOval(x + 11, y + 5, 2, 2);
+                gc.fillOval(x + 11, y + 9, 2, 2);
+                gc.fillOval(x + 13, y + 7, 2, 2);
                 break;
         }
     }

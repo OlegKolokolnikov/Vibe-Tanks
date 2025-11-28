@@ -37,42 +37,49 @@ public class InputHandler {
     }
 
     public void handleInput(GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
+        handleInput(map, bullets, soundManager, allTanks, base, false);
+    }
+
+    public void handleInput(GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
         // Handle single local player with arrow keys + space
         if (playerTanks.size() >= 1) {
-            handlePlayerInput(playerTanks.get(0), map, bullets, soundManager, allTanks, base);
+            handlePlayerInput(playerTanks.get(0), map, bullets, soundManager, allTanks, base, movementFrozen);
         }
     }
 
-    private void handlePlayerInput(Tank player, GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
+    private void handlePlayerInput(Tank player, GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
         if (!player.isAlive()) return;
 
         boolean isMoving = false;
-        // Movement with arrow keys
-        if (pressedKeys.contains(KeyCode.UP)) {
-            player.move(Direction.UP, map, allTanks, base);
-            lastDirection = Direction.UP;
-            isMoving = true;
-        } else if (pressedKeys.contains(KeyCode.DOWN)) {
-            player.move(Direction.DOWN, map, allTanks, base);
-            lastDirection = Direction.DOWN;
-            isMoving = true;
-        } else if (pressedKeys.contains(KeyCode.LEFT)) {
-            player.move(Direction.LEFT, map, allTanks, base);
-            lastDirection = Direction.LEFT;
-            isMoving = true;
-        } else if (pressedKeys.contains(KeyCode.RIGHT)) {
-            player.move(Direction.RIGHT, map, allTanks, base);
-            lastDirection = Direction.RIGHT;
-            isMoving = true;
+
+        // Movement with arrow keys (skip if frozen)
+        if (!movementFrozen) {
+            if (pressedKeys.contains(KeyCode.UP)) {
+                player.move(Direction.UP, map, allTanks, base);
+                lastDirection = Direction.UP;
+                isMoving = true;
+            } else if (pressedKeys.contains(KeyCode.DOWN)) {
+                player.move(Direction.DOWN, map, allTanks, base);
+                lastDirection = Direction.DOWN;
+                isMoving = true;
+            } else if (pressedKeys.contains(KeyCode.LEFT)) {
+                player.move(Direction.LEFT, map, allTanks, base);
+                lastDirection = Direction.LEFT;
+                isMoving = true;
+            } else if (pressedKeys.contains(KeyCode.RIGHT)) {
+                player.move(Direction.RIGHT, map, allTanks, base);
+                lastDirection = Direction.RIGHT;
+                isMoving = true;
+            }
+
+            // Check if just stopped moving on ice - trigger sliding
+            if (wasMoving && !isMoving && lastDirection != null) {
+                player.startSliding(lastDirection, map);
+            }
+            wasMoving = isMoving;
         }
 
-        // Check if just stopped moving on ice - trigger sliding
-        if (wasMoving && !isMoving && lastDirection != null) {
-            player.startSliding(lastDirection, map);
-        }
-        wasMoving = isMoving;
-
-        // Shooting with space
+        // Shooting with space (allowed even when frozen)
         if (pressedKeys.contains(KeyCode.SPACE)) {
             player.shoot(bullets, soundManager);
         }

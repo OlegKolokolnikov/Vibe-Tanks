@@ -74,6 +74,10 @@ public class GameState implements Serializable {
     public int remainingEnemies;
     public int connectedPlayers; // Number of connected players (1-4)
 
+    // Freeze state
+    public int enemyFreezeDuration;
+    public int playerFreezeDuration;
+
     // Base
     public boolean baseAlive;
     public boolean baseShowFlag;

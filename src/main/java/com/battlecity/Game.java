@@ -68,6 +68,11 @@ public class Game {
     private static final int FLASH_DURATION = 60; // 1 second at 60 FPS
     private static final int TOTAL_FLASHES = 10; // 5 complete flashes (10 state changes)
 
+    // FREEZE power-up - freeze enemies or players
+    private int enemyFreezeDuration = 0;
+    private int playerFreezeDuration = 0;
+    private static final int FREEZE_TIME = 600; // 10 seconds at 60 FPS
+
     // Victory dancing anime girl
     private ImageView victoryImageView;
     // Game over dancing death
@@ -740,6 +745,10 @@ public class Game {
         flashCount = 0;
         flashTimer = 0;
 
+        // Reset freeze states
+        enemyFreezeDuration = 0;
+        playerFreezeDuration = 0;
+
         // Hide victory image
         if (victoryImageView != null) {
             victoryImageView.setVisible(false);
@@ -838,8 +847,9 @@ public class Game {
         allTanks.addAll(playerTanks);
         allTanks.addAll(enemyTanks);
 
-        // Handle player input (local or host)
-        inputHandler.handleInput(gameMap, bullets, soundManager, allTanks, base);
+        // Handle player input (local or host) - pass freeze state
+        boolean isPlayerFrozen = playerFreezeDuration > 0;
+        inputHandler.handleInput(gameMap, bullets, soundManager, allTanks, base, isPlayerFrozen);
 
         // Update base protection from SHOVEL power-up
         if (baseProtectionDuration > 0) {
@@ -893,10 +903,20 @@ public class Game {
             }
         }
 
-        // Update enemy tanks with AI
-        for (Tank tank : enemyTanks) {
-            if (tank.isAlive()) {
-                tank.updateAI(gameMap, bullets, allTanks, base, soundManager);
+        // Update freeze durations
+        if (enemyFreezeDuration > 0) {
+            enemyFreezeDuration--;
+        }
+        if (playerFreezeDuration > 0) {
+            playerFreezeDuration--;
+        }
+
+        // Update enemy tanks with AI (skip if frozen)
+        if (enemyFreezeDuration <= 0) {
+            for (Tank tank : enemyTanks) {
+                if (tank.isAlive()) {
+                    tank.updateAI(gameMap, bullets, allTanks, base, soundManager);
+                }
             }
         }
 
@@ -1007,13 +1027,29 @@ public class Game {
             boolean collected = false;
             for (Tank player : playerTanks) {
                 if (player.isAlive() && powerUp.collidesWith(player)) {
-                    // Handle SHOVEL power-up specially (affects map, not tank)
+                    // Handle special power-ups that affect game state, not just tank
                     if (powerUp.getType() == PowerUp.Type.SHOVEL) {
                         gameMap.setBaseProtection(GameMap.TileType.STEEL);
                         baseProtectionDuration = BASE_PROTECTION_TIME; // Reset timer to 1 minute
                         isFlashing = false; // Stop flashing if it was flashing
                         flashCount = 0;
                         flashTimer = 0;
+                    } else if (powerUp.getType() == PowerUp.Type.FREEZE) {
+                        // Player takes FREEZE - freeze all enemies for 10 seconds
+                        enemyFreezeDuration = FREEZE_TIME;
+                        System.out.println("FREEZE: Enemies frozen for 10 seconds!");
+                    } else if (powerUp.getType() == PowerUp.Type.BOMB) {
+                        // Player takes BOMB - explode all enemies on screen
+                        for (Tank enemy : enemyTanks) {
+                            if (enemy.isAlive()) {
+                                // Force kill the enemy
+                                while (enemy.isAlive()) {
+                                    enemy.damage();
+                                }
+                                soundManager.playExplosion();
+                            }
+                        }
+                        System.out.println("BOMB: All enemies destroyed!");
                     } else {
                         powerUp.applyEffect(player);
                     }
@@ -1027,7 +1063,7 @@ public class Game {
             if (!collected) {
                 for (Tank enemy : enemyTanks) {
                     if (enemy.isAlive() && powerUp.collidesWith(enemy)) {
-                        // Handle SHOVEL power-up specially (affects map, not tank)
+                        // Handle special power-ups that affect game state
                         if (powerUp.getType() == PowerUp.Type.SHOVEL) {
                             // Enemy takes SHOVEL - remove base protection (make it "naked")
                             gameMap.setBaseProtection(GameMap.TileType.EMPTY);
@@ -1035,6 +1071,21 @@ public class Game {
                             isFlashing = false; // Stop flashing
                             flashCount = 0;
                             flashTimer = 0;
+                        } else if (powerUp.getType() == PowerUp.Type.FREEZE) {
+                            // Enemy takes FREEZE - freeze all players for 10 seconds (but they can still shoot)
+                            playerFreezeDuration = FREEZE_TIME;
+                            System.out.println("FREEZE: Players frozen for 10 seconds! (can still shoot)");
+                        } else if (powerUp.getType() == PowerUp.Type.BOMB) {
+                            // Enemy takes BOMB - explode all players on screen
+                            for (Tank player : playerTanks) {
+                                if (player.isAlive() && !player.hasShield()) {
+                                    player.damage();
+                                    if (!player.isAlive()) {
+                                        soundManager.playExplosion();
+                                    }
+                                }
+                            }
+                            System.out.println("BOMB: All players hit!");
                         } else {
                             powerUp.applyEffect(enemy);
                         }
@@ -1101,6 +1152,20 @@ public class Game {
         for (Tank tank : playerTanks) {
             if (tank.isAlive()) {
                 tank.render(gc);
+                // Draw ice effect if players are frozen
+                if (playerFreezeDuration > 0) {
+                    gc.setFill(Color.rgb(150, 200, 255, 0.5)); // Semi-transparent ice blue
+                    gc.fillRect(tank.getX(), tank.getY(), tank.getSize(), tank.getSize());
+                    // Draw snowflake/ice crystals
+                    gc.setStroke(Color.WHITE);
+                    gc.setLineWidth(1);
+                    double cx = tank.getX() + tank.getSize() / 2;
+                    double cy = tank.getY() + tank.getSize() / 2;
+                    for (int i = 0; i < 6; i++) {
+                        double angle = (Math.PI * i) / 3;
+                        gc.strokeLine(cx, cy, cx + 10 * Math.cos(angle), cy + 10 * Math.sin(angle));
+                    }
+                }
             }
         }
 
@@ -1108,6 +1173,20 @@ public class Game {
         for (Tank tank : enemyTanks) {
             if (tank.isAlive()) {
                 tank.render(gc);
+                // Draw ice effect if enemies are frozen
+                if (enemyFreezeDuration > 0) {
+                    gc.setFill(Color.rgb(150, 200, 255, 0.5)); // Semi-transparent ice blue
+                    gc.fillRect(tank.getX(), tank.getY(), tank.getSize(), tank.getSize());
+                    // Draw snowflake/ice crystals
+                    gc.setStroke(Color.WHITE);
+                    gc.setLineWidth(1);
+                    double cx = tank.getX() + tank.getSize() / 2;
+                    double cy = tank.getY() + tank.getSize() / 2;
+                    for (int i = 0; i < 6; i++) {
+                        double angle = (Math.PI * i) / 3;
+                        gc.strokeLine(cx, cy, cx + 10 * Math.cos(angle), cy + 10 * Math.sin(angle));
+                    }
+                }
             }
         }
 
@@ -1255,6 +1334,8 @@ public class Game {
             case TANK -> Color.GREEN;
             case SHIELD -> Color.BLUE;
             case MACHINEGUN -> Color.PURPLE;
+            case FREEZE -> Color.LIGHTBLUE;
+            case BOMB -> Color.BLACK;
         };
     }
 
@@ -1721,6 +1802,8 @@ public class Game {
         state.baseShowVictoryFlag = base.isShowingVictoryFlag();
         state.baseVictoryFlagHeight = base.getVictoryFlagHeight();
         state.connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
+        state.enemyFreezeDuration = enemyFreezeDuration;
+        state.playerFreezeDuration = playerFreezeDuration;
 
         // Full map state for sync
         state.mapTiles = gameMap.exportTiles();
@@ -1963,6 +2046,10 @@ public class Game {
         // Update game state
         gameOver = state.gameOver;
         victory = state.victory;
+
+        // Update freeze state
+        enemyFreezeDuration = state.enemyFreezeDuration;
+        playerFreezeDuration = state.playerFreezeDuration;
 
         // Update remaining enemies count
         enemySpawner.setRemainingEnemies(state.remainingEnemies);

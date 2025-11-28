@@ -18,7 +18,9 @@ public class PowerUp {
         SAW,        // Able to destroy forest/trees
         TANK,       // Extra life
         SHIELD,     // Shield for 1 minute (players) or extra life (enemies)
-        MACHINEGUN  // Bullets can wrap through destroyed borders
+        MACHINEGUN, // Bullets can wrap through destroyed borders
+        FREEZE,     // Freeze enemies for 10 seconds (or freeze players if enemy takes it)
+        BOMB        // Explode all enemies (or all players if enemy takes it)
     }
 
     private double x;
@@ -87,6 +89,12 @@ public class PowerUp {
                 break;
             case MACHINEGUN:
                 tank.applyMachinegun();
+                break;
+            case FREEZE:
+                // FREEZE is handled in Game class (affects all enemies or players)
+                break;
+            case BOMB:
+                // BOMB is handled in Game class (affects all enemies or players)
                 break;
         }
     }
@@ -244,6 +252,40 @@ public class PowerUp {
                 gc.fillOval(x + 17, y + 13, 3, 3);
                 gc.fillOval(x + 20, y + 10, 2, 2);
                 break;
+            case FREEZE:
+                // Draw snowflake/ice crystal - represents freezing
+                gc.setFill(Color.LIGHTBLUE);
+                gc.fillOval(x + 6, y + 6, 12, 12); // Ice background
+                gc.setStroke(Color.WHITE);
+                gc.setLineWidth(2);
+                // Snowflake lines
+                double scx = x + SIZE / 2;
+                double scy = y + SIZE / 2;
+                for (int i = 0; i < 6; i++) {
+                    double angle = (Math.PI * i) / 3;
+                    gc.strokeLine(scx, scy, scx + 8 * Math.cos(angle), scy + 8 * Math.sin(angle));
+                }
+                // Center dot
+                gc.setFill(Color.CYAN);
+                gc.fillOval(scx - 3, scy - 3, 6, 6);
+                break;
+            case BOMB:
+                // Draw bomb with fuse - represents explosion
+                gc.setFill(Color.BLACK);
+                gc.fillOval(x + 4, y + 8, 14, 14); // Bomb body
+                // Fuse
+                gc.setStroke(Color.SADDLEBROWN);
+                gc.setLineWidth(2);
+                gc.strokeLine(x + 14, y + 8, x + 18, y + 4);
+                // Spark
+                gc.setFill(Color.ORANGE);
+                gc.fillOval(x + 16, y + 2, 5, 5);
+                gc.setFill(Color.YELLOW);
+                gc.fillOval(x + 17, y + 3, 3, 3);
+                // Bomb highlight
+                gc.setFill(Color.DARKGRAY);
+                gc.fillOval(x + 7, y + 11, 4, 4);
+                break;
         }
     }
 
@@ -258,6 +300,8 @@ public class PowerUp {
             case TANK -> Color.GREEN;
             case SHIELD -> Color.BLUE;
             case MACHINEGUN -> Color.PURPLE;
+            case FREEZE -> Color.LIGHTBLUE;
+            case BOMB -> Color.BLACK;
         };
     }
 

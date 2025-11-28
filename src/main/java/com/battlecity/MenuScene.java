@@ -1,15 +1,18 @@
 package com.battlecity;
 
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import java.util.List;
 import java.util.Optional;
 
 public class MenuScene {
@@ -290,25 +293,180 @@ public class MenuScene {
     }
 
     private void joinGame() {
-        TextInputDialog dialog = new TextInputDialog("192.168.1.1");
-        dialog.setTitle("Join Game");
-        dialog.setHeaderText("Enter Host IP Address");
-        dialog.setContentText("IP:");
+        // Create custom dialog for IP selection
+        Stage dialogStage = new Stage();
+        dialogStage.initModality(Modality.APPLICATION_MODAL);
+        dialogStage.initOwner(stage);
+        dialogStage.setTitle("Join Game");
 
-        Optional<String> result = dialog.showAndWait();
-        result.ifPresent(ip -> {
+        VBox dialogRoot = new VBox(15);
+        dialogRoot.setPadding(new Insets(20));
+        dialogRoot.setStyle("-fx-background-color: #2a2a2a;");
+
+        // Title
+        Label titleLabel = new Label("Enter Host IP Address");
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        titleLabel.setTextFill(Color.LIGHTBLUE);
+
+        // IP input field
+        TextField ipField = new TextField();
+        ipField.setPromptText("Enter IP address...");
+        ipField.setStyle("-fx-background-color: #444; -fx-text-fill: white; -fx-prompt-text-fill: gray;");
+        ipField.setFont(Font.font("Arial", 14));
+
+        // Saved IPs section
+        Label savedLabel = new Label("Recent IPs:");
+        savedLabel.setTextFill(Color.LIGHTGRAY);
+        savedLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+
+        VBox savedIPsBox = new VBox(5);
+        savedIPsBox.setStyle("-fx-background-color: #333; -fx-padding: 10; -fx-background-radius: 5;");
+
+        // Populate saved IPs
+        Runnable refreshSavedIPs = () -> {
+            savedIPsBox.getChildren().clear();
+            List<String> savedIPs = IPHistoryManager.getSavedIPs();
+
+            if (savedIPs.isEmpty()) {
+                Label emptyLabel = new Label("No saved IPs");
+                emptyLabel.setTextFill(Color.GRAY);
+                emptyLabel.setFont(Font.font("Arial", 12));
+                savedIPsBox.getChildren().add(emptyLabel);
+            } else {
+                for (String ip : savedIPs) {
+                    HBox ipRow = new HBox(10);
+                    ipRow.setAlignment(Pos.CENTER_LEFT);
+
+                    // IP button (click to select)
+                    Button ipButton = new Button(ip);
+                    ipButton.setStyle(
+                        "-fx-background-color: #444; -fx-text-fill: lightblue; " +
+                        "-fx-border-color: #555; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand;"
+                    );
+                    ipButton.setPrefWidth(200);
+                    ipButton.setOnMouseEntered(e -> ipButton.setStyle(
+                        "-fx-background-color: #555; -fx-text-fill: white; " +
+                        "-fx-border-color: lightblue; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand;"
+                    ));
+                    ipButton.setOnMouseExited(e -> ipButton.setStyle(
+                        "-fx-background-color: #444; -fx-text-fill: lightblue; " +
+                        "-fx-border-color: #555; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand;"
+                    ));
+                    ipButton.setOnAction(e -> ipField.setText(ip));
+                    HBox.setHgrow(ipButton, Priority.ALWAYS);
+
+                    // Delete button
+                    Button deleteButton = new Button("X");
+                    deleteButton.setStyle(
+                        "-fx-background-color: #5a2a2a; -fx-text-fill: #ff6666; " +
+                        "-fx-border-color: #ff6666; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand;" +
+                        "-fx-min-width: 25; -fx-min-height: 25; -fx-max-width: 25; -fx-max-height: 25;"
+                    );
+                    deleteButton.setOnMouseEntered(e -> deleteButton.setStyle(
+                        "-fx-background-color: #7a3a3a; -fx-text-fill: white; " +
+                        "-fx-border-color: #ff6666; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand;" +
+                        "-fx-min-width: 25; -fx-min-height: 25; -fx-max-width: 25; -fx-max-height: 25;"
+                    ));
+                    deleteButton.setOnMouseExited(e -> deleteButton.setStyle(
+                        "-fx-background-color: #5a2a2a; -fx-text-fill: #ff6666; " +
+                        "-fx-border-color: #ff6666; -fx-border-radius: 3; -fx-background-radius: 3; -fx-cursor: hand;" +
+                        "-fx-min-width: 25; -fx-min-height: 25; -fx-max-width: 25; -fx-max-height: 25;"
+                    ));
+                    final String ipToDelete = ip;
+                    final Runnable[] refreshRef = new Runnable[1];
+                    deleteButton.setOnAction(e -> {
+                        IPHistoryManager.removeIP(ipToDelete);
+                        // Refresh the list
+                        savedIPsBox.getChildren().clear();
+                        List<String> updatedIPs = IPHistoryManager.getSavedIPs();
+                        if (updatedIPs.isEmpty()) {
+                            Label emptyLbl = new Label("No saved IPs");
+                            emptyLbl.setTextFill(Color.GRAY);
+                            emptyLbl.setFont(Font.font("Arial", 12));
+                            savedIPsBox.getChildren().add(emptyLbl);
+                        } else {
+                            // Need to rebuild the UI - trigger refresh by re-running joinGame logic
+                            dialogStage.close();
+                            joinGame();
+                        }
+                    });
+
+                    ipRow.getChildren().addAll(ipButton, deleteButton);
+                    savedIPsBox.getChildren().add(ipRow);
+                }
+            }
+        };
+        refreshSavedIPs.run();
+
+        // Scroll pane for saved IPs (in case there are many)
+        ScrollPane scrollPane = new ScrollPane(savedIPsBox);
+        scrollPane.setStyle("-fx-background: #333; -fx-background-color: #333;");
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefHeight(150);
+        scrollPane.setMaxHeight(150);
+
+        // Buttons
+        HBox buttonBox = new HBox(15);
+        buttonBox.setAlignment(Pos.CENTER);
+
+        Button connectButton = new Button("Connect");
+        connectButton.setStyle(
+            "-fx-background-color: #2a5a2a; -fx-text-fill: lightgreen; " +
+            "-fx-border-color: lightgreen; -fx-border-width: 2; -fx-cursor: hand;"
+        );
+        connectButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        connectButton.setPrefWidth(100);
+
+        Button cancelButton = new Button("Cancel");
+        cancelButton.setStyle(
+            "-fx-background-color: #5a2a2a; -fx-text-fill: #ff9999; " +
+            "-fx-border-color: #ff9999; -fx-border-width: 2; -fx-cursor: hand;"
+        );
+        cancelButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        cancelButton.setPrefWidth(100);
+
+        buttonBox.getChildren().addAll(connectButton, cancelButton);
+
+        // Add all to dialog
+        dialogRoot.getChildren().addAll(titleLabel, ipField, savedLabel, scrollPane, buttonBox);
+
+        // Handle connect
+        connectButton.setOnAction(e -> {
+            String ip = ipField.getText().trim();
+            if (ip.isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("No IP");
+                alert.setHeaderText("Please enter an IP address");
+                alert.showAndWait();
+                return;
+            }
+
+            dialogStage.close();
+
             NetworkManager network = new NetworkManager();
-
             if (network.joinHost(ip)) {
+                // Save successful IP
+                IPHistoryManager.addIP(ip);
                 startNetworkGame(network, false);
             } else {
-                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Connection Failed");
                 alert.setHeaderText("Could not connect to host");
                 alert.setContentText("Make sure the IP address is correct and the host is ready.");
                 alert.showAndWait();
             }
         });
+
+        // Handle cancel
+        cancelButton.setOnAction(e -> dialogStage.close());
+
+        // Handle Enter key in text field
+        ipField.setOnAction(e -> connectButton.fire());
+
+        Scene dialogScene = new Scene(dialogRoot, 320, 350);
+        dialogStage.setScene(dialogScene);
+        dialogStage.setResizable(false);
+        dialogStage.showAndWait();
     }
 
     private void startNetworkGame(NetworkManager network, boolean isHost) {

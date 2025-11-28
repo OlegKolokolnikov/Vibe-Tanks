@@ -1059,6 +1059,15 @@ public class Game {
         // Full map state for sync
         state.mapTiles = gameMap.exportTiles();
 
+        // Burning tiles for fire animation sync
+        Map<Integer, Integer> burning = gameMap.exportBurningTiles();
+        for (Map.Entry<Integer, Integer> entry : burning.entrySet()) {
+            int key = entry.getKey();
+            int row = key / 1000;
+            int col = key % 1000;
+            state.burningTiles.add(new GameState.BurningTileData(row, col, entry.getValue()));
+        }
+
         // Player kills
         state.p1Kills = playerKills[0];
         state.p2Kills = playerKills[1];
@@ -1182,6 +1191,15 @@ public class Game {
         // Sync full map state from host
         if (state.mapTiles != null) {
             gameMap.importTiles(state.mapTiles);
+        }
+
+        // Sync burning tiles for fire animation
+        if (state.burningTiles != null) {
+            List<int[]> burningData = new ArrayList<>();
+            for (GameState.BurningTileData bt : state.burningTiles) {
+                burningData.add(new int[]{bt.row, bt.col, bt.framesRemaining});
+            }
+            gameMap.setBurningTiles(burningData);
         }
 
         // Update kills tracking

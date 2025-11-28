@@ -63,8 +63,22 @@ public class GameState implements Serializable {
     // Full map state for syncing (stores tile type ordinals)
     public int[][] mapTiles;
 
+    // Burning tiles (row*1000+col -> frames remaining)
+    public List<BurningTileData> burningTiles = new ArrayList<>();
+
     // Player kills count
     public int p1Kills, p2Kills, p3Kills, p4Kills;
+
+    public static class BurningTileData implements Serializable {
+        public int row, col;
+        public int framesRemaining;
+
+        public BurningTileData(int row, int col, int framesRemaining) {
+            this.row = row;
+            this.col = col;
+            this.framesRemaining = framesRemaining;
+        }
+    }
 
     public static class EnemyData implements Serializable {
         public double x, y;

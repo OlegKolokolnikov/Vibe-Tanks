@@ -412,6 +412,30 @@ public class GameMap {
         }
     }
 
+    // Export burning tiles for network sync
+    public Map<Integer, Integer> exportBurningTiles() {
+        return new HashMap<>(burningTiles);
+    }
+
+    // Import burning tiles from network sync
+    public void importBurningTiles(Map<Integer, Integer> data) {
+        burningTiles.clear();
+        if (data != null) {
+            burningTiles.putAll(data);
+        }
+    }
+
+    // Set burning tiles directly (for network sync with list)
+    public void setBurningTiles(java.util.List<int[]> tiles) {
+        burningTiles.clear();
+        if (tiles != null) {
+            for (int[] tile : tiles) {
+                int key = tile[0] * 1000 + tile[1];
+                burningTiles.put(key, tile[2]);
+            }
+        }
+    }
+
     // Base protection management (for SHOVEL power-up)
     public void setBaseProtection(TileType protectionType) {
         // Top wall

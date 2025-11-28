@@ -6,7 +6,9 @@ import javafx.scene.paint.Color;
 public class Bullet {
     private static final int SIZE = 8;
     private static final double SPEED = 4.0;
+    private static long nextId = 1; // Global bullet ID counter
 
+    private long id;
     private double x;
     private double y;
     private Direction direction;
@@ -20,6 +22,19 @@ public class Bullet {
     }
 
     public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber) {
+        this.id = nextId++;
+        this.x = x;
+        this.y = y;
+        this.direction = direction;
+        this.fromEnemy = fromEnemy;
+        this.power = power;
+        this.canDestroyTrees = canDestroyTrees;
+        this.ownerPlayerNumber = ownerPlayerNumber;
+    }
+
+    // Constructor with explicit ID (for network sync)
+    public Bullet(long id, double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber) {
+        this.id = id;
         this.x = x;
         this.y = y;
         this.direction = direction;
@@ -75,6 +90,7 @@ public class Bullet {
         return true; // Bullet is within bounds
     }
 
+    public long getId() { return id; }
     public double getX() { return x; }
     public double getY() { return y; }
     public int getSize() { return SIZE; }

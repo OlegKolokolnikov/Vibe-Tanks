@@ -53,7 +53,7 @@ public class Game {
 
     // For client sound effects (track previous state to detect changes)
     private int prevEnemyCount = 0;
-    private int prevBulletCount = 0;
+    private Set<Long> seenBulletIds = new HashSet<>(); // Track bullet IDs we've already played sounds for
 
     // SHOVEL power-up - base protection with steel
     private int baseProtectionDuration = 0;
@@ -1011,6 +1011,7 @@ public class Game {
         for (Bullet bullet : bullets) {
             if (bullet != null) {
                 state.bullets.add(new GameState.BulletData(
+                    bullet.getId(),
                     bullet.getX(),
                     bullet.getY(),
                     bullet.getDirection().ordinal(),
@@ -1126,17 +1127,17 @@ public class Game {
             }
         }
 
-        // Play shoot sound if new bullets appeared (compare before clearing)
-        int newBulletCount = state.bullets.size();
-        if (newBulletCount > prevBulletCount) {
-            soundManager.playShoot();
-        }
-        prevBulletCount = newBulletCount;
-
-        // Update bullets (recreate from state)
+        // Update bullets (recreate from state) and detect new bullets for sound
+        Set<Long> currentBulletIds = new HashSet<>();
         bullets.clear();
         for (GameState.BulletData bData : state.bullets) {
+            currentBulletIds.add(bData.id);
+            // Play shoot sound for bullets we haven't seen before
+            if (!seenBulletIds.contains(bData.id)) {
+                soundManager.playShoot();
+            }
             Bullet bullet = new Bullet(
+                bData.id,
                 bData.x, bData.y,
                 Direction.values()[bData.direction],
                 bData.fromEnemy,
@@ -1146,6 +1147,8 @@ public class Game {
             );
             bullets.add(bullet);
         }
+        // Update seen bullets - keep only current bullets to prevent memory leak
+        seenBulletIds = currentBulletIds;
 
         // Update power-ups (recreate from state)
         powerUps.clear();

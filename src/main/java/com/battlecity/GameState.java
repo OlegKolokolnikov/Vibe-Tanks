@@ -78,6 +78,7 @@ public class GameState implements Serializable {
     }
 
     public static class BulletData implements Serializable {
+        public long id;
         public double x, y;
         public int direction;
         public boolean fromEnemy;
@@ -85,7 +86,8 @@ public class GameState implements Serializable {
         public boolean canDestroyTrees;
         public int ownerPlayerNumber;
 
-        public BulletData(double x, double y, int direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber) {
+        public BulletData(long id, double x, double y, int direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber) {
+            this.id = id;
             this.x = x;
             this.y = y;
             this.direction = direction;

@@ -47,41 +47,60 @@ public class EnemySpawner {
     }
 
     private void spawnEnemy(List<Tank> enemyTanks) {
-        // Choose random spawn position
-        double[] spawnPos = SPAWN_POSITIONS[random.nextInt(SPAWN_POSITIONS.length)];
+        // Determine enemy type first to check size for collision
+        Tank.EnemyType type;
+        int remaining = totalEnemies - spawnedCount;
+        double rand = random.nextDouble();
+
+        if (remaining == 1) {
+            // Last enemy is the BOSS (4x bigger)
+            type = Tank.EnemyType.BOSS;
+        } else if (remaining <= 10) {
+            // Last 10 enemies (except the very last) are HEAVY
+            type = Tank.EnemyType.HEAVY;
+        } else if (rand < 0.5) {
+            // 50% REGULAR
+            type = Tank.EnemyType.REGULAR;
+        } else if (rand < 0.7) {
+            // 20% FAST
+            type = Tank.EnemyType.FAST;
+        } else if (rand < 0.85) {
+            // 15% ARMORED
+            type = Tank.EnemyType.ARMORED;
+        } else {
+            // 15% POWER
+            type = Tank.EnemyType.POWER;
+        }
+
+        // Choose spawn position - BOSS spawns in center, others randomly
+        double[] spawnPos;
+        if (type == Tank.EnemyType.BOSS) {
+            // BOSS spawns in the center-top of the map
+            spawnPos = new double[]{12 * 32, 32};
+        } else {
+            spawnPos = SPAWN_POSITIONS[random.nextInt(SPAWN_POSITIONS.length)];
+        }
+
+        // Get expected tank size for collision check
+        int tankSize = (type == Tank.EnemyType.BOSS) ? 28 * 4 : 28;
 
         // Check if spawn position is clear
         boolean positionClear = true;
         for (Tank tank : enemyTanks) {
-            if (tank.collidesWith(spawnPos[0], spawnPos[1], tank.getSize())) {
+            // Check collision using the size of the tank we're about to spawn
+            double otherX = tank.getX();
+            double otherY = tank.getY();
+            int otherSize = tank.getSize();
+            if (spawnPos[0] < otherX + otherSize &&
+                spawnPos[0] + tankSize > otherX &&
+                spawnPos[1] < otherY + otherSize &&
+                spawnPos[1] + tankSize > otherY) {
                 positionClear = false;
                 break;
             }
         }
 
         if (positionClear) {
-            // Determine enemy type based on progression and randomness
-            Tank.EnemyType type;
-            int remaining = totalEnemies - spawnedCount;
-            double rand = random.nextDouble();
-
-            if (remaining <= 10) {
-                // Last 10 enemies are HEAVY
-                type = Tank.EnemyType.HEAVY;
-            } else if (rand < 0.5) {
-                // 50% REGULAR
-                type = Tank.EnemyType.REGULAR;
-            } else if (rand < 0.7) {
-                // 20% FAST
-                type = Tank.EnemyType.FAST;
-            } else if (rand < 0.85) {
-                // 15% ARMORED
-                type = Tank.EnemyType.ARMORED;
-            } else {
-                // 15% POWER
-                type = Tank.EnemyType.POWER;
-            }
-
             Tank enemy = new Tank(spawnPos[0], spawnPos[1], Direction.DOWN, false, 0, type);
             enemyTanks.add(enemy);
             spawnedCount++;

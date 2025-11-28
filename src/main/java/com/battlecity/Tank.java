@@ -12,10 +12,12 @@ public class Tank {
         ARMORED,    // 2 shots, normal speed, bigger
         FAST,       // 1 shot, faster
         POWER,      // 2 shots, drops power-up on each hit, rainbow colors
-        HEAVY       // 3 shots, fast, black with white dot
+        HEAVY,      // 3 shots, fast, black with white dot
+        BOSS        // 12 shots, fast, black, 4x size, can destroy iron
     }
 
-    private static final int SIZE = 28;
+    private static final int BASE_SIZE = 28;
+    private int size = BASE_SIZE; // Instance variable for tank size
     private static final double SPEED = 2.0;
     private static final int SHOOT_COOLDOWN = 30; // frames
 
@@ -88,6 +90,12 @@ public class Tank {
                     this.speedMultiplier = 1.5;
                     this.bulletPower = 2; // Can destroy iron/steel
                 }
+                case BOSS -> {
+                    this.maxHealth = 12;
+                    this.speedMultiplier = 1.5;
+                    this.bulletPower = 2; // Can destroy iron/steel
+                    this.size = BASE_SIZE * 4; // 4x bigger
+                }
             }
         } else {
             this.maxHealth = 1;
@@ -140,17 +148,17 @@ public class Tank {
 
             // Left edge wraparound
             if (newX < 0) {
-                int row = (int)((y + SIZE/2) / 32);
+                int row = (int)((y + size/2) / 32);
                 if (map.getTile(row, 0) == GameMap.TileType.EMPTY) {
-                    newX = mapWidth - SIZE;
+                    newX = mapWidth - size;
                 } else {
                     canSlide = false;
                 }
             }
 
             // Right edge wraparound
-            if (newX + SIZE > mapWidth) {
-                int row = (int)((y + SIZE/2) / 32);
+            if (newX + size > mapWidth) {
+                int row = (int)((y + size/2) / 32);
                 if (map.getTile(row, map.getWidth() - 1) == GameMap.TileType.EMPTY) {
                     newX = 0;
                 } else {
@@ -160,17 +168,17 @@ public class Tank {
 
             // Top edge wraparound
             if (newY < 0) {
-                int col = (int)((x + SIZE/2) / 32);
+                int col = (int)((x + size/2) / 32);
                 if (map.getTile(0, col) == GameMap.TileType.EMPTY) {
-                    newY = mapHeight - SIZE;
+                    newY = mapHeight - size;
                 } else {
                     canSlide = false;
                 }
             }
 
             // Bottom edge wraparound
-            if (newY + SIZE > mapHeight) {
-                int col = (int)((x + SIZE/2) / 32);
+            if (newY + size > mapHeight) {
+                int col = (int)((x + size/2) / 32);
                 if (map.getTile(map.getHeight() - 1, col) == GameMap.TileType.EMPTY) {
                     newY = 0;
                 } else {
@@ -182,7 +190,7 @@ public class Tank {
             if (canSlide) {
                 for (Tank other : allTanks) {
                     if (other != this && other.isAlive()) {
-                        if (checkCollision(newX, newY, other.x, other.y, SIZE, SIZE)) {
+                        if (checkCollision(newX, newY, other.x, other.y, size, other.size)) {
                             canSlide = false;
                             break;
                         }
@@ -192,13 +200,13 @@ public class Tank {
 
             // Check collision with base
             if (canSlide && base.isAlive()) {
-                if (checkCollision(newX, newY, base.getX(), base.getY(), SIZE, 32)) {
+                if (checkCollision(newX, newY, base.getX(), base.getY(), size, 32)) {
                     canSlide = false;
                 }
             }
 
             // Check collision with map tiles
-            if (canSlide && map.checkTankCollision(newX, newY, SIZE, canSwim)) {
+            if (canSlide && map.checkTankCollision(newX, newY, size, canSwim)) {
                 canSlide = false;
             }
 
@@ -239,18 +247,18 @@ public class Tank {
         // Left edge wraparound
         if (newX < 0) {
             // Check if left border column (col 0) is destroyed at tank's row
-            int row = (int)((y + SIZE/2) / 32);
+            int row = (int)((y + size/2) / 32);
             if (map.getTile(row, 0) == GameMap.TileType.EMPTY) {
-                newX = mapWidth - SIZE; // Wrap to right edge
+                newX = mapWidth - size; // Wrap to right edge
             } else {
                 return; // Can't move through intact border
             }
         }
 
         // Right edge wraparound
-        if (newX + SIZE > mapWidth) {
+        if (newX + size > mapWidth) {
             // Check if right border column (col 25) is destroyed at tank's row
-            int row = (int)((y + SIZE/2) / 32);
+            int row = (int)((y + size/2) / 32);
             if (map.getTile(row, map.getWidth() - 1) == GameMap.TileType.EMPTY) {
                 newX = 0; // Wrap to left edge
             } else {
@@ -261,18 +269,18 @@ public class Tank {
         // Top edge wraparound
         if (newY < 0) {
             // Check if top border row (row 0) is destroyed at tank's column
-            int col = (int)((x + SIZE/2) / 32);
+            int col = (int)((x + size/2) / 32);
             if (map.getTile(0, col) == GameMap.TileType.EMPTY) {
-                newY = mapHeight - SIZE; // Wrap to bottom edge
+                newY = mapHeight - size; // Wrap to bottom edge
             } else {
                 return; // Can't move through intact border
             }
         }
 
         // Bottom edge wraparound
-        if (newY + SIZE > mapHeight) {
+        if (newY + size > mapHeight) {
             // Check if bottom border row (row 25) is destroyed at tank's column
-            int col = (int)((x + SIZE/2) / 32);
+            int col = (int)((x + size/2) / 32);
             if (map.getTile(map.getHeight() - 1, col) == GameMap.TileType.EMPTY) {
                 newY = 0; // Wrap to top edge
             } else {
@@ -283,7 +291,7 @@ public class Tank {
         // Check collision with other tanks
         for (Tank other : otherTanks) {
             if (other != this && other.isAlive()) {
-                if (checkCollision(newX, newY, other.x, other.y, SIZE, SIZE)) {
+                if (checkCollision(newX, newY, other.x, other.y, size, other.size)) {
                     return; // Can't move through other tanks
                 }
             }
@@ -291,13 +299,13 @@ public class Tank {
 
         // Check collision with base (only if base is still alive)
         if (base.isAlive()) {
-            if (checkCollision(newX, newY, base.getX(), base.getY(), SIZE, 32)) {
+            if (checkCollision(newX, newY, base.getX(), base.getY(), size, 32)) {
                 return; // Can't move through base
             }
         }
 
         // Check collision with map tiles (pass canSwim for SHIP power-up)
-        if (!map.checkTankCollision(newX, newY, SIZE, canSwim)) {
+        if (!map.checkTankCollision(newX, newY, size, canSwim)) {
             x = newX;
             y = newY;
             // Animate tracks when moving
@@ -315,8 +323,8 @@ public class Tank {
 
     private boolean isOnIce(GameMap map) {
         // Check if center of tank is on ice
-        int centerX = (int) ((x + SIZE / 2) / 32);
-        int centerY = (int) ((y + SIZE / 2) / 32);
+        int centerX = (int) ((x + size / 2) / 32);
+        int centerY = (int) ((y + size / 2) / 32);
         return map.getTile(centerY, centerX) == GameMap.TileType.ICE;
     }
 
@@ -332,15 +340,15 @@ public class Tank {
     public void shoot(List<Bullet> bullets, SoundManager soundManager) {
         if (!alive || shootCooldown > 0) return;
 
-        double bulletX = x + SIZE / 2.0 - 4;
-        double bulletY = y + SIZE / 2.0 - 4;
+        double bulletX = x + size / 2.0 - 4;
+        double bulletY = y + size / 2.0 - 4;
 
         // Adjust bullet spawn position based on direction
         switch (direction) {
             case UP -> bulletY = y - 8;
-            case DOWN -> bulletY = y + SIZE;
+            case DOWN -> bulletY = y + size;
             case LEFT -> bulletX = x - 8;
-            case RIGHT -> bulletX = x + SIZE;
+            case RIGHT -> bulletX = x + size;
         }
 
         // Calculate number of bullets to fire (1 base + machinegunCount, max 5)
@@ -463,22 +471,25 @@ public class Tank {
     public void render(GraphicsContext gc) {
         if (!alive) return;
 
+        // Scale factor for rendering (1.0 for normal tanks, 4.0 for BOSS)
+        double scale = (double) size / BASE_SIZE;
+
         // Draw shield if active (circle)
         if (hasShield) {
             gc.setStroke(Color.CYAN);
-            gc.setLineWidth(2);
-            gc.strokeOval(x - 4, y - 4, SIZE + 8, SIZE + 8);
+            gc.setLineWidth(2 * scale);
+            gc.strokeOval(x - 4 * scale, y - 4 * scale, size + 8 * scale, size + 8 * scale);
         }
 
         // Draw ship indicator if active (triangle)
         if (canSwim) {
             gc.setStroke(Color.BLUE);
-            gc.setLineWidth(2);
-            double centerX = x + SIZE / 2;
-            double topY = y - 6;
-            double bottomY = y + SIZE + 6;
-            double leftX = x - 6;
-            double rightX = x + SIZE + 6;
+            gc.setLineWidth(2 * scale);
+            double centerX = x + size / 2;
+            double topY = y - 6 * scale;
+            double bottomY = y + size + 6 * scale;
+            double leftX = x - 6 * scale;
+            double rightX = x + size + 6 * scale;
             gc.strokePolygon(
                 new double[]{leftX, rightX, centerX},
                 new double[]{bottomY, bottomY, topY},
@@ -503,17 +514,17 @@ public class Tank {
                     tankColor = rainbow[frame];
                     darkColor = tankColor.darker();
                 }
-                case HEAVY -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
+                case HEAVY, BOSS -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
                 default -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
             }
         }
 
         // Calculate track animation offset (alternates every 4 frames)
-        int trackOffset = (trackAnimationFrame / 4) % 2 == 0 ? 0 : 3;
+        int trackOffset = (trackAnimationFrame / 4) % 2 == 0 ? 0 : (int)(3 * scale);
 
         // Draw tank based on direction
         gc.save();
-        gc.translate(x + SIZE / 2, y + SIZE / 2);
+        gc.translate(x + size / 2.0, y + size / 2.0);
 
         // Rotate based on direction
         switch (direction) {
@@ -523,43 +534,44 @@ public class Tank {
             case LEFT -> gc.rotate(270);
         }
 
-        gc.translate(-SIZE / 2, -SIZE / 2);
+        gc.translate(-size / 2.0, -size / 2.0);
 
         // Draw left track
         gc.setFill(darkColor);
-        gc.fillRect(0, 0, 8, SIZE);
+        gc.fillRect(0, 0, 8 * scale, size);
         // Track details (animated)
         gc.setFill(Color.rgb(40, 40, 40));
-        for (int i = 0; i < 5; i++) {
-            int ty = (i * 7 + trackOffset) % SIZE;
-            gc.fillRect(1, ty, 6, 3);
+        int trackCount = (int)(5 * scale);
+        for (int i = 0; i < trackCount; i++) {
+            int ty = (int)((i * 7 * scale + trackOffset) % size);
+            gc.fillRect(1 * scale, ty, 6 * scale, 3 * scale);
         }
 
         // Draw right track
         gc.setFill(darkColor);
-        gc.fillRect(SIZE - 8, 0, 8, SIZE);
+        gc.fillRect(size - 8 * scale, 0, 8 * scale, size);
         // Track details (animated)
         gc.setFill(Color.rgb(40, 40, 40));
-        for (int i = 0; i < 5; i++) {
-            int ty = (i * 7 + trackOffset) % SIZE;
-            gc.fillRect(SIZE - 7, ty, 6, 3);
+        for (int i = 0; i < trackCount; i++) {
+            int ty = (int)((i * 7 * scale + trackOffset) % size);
+            gc.fillRect(size - 7 * scale, ty, 6 * scale, 3 * scale);
         }
 
         // Draw tank body (between tracks)
         gc.setFill(tankColor);
-        gc.fillRect(6, 4, SIZE - 12, SIZE - 8);
+        gc.fillRect(6 * scale, 4 * scale, size - 12 * scale, size - 8 * scale);
 
         // Draw turret (circular base)
         gc.setFill(darkColor);
-        gc.fillOval(SIZE / 2 - 7, SIZE / 2 - 7, 14, 14);
+        gc.fillOval(size / 2.0 - 7 * scale, size / 2.0 - 7 * scale, 14 * scale, 14 * scale);
         gc.setFill(tankColor);
-        gc.fillOval(SIZE / 2 - 5, SIZE / 2 - 5, 10, 10);
+        gc.fillOval(size / 2.0 - 5 * scale, size / 2.0 - 5 * scale, 10 * scale, 10 * scale);
 
         // Draw cannon barrel
         gc.setFill(Color.DARKGRAY);
-        gc.fillRect(SIZE / 2 - 2, -2, 4, SIZE / 2 + 2);
+        gc.fillRect(size / 2.0 - 2 * scale, -2 * scale, 4 * scale, size / 2.0 + 2 * scale);
         gc.setFill(Color.GRAY);
-        gc.fillRect(SIZE / 2 - 1, -2, 2, SIZE / 2);
+        gc.fillRect(size / 2.0 - 1 * scale, -2 * scale, 2 * scale, size / 2.0);
 
         // Special markings for enemy types
         if (!isPlayer) {
@@ -567,20 +579,20 @@ public class Tank {
                 case ARMORED -> {
                     // Extra armor plates
                     gc.setFill(Color.GRAY);
-                    gc.fillRect(8, 6, SIZE - 16, 3);
-                    gc.fillRect(8, SIZE - 9, SIZE - 16, 3);
+                    gc.fillRect(8 * scale, 6 * scale, size - 16 * scale, 3 * scale);
+                    gc.fillRect(8 * scale, size - 9 * scale, size - 16 * scale, 3 * scale);
                 }
-                case HEAVY -> {
-                    // White dot indicator
+                case HEAVY, BOSS -> {
+                    // White dot indicator (larger for BOSS)
                     gc.setFill(Color.WHITE);
-                    gc.fillOval(SIZE / 2 - 3, SIZE / 2 - 3, 6, 6);
+                    gc.fillOval(size / 2.0 - 3 * scale, size / 2.0 - 3 * scale, 6 * scale, 6 * scale);
                 }
                 case FAST -> {
                     // Speed stripes
                     gc.setStroke(Color.WHITE);
-                    gc.setLineWidth(1);
-                    gc.strokeLine(10, SIZE - 6, 14, SIZE - 6);
-                    gc.strokeLine(SIZE - 14, SIZE - 6, SIZE - 10, SIZE - 6);
+                    gc.setLineWidth(scale);
+                    gc.strokeLine(10 * scale, size - 6 * scale, 14 * scale, size - 6 * scale);
+                    gc.strokeLine(size - 14 * scale, size - 6 * scale, size - 10 * scale, size - 6 * scale);
                 }
             }
         }
@@ -593,9 +605,9 @@ public class Tank {
 
     public boolean collidesWith(double otherX, double otherY, int otherSize) {
         return x < otherX + otherSize &&
-               x + SIZE > otherX &&
+               x + size > otherX &&
                y < otherY + otherSize &&
-               y + SIZE > otherY;
+               y + size > otherY;
     }
 
     // Get player color based on player number
@@ -612,7 +624,7 @@ public class Tank {
     // Getters and setters
     public double getX() { return x; }
     public double getY() { return y; }
-    public int getSize() { return SIZE; }
+    public int getSize() { return size; }
     public boolean isAlive() { return alive; }
     public void setAlive(boolean alive) { this.alive = alive; }
     public int getLives() { return lives; }

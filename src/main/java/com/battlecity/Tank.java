@@ -455,11 +455,28 @@ public class Tank {
     public void render(GraphicsContext gc) {
         if (!alive) return;
 
-        // Draw shield if active
+        // Draw shield if active (circle)
         if (hasShield) {
             gc.setStroke(Color.CYAN);
             gc.setLineWidth(2);
             gc.strokeOval(x - 4, y - 4, SIZE + 8, SIZE + 8);
+        }
+
+        // Draw ship indicator if active (triangle)
+        if (canSwim) {
+            gc.setStroke(Color.BLUE);
+            gc.setLineWidth(2);
+            double centerX = x + SIZE / 2;
+            double topY = y - 6;
+            double bottomY = y + SIZE + 6;
+            double leftX = x - 6;
+            double rightX = x + SIZE + 6;
+            // Draw triangle pointing in movement direction
+            gc.strokePolygon(
+                new double[]{leftX, rightX, centerX},
+                new double[]{bottomY, bottomY, topY},
+                3
+            );
         }
 
         // Draw tank body based on type

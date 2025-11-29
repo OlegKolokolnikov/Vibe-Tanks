@@ -73,6 +73,7 @@ public class GameState implements Serializable {
     public boolean victory;
     public int remainingEnemies;
     public int connectedPlayers; // Number of connected players (1-4)
+    public int levelNumber; // Current level number for sync
 
     // Freeze state
     public int enemyFreezeDuration;

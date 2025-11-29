@@ -1910,6 +1910,7 @@ public class Game {
         state.gameOver = gameOver;
         state.victory = victory;
         state.remainingEnemies = enemySpawner.getRemainingEnemies();
+        state.levelNumber = gameMap.getLevelNumber();
         state.baseAlive = base.isAlive();
         state.baseShowFlag = base.isShowingFlag();
         state.baseFlagHeight = base.getFlagHeight();
@@ -2173,6 +2174,33 @@ public class Game {
             }
         }
 
+        // Check if level changed (host restarted or went to next level)
+        if (state.levelNumber != gameMap.getLevelNumber()) {
+            System.out.println("Level changed from " + gameMap.getLevelNumber() + " to " + state.levelNumber);
+            // Reset client state for new level
+            if (state.levelNumber == 1 && gameMap.getLevelNumber() > 1) {
+                // Game was restarted - reset scores
+                for (int i = 0; i < playerScores.length; i++) {
+                    playerScores[i] = 0;
+                }
+            }
+            // Reset kills for new level
+            for (int i = 0; i < playerKills.length; i++) {
+                playerKills[i] = 0;
+            }
+            // Clear visual state
+            dancingInitialized = false;
+            dancingCharacters.clear();
+            victoryDancingInitialized = false;
+            victoryDancingGirls.clear();
+            gameOverSoundPlayed = false;
+            // Hide end game images
+            if (victoryImageView != null) victoryImageView.setVisible(false);
+            if (gameOverImageView != null) gameOverImageView.setVisible(false);
+            // Play intro sound
+            soundManager.playIntro();
+        }
+
         // Update game state
         gameOver = state.gameOver;
         victory = state.victory;
@@ -2184,10 +2212,20 @@ public class Game {
         // Update remaining enemies count
         enemySpawner.setRemainingEnemies(state.remainingEnemies);
 
-        // Update base
-        if (!state.baseAlive && base.isAlive()) {
+        // Update base - recreate if level changed or if state differs
+        if (state.levelNumber != gameMap.getLevelNumber() || (state.baseAlive && !base.isAlive())) {
+            base = new Base(12 * 32, 24 * 32);
+        } else if (!state.baseAlive && base.isAlive()) {
             base.destroy();
             soundManager.playExplosion();
+        }
+
+        // Update level number after base check
+        while (gameMap.getLevelNumber() < state.levelNumber) {
+            gameMap.nextLevel();
+        }
+        if (gameMap.getLevelNumber() > state.levelNumber) {
+            gameMap.resetToLevel1();
         }
 
         // Sync flag state (skull flag for game over)

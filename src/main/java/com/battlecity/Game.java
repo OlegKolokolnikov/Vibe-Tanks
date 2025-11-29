@@ -1032,10 +1032,11 @@ public class Game {
             playerFreezeDuration--;
         }
 
-        // Update enemy tanks with AI (skip if frozen)
-        if (enemyFreezeDuration <= 0) {
-            for (Tank tank : enemyTanks) {
-                if (tank.isAlive()) {
+        // Update enemy tanks with AI (skip if frozen, except BOSS is unfreezable)
+        for (Tank tank : enemyTanks) {
+            if (tank.isAlive()) {
+                // BOSS tank is immune to freeze
+                if (enemyFreezeDuration <= 0 || tank.getEnemyType() == Tank.EnemyType.BOSS) {
                     tank.updateAI(gameMap, bullets, allTanks, base, soundManager);
                 }
             }
@@ -1294,8 +1295,8 @@ public class Game {
         for (Tank tank : enemyTanks) {
             if (tank.isAlive()) {
                 tank.render(gc);
-                // Draw ice effect if enemies are frozen
-                if (enemyFreezeDuration > 0) {
+                // Draw ice effect if enemies are frozen (except BOSS which is immune)
+                if (enemyFreezeDuration > 0 && tank.getEnemyType() != Tank.EnemyType.BOSS) {
                     gc.setFill(Color.rgb(150, 200, 255, 0.5)); // Semi-transparent ice blue
                     gc.fillRect(tank.getX(), tank.getY(), tank.getSize(), tank.getSize());
                     // Draw snowflake/ice crystals

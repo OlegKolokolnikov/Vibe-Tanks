@@ -13,6 +13,7 @@ public class GameState implements Serializable {
     public int p1Lives;
     public boolean p1Alive;
     public boolean p1HasShield;
+    public boolean p1HasPauseShield;
     public boolean p1HasShip;
     public boolean p1HasGun;
     public int p1StarCount;
@@ -26,6 +27,7 @@ public class GameState implements Serializable {
     public int p2Lives;
     public boolean p2Alive;
     public boolean p2HasShield;
+    public boolean p2HasPauseShield;
     public boolean p2HasShip;
     public boolean p2HasGun;
     public int p2StarCount;
@@ -39,6 +41,7 @@ public class GameState implements Serializable {
     public int p3Lives;
     public boolean p3Alive;
     public boolean p3HasShield;
+    public boolean p3HasPauseShield;
     public boolean p3HasShip;
     public boolean p3HasGun;
     public int p3StarCount;
@@ -52,6 +55,7 @@ public class GameState implements Serializable {
     public int p4Lives;
     public boolean p4Alive;
     public boolean p4HasShield;
+    public boolean p4HasPauseShield;
     public boolean p4HasShip;
     public boolean p4HasGun;
     public int p4StarCount;

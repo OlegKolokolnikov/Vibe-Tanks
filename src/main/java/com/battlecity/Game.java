@@ -47,8 +47,9 @@ public class Game {
 
     private boolean gameOver = false;
     private boolean victory = false;
-    private boolean paused = false;
+    private boolean paused = false; // Local pause (single player only)
     private int pauseMenuSelection = 0; // 0 = Resume, 1 = Exit
+    private boolean[] playerPaused = new boolean[4]; // Per-player pause for multiplayer
 
     // Player kills and score tracking
     private int[] playerKills = new int[4];
@@ -625,16 +626,29 @@ public class Game {
             if (event.getCode() == KeyCode.ESCAPE) {
                 if (gameOver || victory) {
                     returnToMenu();
+                } else if (isNetworkGame) {
+                    // Multiplayer: toggle per-player pause with shield
+                    int myPlayerIndex = network != null && !network.isHost()
+                        ? network.getPlayerNumber() - 1 : 0;
+                    if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
+                        playerPaused[myPlayerIndex] = !playerPaused[myPlayerIndex];
+                        Tank myTank = playerTanks.get(myPlayerIndex);
+                        if (playerPaused[myPlayerIndex]) {
+                            myTank.setPauseShield(true);
+                        } else {
+                            myTank.setPauseShield(false);
+                        }
+                    }
                 } else {
-                    // Toggle pause
+                    // Single player: full game pause
                     paused = !paused;
                     pauseMenuSelection = 0;
                 }
                 return;
             }
 
-            // Pause menu navigation
-            if (paused) {
+            // Pause menu navigation (single player only)
+            if (paused && !isNetworkGame) {
                 if (event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) {
                     pauseMenuSelection = (pauseMenuSelection + 1) % 2;
                 } else if (event.getCode() == KeyCode.ENTER) {
@@ -910,8 +924,8 @@ public class Game {
                     // Capture input
                     PlayerInput input = inputHandler.capturePlayerInput();
 
-                    // Apply movement locally
-                    if (myTank.isAlive() && playerFreezeDuration <= 0) {
+                    // Apply movement locally (skip if paused)
+                    if (myTank.isAlive() && playerFreezeDuration <= 0 && !playerPaused[myPlayerIndex]) {
                         List<Tank> allTanks = new ArrayList<>();
                         allTanks.addAll(playerTanks);
                         allTanks.addAll(enemyTanks);
@@ -927,8 +941,8 @@ public class Game {
                         }
                     }
 
-                    // Shoot locally for sound
-                    if (myTank.isAlive() && input.shoot) {
+                    // Shoot locally for sound (skip if paused)
+                    if (myTank.isAlive() && input.shoot && !playerPaused[myPlayerIndex]) {
                         myTank.shoot(bullets, soundManager);
                     }
 
@@ -1711,6 +1725,19 @@ public class Game {
                     }
                 }
             }
+
+            // Show pause indicator for multiplayer
+            if (isNetworkGame) {
+                int pausePlayerIndex = network != null && !network.isHost()
+                    ? network.getPlayerNumber() - 1 : 0;
+                if (pausePlayerIndex >= 0 && pausePlayerIndex < playerTanks.size() && playerPaused[pausePlayerIndex]) {
+                    gc.setFill(Color.rgb(0, 0, 0, 0.5));
+                    gc.fillRect(0, 0, width, 60);
+                    gc.setFill(Color.YELLOW);
+                    gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 30));
+                    gc.fillText("PAUSED - Press ESC to resume", width / 2 - 200, 40);
+                }
+            }
         }
     }
 
@@ -1806,6 +1833,7 @@ public class Game {
             state.p1Lives = p1.getLives();
             state.p1Alive = p1.isAlive();
             state.p1HasShield = p1.hasShield();
+            state.p1HasPauseShield = p1.hasPauseShield();
             state.p1HasShip = p1.hasShip();
             state.p1HasGun = p1.hasGun();
             state.p1StarCount = p1.getStarCount();
@@ -1823,6 +1851,7 @@ public class Game {
             state.p2Lives = p2.getLives();
             state.p2Alive = p2.isAlive();
             state.p2HasShield = p2.hasShield();
+            state.p2HasPauseShield = p2.hasPauseShield();
             state.p2HasShip = p2.hasShip();
             state.p2HasGun = p2.hasGun();
             state.p2StarCount = p2.getStarCount();
@@ -1840,6 +1869,7 @@ public class Game {
             state.p3Lives = p3.getLives();
             state.p3Alive = p3.isAlive();
             state.p3HasShield = p3.hasShield();
+            state.p3HasPauseShield = p3.hasPauseShield();
             state.p3HasShip = p3.hasShip();
             state.p3HasGun = p3.hasGun();
             state.p3StarCount = p3.getStarCount();
@@ -1857,6 +1887,7 @@ public class Game {
             state.p4Lives = p4.getLives();
             state.p4Alive = p4.isAlive();
             state.p4HasShield = p4.hasShield();
+            state.p4HasPauseShield = p4.hasPauseShield();
             state.p4HasShip = p4.hasShip();
             state.p4HasGun = p4.hasGun();
             state.p4StarCount = p4.getStarCount();
@@ -2000,6 +2031,7 @@ public class Game {
                 }
             }
             p1.setShield(state.p1HasShield);
+            p1.setPauseShield(state.p1HasPauseShield);
             p1.setShip(state.p1HasShip);
             p1.setGun(state.p1HasGun);
             p1.setStarCount(state.p1StarCount);
@@ -2021,6 +2053,7 @@ public class Game {
                 }
             }
             p2.setShield(state.p2HasShield);
+            p2.setPauseShield(state.p2HasPauseShield);
             p2.setShip(state.p2HasShip);
             p2.setGun(state.p2HasGun);
             p2.setStarCount(state.p2StarCount);
@@ -2042,6 +2075,7 @@ public class Game {
                 }
             }
             p3.setShield(state.p3HasShield);
+            p3.setPauseShield(state.p3HasPauseShield);
             p3.setShip(state.p3HasShip);
             p3.setGun(state.p3HasGun);
             p3.setStarCount(state.p3StarCount);
@@ -2063,6 +2097,7 @@ public class Game {
                 }
             }
             p4.setShield(state.p4HasShield);
+            p4.setPauseShield(state.p4HasPauseShield);
             p4.setShip(state.p4HasShip);
             p4.setGun(state.p4HasGun);
             p4.setStarCount(state.p4StarCount);

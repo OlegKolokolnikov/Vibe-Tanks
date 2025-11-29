@@ -35,6 +35,7 @@ public class Tank {
     private int shootCooldown;
     private boolean hasShield;
     private int shieldDuration;
+    private boolean hasPauseShield; // Shield while player is paused (multiplayer)
     private double speedMultiplier; // Base is 1.0, each CAR adds 0.3
     private int bulletPower; // 1 = normal, 2 = can break steel
     private boolean canSwim; // SHIP power-up
@@ -447,7 +448,7 @@ public class Tank {
     }
 
     public boolean damage() {
-        if (!alive || hasShield) return false;
+        if (!alive || hasShield || hasPauseShield) return false;
 
         // SHIP acts as one extra shot protection
         if (canSwim) {
@@ -482,6 +483,14 @@ public class Tank {
             gc.setStroke(Color.CYAN);
             gc.setLineWidth(2 * scale);
             gc.strokeOval(x - 4 * scale, y - 4 * scale, size + 8 * scale, size + 8 * scale);
+        }
+
+        // Draw pause shield (yellow/orange pulsing)
+        if (hasPauseShield) {
+            int pulse = (int) (System.currentTimeMillis() / 200) % 2;
+            gc.setStroke(pulse == 0 ? Color.YELLOW : Color.ORANGE);
+            gc.setLineWidth(3 * scale);
+            gc.strokeOval(x - 6 * scale, y - 6 * scale, size + 12 * scale, size + 12 * scale);
         }
 
         // Draw ship indicator if active (triangle)
@@ -635,6 +644,8 @@ public class Tank {
     public int getLives() { return lives; }
     public void setLives(int lives) { this.lives = lives; }
     public boolean hasShield() { return hasShield; }
+    public boolean hasPauseShield() { return hasPauseShield; }
+    public void setPauseShield(boolean pauseShield) { this.hasPauseShield = pauseShield; }
     public Direction getDirection() { return direction; }
 
     public void setDirection(Direction direction) {

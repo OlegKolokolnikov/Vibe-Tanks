@@ -9,9 +9,11 @@ public class EnemySpawner {
     private int spawnedCount;
     private int spawnCooldown;
     private static final int SPAWN_DELAY = 50; // ~0.8 seconds
+    private static final int BOSS_BASE_HEALTH = 12;
 
     private Random random;
     private GameMap map;
+    private int levelNumber;
 
     // Spawn positions (top of map)
     private static final double[][] SPAWN_POSITIONS = {
@@ -27,6 +29,7 @@ public class EnemySpawner {
         this.spawnCooldown = SPAWN_DELAY;
         this.random = new Random();
         this.map = map;
+        this.levelNumber = map.getLevelNumber();
     }
 
     public void update(List<Tank> enemyTanks) {
@@ -102,6 +105,15 @@ public class EnemySpawner {
 
         if (positionClear) {
             Tank enemy = new Tank(spawnPos[0], spawnPos[1], Direction.DOWN, false, 0, type);
+
+            // BOSS health increases with level: 12 + (level - 1)
+            if (type == Tank.EnemyType.BOSS) {
+                int bossHealth = BOSS_BASE_HEALTH + (levelNumber - 1);
+                enemy.setHealth(bossHealth);
+                enemy.setMaxHealth(bossHealth);
+                System.out.println("BOSS spawned with " + bossHealth + " health (Level " + levelNumber + ")");
+            }
+
             enemyTanks.add(enemy);
             spawnedCount++;
         }

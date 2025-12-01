@@ -1,0 +1,105 @@
+package com.vibetanks;
+
+import java.io.Serializable;
+
+/**
+ * Centralized entity for player data - used for display and network sync.
+ * Single source of truth for all player information.
+ */
+public class PlayerData implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    // Position and movement
+    public double x, y;
+    public int direction; // 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT
+
+    // Status
+    public int lives;
+    public boolean alive;
+    public int kills;
+    public int score;
+
+    // Power-ups
+    public boolean hasShield;
+    public boolean hasPauseShield;
+    public boolean hasShip;
+    public boolean hasGun;
+    public int starCount;
+    public int carCount;
+    public boolean hasSaw;
+    public int machinegunCount;
+
+    // Identity
+    public String nickname;
+    public int playerNumber; // 1-4
+
+    public PlayerData() {
+        this.lives = 3;
+        this.alive = true;
+        this.direction = 0;
+    }
+
+    public PlayerData(int playerNumber) {
+        this();
+        this.playerNumber = playerNumber;
+    }
+
+    /**
+     * Copy data from a Tank object
+     */
+    public void copyFromTank(Tank tank, int kills, int score, String nickname) {
+        this.x = tank.getX();
+        this.y = tank.getY();
+        this.direction = tank.getDirection().ordinal();
+        this.lives = tank.getLives();
+        this.alive = tank.isAlive();
+        this.hasShield = tank.hasShield();
+        this.hasPauseShield = tank.hasPauseShield();
+        this.hasShip = tank.hasShip();
+        this.hasGun = tank.hasGun();
+        this.starCount = tank.getStarCount();
+        this.carCount = tank.getCarCount();
+        this.hasSaw = tank.hasSaw();
+        this.machinegunCount = tank.getMachinegunCount();
+        this.kills = kills;
+        this.score = score;
+        this.nickname = nickname;
+    }
+
+    /**
+     * Apply data to a Tank object
+     */
+    public void applyToTank(Tank tank, boolean skipPosition) {
+        tank.setLives(this.lives);
+        tank.setAlive(this.alive);
+        if (this.alive && !skipPosition) {
+            tank.setPosition(this.x, this.y);
+            tank.setDirection(Direction.values()[this.direction]);
+        }
+        tank.setShield(this.hasShield);
+        tank.setPauseShield(this.hasPauseShield);
+        tank.setShip(this.hasShip);
+        tank.setGun(this.hasGun);
+        tank.setStarCount(this.starCount);
+        tank.setCarCount(this.carCount);
+        tank.setSaw(this.hasSaw);
+        tank.setMachinegunCount(this.machinegunCount);
+    }
+
+    /**
+     * Get display name (nickname or "P1", "P2", etc.)
+     */
+    public String getDisplayName() {
+        if (nickname != null && !nickname.isEmpty()) {
+            return nickname;
+        }
+        return "P" + playerNumber;
+    }
+
+    /**
+     * Get lives for display (remaining respawns = lives - 1)
+     */
+    public int getDisplayLives() {
+        return Math.max(0, lives - 1);
+    }
+}

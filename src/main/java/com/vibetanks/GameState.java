@@ -5,63 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameState implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L; // Incremented for new format
 
-    // Player 1 data
-    public double p1X, p1Y;
-    public int p1Direction; // 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT
-    public int p1Lives;
-    public boolean p1Alive;
-    public boolean p1HasShield;
-    public boolean p1HasPauseShield;
-    public boolean p1HasShip;
-    public boolean p1HasGun;
-    public int p1StarCount;
-    public int p1CarCount;
-    public boolean p1HasSaw;
-    public int p1MachinegunCount;
+    // Centralized player data array (up to 4 players)
+    public PlayerData[] players = new PlayerData[4];
 
-    // Player 2 data
-    public double p2X, p2Y;
-    public int p2Direction;
-    public int p2Lives;
-    public boolean p2Alive;
-    public boolean p2HasShield;
-    public boolean p2HasPauseShield;
-    public boolean p2HasShip;
-    public boolean p2HasGun;
-    public int p2StarCount;
-    public int p2CarCount;
-    public boolean p2HasSaw;
-    public int p2MachinegunCount;
-
-    // Player 3 data
-    public double p3X, p3Y;
-    public int p3Direction;
-    public int p3Lives;
-    public boolean p3Alive;
-    public boolean p3HasShield;
-    public boolean p3HasPauseShield;
-    public boolean p3HasShip;
-    public boolean p3HasGun;
-    public int p3StarCount;
-    public int p3CarCount;
-    public boolean p3HasSaw;
-    public int p3MachinegunCount;
-
-    // Player 4 data
-    public double p4X, p4Y;
-    public int p4Direction;
-    public int p4Lives;
-    public boolean p4Alive;
-    public boolean p4HasShield;
-    public boolean p4HasPauseShield;
-    public boolean p4HasShip;
-    public boolean p4HasGun;
-    public int p4StarCount;
-    public int p4CarCount;
-    public boolean p4HasSaw;
-    public int p4MachinegunCount;
+    public GameState() {
+        for (int i = 0; i < 4; i++) {
+            players[i] = new PlayerData(i + 1);
+        }
+    }
 
     // Enemy tanks
     public List<EnemyData> enemies = new ArrayList<>();
@@ -99,15 +52,6 @@ public class GameState implements Serializable {
 
     // Burning tiles (row*1000+col -> frames remaining)
     public List<BurningTileData> burningTiles = new ArrayList<>();
-
-    // Player kills count
-    public int p1Kills, p2Kills, p3Kills, p4Kills;
-
-    // Player scores
-    public int p1Score, p2Score, p3Score, p4Score;
-
-    // Player nicknames (null means use default "P1", "P2", etc.)
-    public String p1Nickname, p2Nickname, p3Nickname, p4Nickname;
 
     // Dancing characters for game over animation (when base is destroyed)
     public List<DancingCharacterData> dancingCharacters = new ArrayList<>();

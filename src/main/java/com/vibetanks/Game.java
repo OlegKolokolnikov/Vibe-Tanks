@@ -2296,76 +2296,10 @@ public class Game {
     private GameState buildGameState() {
         GameState state = new GameState();
 
-        // Player 1 data
-        if (playerTanks.size() >= 1) {
-            Tank p1 = playerTanks.get(0);
-            state.p1X = p1.getX();
-            state.p1Y = p1.getY();
-            state.p1Direction = p1.getDirection().ordinal();
-            state.p1Lives = p1.getLives();
-            state.p1Alive = p1.isAlive();
-            state.p1HasShield = p1.hasShield();
-            state.p1HasPauseShield = p1.hasPauseShield();
-            state.p1HasShip = p1.hasShip();
-            state.p1HasGun = p1.hasGun();
-            state.p1StarCount = p1.getStarCount();
-            state.p1CarCount = p1.getCarCount();
-            state.p1HasSaw = p1.hasSaw();
-            state.p1MachinegunCount = p1.getMachinegunCount();
-        }
-
-        // Player 2 data
-        if (playerTanks.size() >= 2) {
-            Tank p2 = playerTanks.get(1);
-            state.p2X = p2.getX();
-            state.p2Y = p2.getY();
-            state.p2Direction = p2.getDirection().ordinal();
-            state.p2Lives = p2.getLives();
-            state.p2Alive = p2.isAlive();
-            state.p2HasShield = p2.hasShield();
-            state.p2HasPauseShield = p2.hasPauseShield();
-            state.p2HasShip = p2.hasShip();
-            state.p2HasGun = p2.hasGun();
-            state.p2StarCount = p2.getStarCount();
-            state.p2CarCount = p2.getCarCount();
-            state.p2HasSaw = p2.hasSaw();
-            state.p2MachinegunCount = p2.getMachinegunCount();
-        }
-
-        // Player 3 data
-        if (playerTanks.size() >= 3) {
-            Tank p3 = playerTanks.get(2);
-            state.p3X = p3.getX();
-            state.p3Y = p3.getY();
-            state.p3Direction = p3.getDirection().ordinal();
-            state.p3Lives = p3.getLives();
-            state.p3Alive = p3.isAlive();
-            state.p3HasShield = p3.hasShield();
-            state.p3HasPauseShield = p3.hasPauseShield();
-            state.p3HasShip = p3.hasShip();
-            state.p3HasGun = p3.hasGun();
-            state.p3StarCount = p3.getStarCount();
-            state.p3CarCount = p3.getCarCount();
-            state.p3HasSaw = p3.hasSaw();
-            state.p3MachinegunCount = p3.getMachinegunCount();
-        }
-
-        // Player 4 data
-        if (playerTanks.size() >= 4) {
-            Tank p4 = playerTanks.get(3);
-            state.p4X = p4.getX();
-            state.p4Y = p4.getY();
-            state.p4Direction = p4.getDirection().ordinal();
-            state.p4Lives = p4.getLives();
-            state.p4Alive = p4.isAlive();
-            state.p4HasShield = p4.hasShield();
-            state.p4HasPauseShield = p4.hasPauseShield();
-            state.p4HasShip = p4.hasShip();
-            state.p4HasGun = p4.hasGun();
-            state.p4StarCount = p4.getStarCount();
-            state.p4CarCount = p4.getCarCount();
-            state.p4HasSaw = p4.hasSaw();
-            state.p4MachinegunCount = p4.getMachinegunCount();
+        // Build player data using centralized PlayerData entity
+        for (int i = 0; i < playerTanks.size() && i < 4; i++) {
+            Tank tank = playerTanks.get(i);
+            state.players[i].copyFromTank(tank, playerKills[i], playerScores[i], playerNicknames[i]);
         }
 
         // Enemy tanks
@@ -2438,24 +2372,6 @@ public class Game {
             state.burningTiles.add(new GameState.BurningTileData(row, col, entry.getValue()));
         }
 
-        // Player kills
-        state.p1Kills = playerKills[0];
-        state.p2Kills = playerKills[1];
-        state.p3Kills = playerKills[2];
-        state.p4Kills = playerKills[3];
-
-        // Player scores
-        state.p1Score = playerScores[0];
-        state.p2Score = playerScores[1];
-        state.p3Score = playerScores[2];
-        state.p4Score = playerScores[3];
-
-        // Player nicknames
-        state.p1Nickname = playerNicknames[0];
-        state.p2Nickname = playerNicknames[1];
-        state.p3Nickname = playerNicknames[2];
-        state.p4Nickname = playerNicknames[3];
-
         // Dancing characters for game over animation
         state.dancingInitialized = dancingInitialized;
         for (DancingCharacter dancer : dancingCharacters) {
@@ -2515,95 +2431,22 @@ public class Game {
         // Get local player index - skip position updates for local player (they control their own position)
         int myPlayerIndex = network != null ? network.getPlayerNumber() - 1 : -1;
 
-        // Update Player 1
-        if (playerTanks.size() >= 1) {
-            Tank p1 = playerTanks.get(0);
-            if (p1.getLives() != state.p1Lives) {
-                System.out.println("Syncing P1 lives: " + p1.getLives() + " -> " + state.p1Lives);
-            }
-            p1.setLives(state.p1Lives);
-            p1.setAlive(state.p1Alive);
-            if (state.p1Alive) {
-                // Skip position update for local player (client-authoritative movement)
-                if (myPlayerIndex != 0) {
-                    p1.setPosition(state.p1X, state.p1Y);
-                    p1.setDirection(Direction.values()[state.p1Direction]);
-                }
-            }
-            p1.setShield(state.p1HasShield);
-            p1.setPauseShield(state.p1HasPauseShield);
-            p1.setShip(state.p1HasShip);
-            p1.setGun(state.p1HasGun);
-            p1.setStarCount(state.p1StarCount);
-            p1.setCarCount(state.p1CarCount);
-            p1.setSaw(state.p1HasSaw);
-            p1.setMachinegunCount(state.p1MachinegunCount);
-        }
+        // Update all players using centralized PlayerData
+        for (int i = 0; i < playerTanks.size() && i < 4; i++) {
+            Tank tank = playerTanks.get(i);
+            PlayerData pData = state.players[i];
 
-        // Update Player 2
-        if (playerTanks.size() >= 2) {
-            Tank p2 = playerTanks.get(1);
-            p2.setLives(state.p2Lives);
-            p2.setAlive(state.p2Alive);
-            if (state.p2Alive) {
-                // Skip position update for local player (client-authoritative movement)
-                if (myPlayerIndex != 1) {
-                    p2.setPosition(state.p2X, state.p2Y);
-                    p2.setDirection(Direction.values()[state.p2Direction]);
-                }
-            }
-            p2.setShield(state.p2HasShield);
-            p2.setPauseShield(state.p2HasPauseShield);
-            p2.setShip(state.p2HasShip);
-            p2.setGun(state.p2HasGun);
-            p2.setStarCount(state.p2StarCount);
-            p2.setCarCount(state.p2CarCount);
-            p2.setSaw(state.p2HasSaw);
-            p2.setMachinegunCount(state.p2MachinegunCount);
-        }
+            // Skip position update for local player (client-authoritative movement)
+            boolean skipPosition = (i == myPlayerIndex);
+            pData.applyToTank(tank, skipPosition);
 
-        // Update Player 3
-        if (playerTanks.size() >= 3) {
-            Tank p3 = playerTanks.get(2);
-            p3.setLives(state.p3Lives);
-            p3.setAlive(state.p3Alive);
-            if (state.p3Alive) {
-                // Skip position update for local player (client-authoritative movement)
-                if (myPlayerIndex != 2) {
-                    p3.setPosition(state.p3X, state.p3Y);
-                    p3.setDirection(Direction.values()[state.p3Direction]);
-                }
+            // Update kills, scores, and nicknames
+            playerKills[i] = pData.kills;
+            playerScores[i] = pData.score;
+            // Don't overwrite local player's nickname
+            if (i != myPlayerIndex && pData.nickname != null) {
+                playerNicknames[i] = pData.nickname;
             }
-            p3.setShield(state.p3HasShield);
-            p3.setPauseShield(state.p3HasPauseShield);
-            p3.setShip(state.p3HasShip);
-            p3.setGun(state.p3HasGun);
-            p3.setStarCount(state.p3StarCount);
-            p3.setCarCount(state.p3CarCount);
-            p3.setSaw(state.p3HasSaw);
-            p3.setMachinegunCount(state.p3MachinegunCount);
-        }
-
-        // Update Player 4
-        if (playerTanks.size() >= 4) {
-            Tank p4 = playerTanks.get(3);
-            p4.setLives(state.p4Lives);
-            p4.setAlive(state.p4Alive);
-            if (state.p4Alive) {
-                // Skip position update for local player (client-authoritative movement)
-                if (myPlayerIndex != 3) {
-                    p4.setPosition(state.p4X, state.p4Y);
-                    p4.setDirection(Direction.values()[state.p4Direction]);
-                }
-            }
-            p4.setShield(state.p4HasShield);
-            p4.setPauseShield(state.p4HasPauseShield);
-            p4.setShip(state.p4HasShip);
-            p4.setGun(state.p4HasGun);
-            p4.setStarCount(state.p4StarCount);
-            p4.setCarCount(state.p4CarCount);
-            p4.setSaw(state.p4HasSaw);
-            p4.setMachinegunCount(state.p4MachinegunCount);
         }
 
         // Update enemy tanks - reuse existing tanks to preserve animation state
@@ -2675,25 +2518,6 @@ public class Game {
             }
             gameMap.setBurningTiles(burningData);
         }
-
-        // Update kills tracking
-        playerKills[0] = state.p1Kills;
-        playerKills[1] = state.p2Kills;
-        playerKills[2] = state.p3Kills;
-        playerKills[3] = state.p4Kills;
-
-        // Update scores tracking
-        playerScores[0] = state.p1Score;
-        playerScores[1] = state.p2Score;
-        playerScores[2] = state.p3Score;
-        playerScores[3] = state.p4Score;
-
-        // Update nicknames from other players (don't overwrite our own)
-        // myPlayerIndex is already defined earlier in this method
-        if (myPlayerIndex != 0 && state.p1Nickname != null) playerNicknames[0] = state.p1Nickname;
-        if (myPlayerIndex != 1 && state.p2Nickname != null) playerNicknames[1] = state.p2Nickname;
-        if (myPlayerIndex != 2 && state.p3Nickname != null) playerNicknames[2] = state.p3Nickname;
-        if (myPlayerIndex != 3 && state.p4Nickname != null) playerNicknames[3] = state.p4Nickname;
 
         // Sync dancing characters for game over animation
         dancingInitialized = state.dancingInitialized;

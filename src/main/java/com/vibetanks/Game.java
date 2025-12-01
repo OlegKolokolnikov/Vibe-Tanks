@@ -1229,15 +1229,14 @@ public class Game {
                             System.out.println("FREEZE: Players frozen for 10 seconds! (can still shoot)");
                         } else if (powerUp.getType() == PowerUp.Type.BOMB) {
                             // Enemy takes BOMB - explode all players on screen
+                            System.out.println("BOMB collected by enemy - damaging all players!");
                             for (Tank player : playerTanks) {
-                                if (player.isAlive() && !player.hasShield()) {
+                                if (player.isAlive() && !player.hasShield() && !player.hasPauseShield()) {
                                     player.damage();
-                                    if (!player.isAlive()) {
-                                        soundManager.playExplosion();
-                                    }
+                                    soundManager.playExplosion();
+                                    System.out.println("  Player hit by BOMB! Still alive=" + player.isAlive());
                                 }
                             }
-                            System.out.println("BOMB: All players hit!");
                         } else {
                             powerUp.applyEffect(enemy);
                         }

@@ -1402,6 +1402,96 @@ public class Game {
         gc.fillText(boss.getHealth() + "/" + boss.getMaxHealth(), barX + barWidth + 10, barY + 15);
     }
 
+    private void renderLaughingSkull(GraphicsContext gc, double centerX, double centerY) {
+        double scale = 3.0; // Big skull for game over
+        double time = System.currentTimeMillis() / 100.0;
+
+        // Laughing animation - skull bobs up and down
+        double bobY = Math.sin(time * 0.5) * 5;
+        double cy = centerY + bobY;
+
+        // Jaw opening animation for laughing
+        double jawOpen = (Math.sin(time * 2) + 1) * 8 * scale;
+
+        // Skull background glow (pulsing red)
+        double pulse = (Math.sin(time * 0.3) + 1) / 2;
+        gc.setFill(Color.rgb((int)(100 + pulse * 100), 0, 0, 0.3));
+        gc.fillOval(centerX - 70 * scale, cy - 60 * scale, 140 * scale, 130 * scale);
+
+        // Main skull (cream/bone color)
+        gc.setFill(Color.rgb(255, 250, 240));
+        gc.fillOval(centerX - 50 * scale, cy - 45 * scale, 100 * scale, 90 * scale);
+
+        // Eye sockets (black with red glow inside)
+        gc.setFill(Color.BLACK);
+        gc.fillOval(centerX - 30 * scale, cy - 20 * scale, 25 * scale, 30 * scale);
+        gc.fillOval(centerX + 5 * scale, cy - 20 * scale, 25 * scale, 30 * scale);
+
+        // Evil red eyes (pulsing)
+        gc.setFill(Color.rgb(255, (int)(50 * pulse), 0));
+        gc.fillOval(centerX - 25 * scale, cy - 12 * scale, 15 * scale, 15 * scale);
+        gc.fillOval(centerX + 10 * scale, cy - 12 * scale, 15 * scale, 15 * scale);
+
+        // Eye highlights
+        gc.setFill(Color.YELLOW);
+        gc.fillOval(centerX - 22 * scale, cy - 10 * scale, 5 * scale, 5 * scale);
+        gc.fillOval(centerX + 13 * scale, cy - 10 * scale, 5 * scale, 5 * scale);
+
+        // Nose hole (triangle)
+        gc.setFill(Color.BLACK);
+        gc.fillPolygon(
+            new double[]{centerX - 8 * scale, centerX + 8 * scale, centerX},
+            new double[]{cy + 15 * scale, cy + 15 * scale, cy + 30 * scale},
+            3
+        );
+
+        // Upper teeth row
+        gc.setFill(Color.rgb(255, 250, 240));
+        gc.fillRect(centerX - 30 * scale, cy + 32 * scale, 60 * scale, 12 * scale);
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(1);
+        for (int i = 0; i < 6; i++) {
+            double toothX = centerX - 25 * scale + i * 10 * scale;
+            gc.strokeLine(toothX, cy + 32 * scale, toothX, cy + 44 * scale);
+        }
+
+        // Lower jaw (moves for laughing)
+        gc.setFill(Color.rgb(240, 235, 225));
+        gc.fillRect(centerX - 28 * scale, cy + 32 * scale + jawOpen, 56 * scale, 10 * scale);
+        for (int i = 0; i < 5; i++) {
+            double toothX = centerX - 23 * scale + i * 10 * scale;
+            gc.strokeLine(toothX, cy + 32 * scale + jawOpen, toothX, cy + 42 * scale + jawOpen);
+        }
+
+        // Skull outline
+        gc.setStroke(Color.rgb(200, 180, 160));
+        gc.setLineWidth(2);
+        gc.strokeOval(centerX - 50 * scale, cy - 45 * scale, 100 * scale, 90 * scale);
+
+        // Crossbones behind
+        gc.setStroke(Color.rgb(255, 250, 240));
+        gc.setLineWidth(8 * scale);
+        gc.strokeLine(centerX - 80 * scale, cy - 50 * scale, centerX + 80 * scale, cy + 60 * scale);
+        gc.strokeLine(centerX + 80 * scale, cy - 50 * scale, centerX - 80 * scale, cy + 60 * scale);
+
+        // Bone ends
+        gc.setFill(Color.rgb(255, 250, 240));
+        double boneEndSize = 12 * scale;
+        gc.fillOval(centerX - 85 * scale, cy - 55 * scale, boneEndSize, boneEndSize);
+        gc.fillOval(centerX + 75 * scale, cy - 55 * scale, boneEndSize, boneEndSize);
+        gc.fillOval(centerX - 85 * scale, cy + 55 * scale, boneEndSize, boneEndSize);
+        gc.fillOval(centerX + 75 * scale, cy + 55 * scale, boneEndSize, boneEndSize);
+
+        // "HA HA HA" text floating around
+        gc.setFill(Color.RED);
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 24));
+        double textWave = Math.sin(time * 0.8) * 10;
+        gc.fillText("HA", centerX - 100, cy - 30 + textWave);
+        gc.fillText("HA", centerX + 80, cy - 20 - textWave);
+        gc.fillText("HA", centerX - 90, cy + 70 - textWave);
+        gc.fillText("HA", centerX + 70, cy + 80 + textWave);
+    }
+
     private void renderPowerUpIcon(double x, double y, PowerUp.Type type) {
         int size = 16;
 
@@ -1689,10 +1779,8 @@ public class Game {
                 dancer.render(gc);
             }
 
-            // Show dancing death if available
-            if (gameOverImageView != null) {
-                gameOverImageView.setVisible(true);
-            }
+            // Render laughing skull instead of GIF (synchronized for all players)
+            renderLaughingSkull(gc, width / 2, height / 2 - 150);
 
             // Play sad sound once and stop gameplay sounds
             if (!gameOverSoundPlayed) {

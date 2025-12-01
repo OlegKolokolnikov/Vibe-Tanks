@@ -1,6 +1,6 @@
-# Battle City - JavaFX Game
+# Vibe Tanks - JavaFX Game
 
-A recreation of the classic Battle City tank game using JavaFX.
+A classic tank battle game using JavaFX.
 
 ## Features
 
@@ -9,7 +9,7 @@ A recreation of the classic Battle City tank game using JavaFX.
 - **Online multiplayer** - Up to 4 players can team up over the network
 - **Auto-generated sound effects** - Sounds are created automatically on first run
 - 100 AI enemy tanks (max 10 on screen at once)
-- 5 different enemy tank types with varying abilities
+- 6 different enemy tank types with varying abilities
 - Multiple power-ups:
   - **GUN**: Bullets can destroy steel walls
   - **STAR**: Faster shooting (stackable)
@@ -20,6 +20,8 @@ A recreation of the classic Battle City tank game using JavaFX.
   - **TANK**: Extra life
   - **SHIELD**: Temporary invincibility (1 minute)
   - **MACHINEGUN**: Rapid-fire bullets
+  - **FREEZE**: Freeze all enemies for 10 seconds
+  - **BOMB**: Destroy all enemies on screen
 - Destructible terrain:
   - Brick walls: Destroyed by bullets
   - Steel walls: Destroyed only with GUN power-up
@@ -28,6 +30,7 @@ A recreation of the classic Battle City tank game using JavaFX.
   - Ice: Tanks slide when moving
 - Sound effects: Shooting, explosions, and intro music (automatically generated)
 - Base defense gameplay: Protect your base from enemy tanks
+- Victory celebration with Soviet flag and dancing girls!
 
 ## How to Play
 
@@ -35,22 +38,24 @@ A recreation of the classic Battle City tank game using JavaFX.
 1. **Start Menu**: When you launch the game, you'll see a start menu
 2. **Select "1 PLAYER"**: Start a solo game against 100 enemy tanks
 3. **Defend Your Base**: Destroy all enemy tanks before they destroy your base
-4. **Return to Menu**: Press **ESC** when game is over or you win
+4. **Press ENTER**: Continue to next level after victory, or restart after game over
+5. **Return to Menu**: Press **ESC** to return to menu
 
 ### Online Multiplayer (Up to 4 Players)
 1. **Host**: One player clicks "HOST GAME (ONLINE)" and shares their IP address
 2. **Join**: Up to 3 other players click "JOIN GAME (ONLINE)" and enter the host's IP
 3. **Team Up**: Work together to defend the base from 100 enemy tanks
-4. **Have Fun**: Coordinate with your teammates to survive!
+4. **Per-Player Pause**: Press ESC to pause with shield (game continues for others)
+5. **Share Lives**: Press ENTER to take a life from a teammate when dead
+6. **Have Fun**: Coordinate with your teammates to survive!
 
 ## Controls
 
 **All Players** (both local and online):
 - **Arrow Keys** (↑ ↓ ← →): Move tank
 - **Space**: Shoot
-
-**Other Controls**:
-- **ESC**: Return to menu (after game over/victory)
+- **ENTER**: Take life from teammate (when dead) / Next level / Restart
+- **ESC**: Pause (single player) / Pause with shield (multiplayer) / Return to menu
 
 ## How to Run
 
@@ -96,25 +101,30 @@ Destroy all 100 enemy tanks without losing your base.
 Power-ups randomly spawn on the map every 15 seconds. They last for 10 seconds before disappearing.
 Some power-ups are stackable (STAR, CAR, MACHINEGUN) - collect multiple for enhanced effects!
 
+**Warning**: Enemies can also collect power-ups! FREEZE will freeze players (but they can still shoot), and BOMB will damage all players.
+
 ### Lives System
 - Each player starts with 3 lives
 - Players respawn with a temporary shield after losing a life
 - Shield power-up provides 1 minute of invincibility
+- Press ENTER to take a life from a teammate who has lives to spare
 
 ### Enemy Types
-5 different enemy tank types with increasing difficulty:
-- **REGULAR**: Standard enemy tank
-- **FAST**: Moves faster than normal
-- **POWER**: Shoots stronger bullets
-- **ARMORED**: Takes 4 hits to destroy
-- **ULTRA**: Fastest, strongest enemy tank
+6 different enemy tank types with increasing difficulty:
+- **REGULAR**: Standard enemy tank (red)
+- **FAST**: Moves faster than normal (light red)
+- **ARMORED**: Takes 4 hits to destroy (dark red)
+- **POWER**: Shoots stronger bullets, drops power-ups (rainbow)
+- **HEAVY**: Fast, can destroy steel walls (black) - last 10 enemies
+- **BOSS**: 4x size, 12 health, rainbow color, immune to freeze, big bullets - spawns last!
 
 ### Network Multiplayer
 - Host runs the authoritative game logic
-- Clients send input and receive game state
+- Client-authoritative movement for smooth gameplay
 - Supports up to 4 players cooperating
 - Works best on local network (LAN)
 - Uses TCP on port 25565
+- Per-player pause with shield protection
 
 ## Technical Details
 
@@ -122,7 +132,7 @@ Some power-ups are stackable (STAR, CAR, MACHINEGUN) - collect multiple for enha
 - 60 FPS game loop
 - Collision detection for tanks, bullets, and terrain
 - AI pathfinding with obstacle avoidance
-- Network synchronization at 20Hz
-- Peer-to-peer multiplayer architecture
+- Network synchronization at 60Hz
+- Client-authoritative movement for responsive controls
 
-Enjoy playing Battle City!
+Enjoy playing Vibe Tanks!

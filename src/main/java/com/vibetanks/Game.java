@@ -1118,6 +1118,7 @@ public class Game {
                                 // BOSS kill rewards the player with a random power-up
                                 if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
                                     Tank killer = playerTanks.get(killerPlayer - 1);
+                                    System.out.println("BOSS killed by Player " + killerPlayer + " - awarding power-up!");
                                     applyRandomPowerUp(killer);
                                 }
                             }

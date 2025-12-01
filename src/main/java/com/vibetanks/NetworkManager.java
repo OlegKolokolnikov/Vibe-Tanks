@@ -1,4 +1,4 @@
-package com.battlecity;
+package com.vibetanks;
 
 import java.io.*;
 import java.net.*;

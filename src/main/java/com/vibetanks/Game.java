@@ -1,4 +1,4 @@
-package com.battlecity;
+package com.vibetanks;
 
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;

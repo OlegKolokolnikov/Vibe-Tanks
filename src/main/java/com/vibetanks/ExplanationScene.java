@@ -1,4 +1,4 @@
-package com.battlecity;
+package com.vibetanks;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

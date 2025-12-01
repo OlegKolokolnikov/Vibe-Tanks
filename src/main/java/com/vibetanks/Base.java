@@ -1,4 +1,4 @@
-package com.battlecity;
+package com.vibetanks;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;

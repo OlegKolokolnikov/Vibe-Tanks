@@ -1,4 +1,4 @@
-package com.battlecity;
+package com.vibetanks;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -11,7 +11,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("Battle City");
+        primaryStage.setTitle("Vibe Tanks");
 
         // Clean up any zombie processes on port 25565 from previous runs
         System.out.println("Performing startup port cleanup...");

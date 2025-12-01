@@ -1,4 +1,4 @@
-package com.battlecity;
+package com.vibetanks;
 
 public enum Direction {
     UP(0, -1),

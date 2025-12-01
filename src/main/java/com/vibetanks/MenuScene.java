@@ -1,4 +1,4 @@
-package com.battlecity;
+package com.vibetanks;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -37,7 +37,7 @@ public class MenuScene {
         menuLayout.setStyle("-fx-background-color: black;");
 
         // Title
-        Label title = new Label("BATTLE CITY");
+        Label title = new Label("VIBE TANKS");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 60));
         title.setTextFill(Color.YELLOW);
 

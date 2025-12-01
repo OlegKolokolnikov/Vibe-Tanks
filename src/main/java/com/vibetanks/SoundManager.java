@@ -1,4 +1,4 @@
-package com.battlecity;
+package com.vibetanks;
 
 import javax.sound.sampled.*;
 import java.io.File;

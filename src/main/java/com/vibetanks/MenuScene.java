@@ -49,7 +49,7 @@ public class MenuScene {
         // Play button
         Button playButton = new Button("PLAY");
         styleButton(playButton);
-        playButton.setOnAction(e -> startGame(1, 20));
+        playButton.setOnAction(e -> startGame(1, 25));
 
         // Host Game button (Online Multiplayer)
         Button hostButton = new Button("HOST GAME (ONLINE)");
@@ -484,7 +484,7 @@ public class MenuScene {
         // Network game supports up to 4 players
         // Both host and client need all 4 tanks so GameState can update them all
         int playerCount = 4;
-        Game game = new Game(gameRoot, windowWidth, windowHeight, playerCount, 20, stage, network);
+        Game game = new Game(gameRoot, windowWidth, windowHeight, playerCount, 25, stage, network);
         game.start();
 
         stage.setScene(gameScene);

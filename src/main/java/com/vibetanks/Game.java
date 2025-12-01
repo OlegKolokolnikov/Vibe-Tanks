@@ -1022,6 +1022,10 @@ public class Game {
             // CLIENT: Move locally and send position to host
             int myPlayerIndex = network.getPlayerNumber() - 1;
             if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
+                // Ensure local nickname is set for our player index (may not have been set correctly in constructor)
+                if (playerNicknames[myPlayerIndex] == null) {
+                    playerNicknames[myPlayerIndex] = NicknameManager.getNickname();
+                }
                 Tank myTank = playerTanks.get(myPlayerIndex);
 
                 // Capture input

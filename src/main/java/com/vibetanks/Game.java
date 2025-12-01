@@ -700,6 +700,11 @@ public class Game {
             if (event.getCode() == KeyCode.ENTER && !gameOver && !victory) {
                 tryTakeLifeFromTeammate();
             }
+
+            // TEST MODE: Press B to spawn BOSS tank that shoots at player
+            if (event.getCode() == KeyCode.B && !gameOver && !victory) {
+                spawnTestBoss();
+            }
         });
 
         // Initialize sound manager
@@ -711,6 +716,31 @@ public class Game {
         stop();
         MenuScene menuScene = new MenuScene(stage, width, height);
         stage.setScene(menuScene.getScene());
+    }
+
+    // TEST MODE: Spawn a BOSS tank directly above player 1 facing down
+    private void spawnTestBoss() {
+        if (playerTanks.isEmpty()) return;
+
+        Tank player = playerTanks.get(0);
+
+        // Clear all existing enemies
+        enemyTanks.clear();
+
+        // Spawn BOSS tank 200 pixels above player, facing DOWN
+        double bossX = player.getX();
+        double bossY = player.getY() - 200;
+
+        // Make sure BOSS is on screen
+        if (bossY < 0) bossY = 50;
+
+        Tank boss = new Tank(bossX, bossY, Direction.DOWN, false, 0, Tank.EnemyType.BOSS);
+        enemyTanks.add(boss);
+
+        System.out.println("TEST MODE: Spawned BOSS at (" + bossX + ", " + bossY + ") facing DOWN");
+        System.out.println("Player is at (" + player.getX() + ", " + player.getY() + ")");
+        System.out.println("Player has shield: " + player.hasShield() + ", pause shield: " + player.hasPauseShield());
+        System.out.println("Press B again to spawn another BOSS");
     }
 
     private void tryTakeLifeFromTeammate() {

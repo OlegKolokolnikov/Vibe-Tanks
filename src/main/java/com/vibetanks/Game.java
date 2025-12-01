@@ -669,9 +669,9 @@ public class Game {
                 return;
             }
 
-            // ENTER to restart game after game over
+            // ENTER to restart current level after game over
             if (event.getCode() == KeyCode.ENTER && gameOver) {
-                restartGame();
+                restartCurrentLevel();
                 return;
             }
 
@@ -783,9 +783,9 @@ public class Game {
         System.out.println("Starting Level " + gameMap.getLevelNumber());
     }
 
-    private void restartGame() {
-        // Reset to level 1
-        gameMap.resetToLevel1();
+    private void restartCurrentLevel() {
+        // Regenerate the same level (keep level number)
+        gameMap.regenerateCurrentLevel();
 
         // Reset game state
         victory = false;
@@ -797,10 +797,9 @@ public class Game {
         victoryDancingGirls.clear();
         winnerBonusAwarded = false;
 
-        // Reset kills and scores for new game
+        // Reset kills for this attempt (scores persist)
         for (int i = 0; i < playerKills.length; i++) {
             playerKills[i] = 0;
-            playerScores[i] = 0;
         }
 
         // Reset base
@@ -836,10 +835,10 @@ public class Game {
             gameOverImageView.setVisible(false);
         }
 
-        // Play intro sound for new game
+        // Play intro sound for retry
         soundManager.playIntro();
 
-        System.out.println("Game restarted from Level 1");
+        System.out.println("Restarting Level " + gameMap.getLevelNumber());
     }
 
     public void start() {
@@ -2210,17 +2209,26 @@ public class Game {
             }
         }
 
-        // Check if level changed (host restarted or went to next level)
-        if (state.levelNumber != gameMap.getLevelNumber()) {
-            System.out.println("Level changed from " + gameMap.getLevelNumber() + " to " + state.levelNumber);
-            // Reset client state for new level
+        // Check if level changed (host went to next level)
+        boolean levelChanged = state.levelNumber != gameMap.getLevelNumber();
+        // Check if game was restarted (gameOver went from true to false)
+        boolean gameRestarted = gameOver && !state.gameOver && !state.victory;
+
+        if (levelChanged || gameRestarted) {
+            if (levelChanged) {
+                System.out.println("Level changed from " + gameMap.getLevelNumber() + " to " + state.levelNumber);
+            }
+            if (gameRestarted) {
+                System.out.println("Game restarted by host - resetting client state");
+            }
+            // Reset client state for new level or restart
             if (state.levelNumber == 1 && gameMap.getLevelNumber() > 1) {
-                // Game was restarted - reset scores
+                // Game was restarted to level 1 - reset scores
                 for (int i = 0; i < playerScores.length; i++) {
                     playerScores[i] = 0;
                 }
             }
-            // Reset kills for new level
+            // Reset kills for new level/restart
             for (int i = 0; i < playerKills.length; i++) {
                 playerKills[i] = 0;
             }
@@ -2248,8 +2256,8 @@ public class Game {
         // Update remaining enemies count
         enemySpawner.setRemainingEnemies(state.remainingEnemies);
 
-        // Update base - recreate if level changed or if state differs
-        if (state.levelNumber != gameMap.getLevelNumber() || (state.baseAlive && !base.isAlive())) {
+        // Update base - recreate if level changed, game restarted, or if state differs
+        if (levelChanged || gameRestarted || (state.baseAlive && !base.isAlive())) {
             base = new Base(12 * 32, 24 * 32);
         } else if (!state.baseAlive && base.isAlive()) {
             base.destroy();

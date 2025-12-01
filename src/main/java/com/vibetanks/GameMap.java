@@ -53,6 +53,16 @@ public class GameMap {
         generateRandomLevel();
     }
 
+    public void regenerateCurrentLevel() {
+        // Keep the same level number but regenerate the map
+        burningTiles.clear();
+        generateRandomLevel();
+    }
+
+    public void setLevelNumber(int level) {
+        this.levelNumber = level;
+    }
+
     private void generateLevel1() {
         // Initialize with empty tiles
         for (int row = 0; row < height; row++) {

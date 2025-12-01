@@ -686,6 +686,8 @@ public class Tank {
     public void setAlive(boolean alive) { this.alive = alive; }
     public int getLives() { return lives; }
     public void setLives(int lives) { this.lives = lives; }
+    public int getHealth() { return health; }
+    public int getMaxHealth() { return maxHealth; }
     public boolean hasShield() { return hasShield; }
     public boolean hasPauseShield() { return hasPauseShield; }
     public void setPauseShield(boolean pauseShield) { this.hasPauseShield = pauseShield; }

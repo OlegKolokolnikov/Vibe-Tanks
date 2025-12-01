@@ -1351,6 +1351,57 @@ public class Game {
         renderUI();
     }
 
+    private void renderBossHealthBar() {
+        // Find BOSS tank if alive
+        Tank boss = null;
+        for (Tank enemy : enemyTanks) {
+            if (enemy.isAlive() && enemy.getEnemyType() == Tank.EnemyType.BOSS) {
+                boss = enemy;
+                break;
+            }
+        }
+
+        if (boss == null) return;
+
+        // Draw BOSS health bar at the top center of the screen
+        double barWidth = 300;
+        double barHeight = 20;
+        double barX = (width - barWidth) / 2;
+        double barY = 10;
+
+        // Background
+        gc.setFill(Color.DARKGRAY);
+        gc.fillRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4);
+
+        // Health bar background (red)
+        gc.setFill(Color.DARKRED);
+        gc.fillRect(barX, barY, barWidth, barHeight);
+
+        // Current health (rainbow animated like BOSS tank)
+        double healthPercent = (double) boss.getHealth() / boss.getMaxHealth();
+        double healthWidth = barWidth * healthPercent;
+
+        // Rainbow color cycling
+        long time = System.currentTimeMillis();
+        int colorIndex = (int) ((time / 100) % 6);
+        Color[] rainbowColors = {Color.RED, Color.ORANGE, Color.YELLOW, Color.LIME, Color.CYAN, Color.MAGENTA};
+        gc.setFill(rainbowColors[colorIndex]);
+        gc.fillRect(barX, barY, healthWidth, barHeight);
+
+        // Border
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(2);
+        gc.strokeRect(barX, barY, barWidth, barHeight);
+
+        // BOSS label
+        gc.setFill(Color.WHITE);
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 14));
+        gc.fillText("BOSS", barX - 50, barY + 15);
+
+        // Health text
+        gc.fillText(boss.getHealth() + "/" + boss.getMaxHealth(), barX + barWidth + 10, barY + 15);
+    }
+
     private void renderPowerUpIcon(double x, double y, PowerUp.Type type) {
         int size = 16;
 
@@ -1622,6 +1673,9 @@ public class Game {
                 xOffset += 35;
             }
         }
+
+        // Render BOSS health indicator if BOSS is alive
+        renderBossHealthBar();
 
         if (gameOver) {
             // Initialize dancing characters when base was destroyed (not when players died)

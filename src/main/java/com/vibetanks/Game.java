@@ -1022,10 +1022,6 @@ public class Game {
             // CLIENT: Move locally and send position to host
             int myPlayerIndex = network.getPlayerNumber() - 1;
             if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
-                // Ensure local nickname is set for our player index (may not have been set correctly in constructor)
-                if (playerNicknames[myPlayerIndex] == null) {
-                    playerNicknames[myPlayerIndex] = NicknameManager.getNickname();
-                }
                 Tank myTank = playerTanks.get(myPlayerIndex);
 
                 // Capture input
@@ -1990,10 +1986,24 @@ public class Game {
 
     /**
      * Get the display name for a player (nickname if set, otherwise "P1", "P2", etc.)
+     * For local player: use NicknameManager directly
+     * For other players: use synced nicknames from GameState
      */
     private String getPlayerDisplayName(int playerIndex) {
-        if (playerIndex >= 0 && playerIndex < 4 && playerNicknames[playerIndex] != null) {
-            return playerNicknames[playerIndex];
+        // Determine local player index
+        int myPlayerIndex = isNetworkGame && network != null ? network.getPlayerNumber() - 1 : 0;
+
+        // For local player, always use NicknameManager directly
+        if (playerIndex == myPlayerIndex) {
+            String localNickname = NicknameManager.getNickname();
+            if (localNickname != null) {
+                return localNickname;
+            }
+        } else {
+            // For other players, use synced nickname from array
+            if (playerIndex >= 0 && playerIndex < 4 && playerNicknames[playerIndex] != null) {
+                return playerNicknames[playerIndex];
+            }
         }
         return "P" + (playerIndex + 1);
     }

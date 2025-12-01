@@ -106,6 +106,9 @@ public class GameState implements Serializable {
     // Player scores
     public int p1Score, p2Score, p3Score, p4Score;
 
+    // Player nicknames (null means use default "P1", "P2", etc.)
+    public String p1Nickname, p2Nickname, p3Nickname, p4Nickname;
+
     // Dancing characters for game over animation (when base is destroyed)
     public List<DancingCharacterData> dancingCharacters = new ArrayList<>();
     public boolean dancingInitialized;

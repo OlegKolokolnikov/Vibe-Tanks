@@ -121,6 +121,34 @@ public class MenuScene {
         multiplayerInfo.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
         multiplayerInfo.setTextFill(Color.LIGHTBLUE);
 
+        // Nickname button (small, at bottom)
+        Button nicknameButton = new Button(getNicknameButtonText());
+        nicknameButton.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
+        nicknameButton.setPrefWidth(200);
+        nicknameButton.setPrefHeight(30);
+        nicknameButton.setStyle(
+            "-fx-background-color: #222222;" +
+            "-fx-text-fill: #aaaaaa;" +
+            "-fx-border-color: #555555;" +
+            "-fx-border-width: 1px;" +
+            "-fx-cursor: hand;"
+        );
+        nicknameButton.setOnMouseEntered(e -> nicknameButton.setStyle(
+            "-fx-background-color: #333333;" +
+            "-fx-text-fill: #ffffff;" +
+            "-fx-border-color: #888888;" +
+            "-fx-border-width: 1px;" +
+            "-fx-cursor: hand;"
+        ));
+        nicknameButton.setOnMouseExited(e -> nicknameButton.setStyle(
+            "-fx-background-color: #222222;" +
+            "-fx-text-fill: #aaaaaa;" +
+            "-fx-border-color: #555555;" +
+            "-fx-border-width: 1px;" +
+            "-fx-cursor: hand;"
+        ));
+        nicknameButton.setOnAction(e -> showNicknameDialog(nicknameButton));
+
         menuLayout.getChildren().addAll(
             title,
             subtitle,
@@ -130,7 +158,8 @@ public class MenuScene {
             explanationButton,
             instructions,
             controls,
-            multiplayerInfo
+            multiplayerInfo,
+            nicknameButton
         );
 
         scene = new Scene(menuLayout, windowWidth, windowHeight);
@@ -453,6 +482,114 @@ public class MenuScene {
         game.start();
 
         stage.setScene(gameScene);
+    }
+
+    private String getNicknameButtonText() {
+        String nickname = NicknameManager.getNickname();
+        if (nickname != null) {
+            return "Nickname: " + nickname;
+        }
+        return "Set Nickname";
+    }
+
+    private void showNicknameDialog(Button nicknameButton) {
+        Stage dialogStage = new Stage();
+        dialogStage.initModality(Modality.APPLICATION_MODAL);
+        dialogStage.initOwner(stage);
+        dialogStage.setTitle("Set Nickname");
+
+        VBox dialogRoot = new VBox(15);
+        dialogRoot.setPadding(new Insets(20));
+        dialogRoot.setAlignment(Pos.CENTER);
+        dialogRoot.setStyle("-fx-background-color: #2a2a2a;");
+
+        // Title
+        Label titleLabel = new Label("Enter Your Nickname");
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        titleLabel.setTextFill(Color.YELLOW);
+
+        // Info label
+        Label infoLabel = new Label("Max " + NicknameManager.getMaxLength() + " characters. Shown to all players.");
+        infoLabel.setFont(Font.font("Arial", 11));
+        infoLabel.setTextFill(Color.LIGHTGRAY);
+
+        // Nickname input field
+        TextField nicknameField = new TextField();
+        String currentNickname = NicknameManager.getNickname();
+        if (currentNickname != null) {
+            nicknameField.setText(currentNickname);
+        }
+        nicknameField.setPromptText("Enter nickname...");
+        nicknameField.setStyle("-fx-background-color: #444; -fx-text-fill: white; -fx-prompt-text-fill: gray;");
+        nicknameField.setFont(Font.font("Arial", 14));
+        nicknameField.setMaxWidth(200);
+
+        // Limit input length
+        nicknameField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.length() > NicknameManager.getMaxLength()) {
+                nicknameField.setText(oldVal);
+            }
+        });
+
+        // Buttons
+        HBox buttonBox = new HBox(15);
+        buttonBox.setAlignment(Pos.CENTER);
+
+        Button saveButton = new Button("Save");
+        saveButton.setStyle(
+            "-fx-background-color: #2a5a2a; -fx-text-fill: lightgreen; " +
+            "-fx-border-color: lightgreen; -fx-border-width: 2; -fx-cursor: hand;"
+        );
+        saveButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        saveButton.setPrefWidth(80);
+
+        Button clearButton = new Button("Clear");
+        clearButton.setStyle(
+            "-fx-background-color: #5a5a2a; -fx-text-fill: #ffff99; " +
+            "-fx-border-color: #ffff99; -fx-border-width: 2; -fx-cursor: hand;"
+        );
+        clearButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        clearButton.setPrefWidth(80);
+
+        Button cancelButton = new Button("Cancel");
+        cancelButton.setStyle(
+            "-fx-background-color: #5a2a2a; -fx-text-fill: #ff9999; " +
+            "-fx-border-color: #ff9999; -fx-border-width: 2; -fx-cursor: hand;"
+        );
+        cancelButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        cancelButton.setPrefWidth(80);
+
+        buttonBox.getChildren().addAll(saveButton, clearButton, cancelButton);
+
+        dialogRoot.getChildren().addAll(titleLabel, infoLabel, nicknameField, buttonBox);
+
+        // Handle save
+        saveButton.setOnAction(e -> {
+            String nickname = nicknameField.getText().trim();
+            if (!nickname.isEmpty()) {
+                NicknameManager.setNickname(nickname);
+                nicknameButton.setText(getNicknameButtonText());
+            }
+            dialogStage.close();
+        });
+
+        // Handle clear
+        clearButton.setOnAction(e -> {
+            NicknameManager.clearNickname();
+            nicknameButton.setText(getNicknameButtonText());
+            dialogStage.close();
+        });
+
+        // Handle cancel
+        cancelButton.setOnAction(e -> dialogStage.close());
+
+        // Handle Enter key
+        nicknameField.setOnAction(e -> saveButton.fire());
+
+        Scene dialogScene = new Scene(dialogRoot, 280, 180);
+        dialogStage.setScene(dialogScene);
+        dialogStage.setResizable(false);
+        dialogStage.showAndWait();
     }
 
     public Scene getScene() {

@@ -96,6 +96,9 @@ public class Game {
     private List<DancingGirl> victoryDancingGirls = new ArrayList<>();
     private boolean victoryDancingInitialized = false;
 
+    // Player nicknames (index 0-3 for players 1-4)
+    private String[] playerNicknames = new String[4];
+
     // Inner class for dancing characters
     private static class DancingCharacter {
         static final Color[] ALIEN_COLORS = {Color.LIME, Color.CYAN, Color.MAGENTA, Color.YELLOW};
@@ -416,6 +419,13 @@ public class Game {
         gc = canvas.getGraphicsContext2D();
         canvas.setFocusTraversable(false); // Canvas should not take focus
         root.getChildren().add(canvas);
+
+        // Load local player's nickname
+        String localNickname = NicknameManager.getNickname();
+        int myPlayerIndex = isNetworkGame && network != null ? network.getPlayerNumber() - 1 : 0;
+        if (myPlayerIndex >= 0 && myPlayerIndex < 4) {
+            playerNicknames[myPlayerIndex] = localNickname;
+        }
 
         // Load dancing anime girl GIF for victory screen
         loadVictoryImage();
@@ -1862,6 +1872,16 @@ public class Game {
         System.out.println("Victory celebration initialized with " + girlCount + " dancing girls for " + activePlayers + " players");
     }
 
+    /**
+     * Get the display name for a player (nickname if set, otherwise "P1", "P2", etc.)
+     */
+    private String getPlayerDisplayName(int playerIndex) {
+        if (playerIndex >= 0 && playerIndex < 4 && playerNicknames[playerIndex] != null) {
+            return playerNicknames[playerIndex];
+        }
+        return "P" + (playerIndex + 1);
+    }
+
     private void renderUI() {
         gc.setFill(Color.WHITE);
         gc.fillText("Level: " + gameMap.getLevelNumber() + "  Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
@@ -1870,12 +1890,12 @@ public class Game {
         int connectedCount = isNetworkGame && network != null ? network.getConnectedPlayerCount() : playerTanks.size();
         for (int i = 0; i < Math.min(playerTanks.size(), connectedCount); i++) {
             Tank player = playerTanks.get(i);
-            int playerNum = i + 1;
+            String playerName = getPlayerDisplayName(i);
             double yOffset = 40 + i * 60;
 
             // Display lives, kills and score
             gc.setFill(Color.WHITE);
-            gc.fillText("P" + playerNum + " Lives: " + player.getLives() + "  Kills: " + playerKills[i] + "  Score: " + playerScores[i], 10, yOffset);
+            gc.fillText(playerName + " Lives: " + player.getLives() + "  Kills: " + playerKills[i] + "  Score: " + playerScores[i], 10, yOffset);
 
             // Display power-ups
             double xOffset = 10;
@@ -2125,7 +2145,7 @@ public class Game {
                 gc.setFill(Color.CYAN);
             }
 
-            gc.fillText("P" + (i + 1) + ": " + kills + " kills, " + score + " pts" + status,
+            gc.fillText(getPlayerDisplayName(i) + ": " + kills + " kills, " + score + " pts" + status,
                         width / 2 - 120, startY + 25 + i * 22);
         }
 
@@ -2302,6 +2322,12 @@ public class Game {
         state.p2Score = playerScores[1];
         state.p3Score = playerScores[2];
         state.p4Score = playerScores[3];
+
+        // Player nicknames
+        state.p1Nickname = playerNicknames[0];
+        state.p2Nickname = playerNicknames[1];
+        state.p3Nickname = playerNicknames[2];
+        state.p4Nickname = playerNicknames[3];
 
         // Dancing characters for game over animation
         state.dancingInitialized = dancingInitialized;
@@ -2530,6 +2556,13 @@ public class Game {
         playerScores[1] = state.p2Score;
         playerScores[2] = state.p3Score;
         playerScores[3] = state.p4Score;
+
+        // Update nicknames from other players (don't overwrite our own)
+        // myPlayerIndex is already defined earlier in this method
+        if (myPlayerIndex != 0 && state.p1Nickname != null) playerNicknames[0] = state.p1Nickname;
+        if (myPlayerIndex != 1 && state.p2Nickname != null) playerNicknames[1] = state.p2Nickname;
+        if (myPlayerIndex != 2 && state.p3Nickname != null) playerNicknames[2] = state.p3Nickname;
+        if (myPlayerIndex != 3 && state.p4Nickname != null) playerNicknames[3] = state.p4Nickname;
 
         // Sync dancing characters for game over animation
         dancingInitialized = state.dancingInitialized;

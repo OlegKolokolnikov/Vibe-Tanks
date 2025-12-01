@@ -975,11 +975,74 @@ public class Game {
     }
 
     private void update() {
+        // Network clients must always receive game state to detect level/game transitions
+        // even during victory/gameOver screens
+        if (isNetworkGame && network != null && !network.isHost()) {
+            // CLIENT: Always receive and apply game state from host
+            GameState state = network.getLatestGameState();
+            if (state != null) {
+                applyGameState(state);
+            }
+
+            // If game is over or victory, don't process movement but still rendered
+            if (gameOver || victory || paused) {
+                return;
+            }
+
+            // CLIENT: Move locally and send position to host
+            int myPlayerIndex = network.getPlayerNumber() - 1;
+            if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
+                Tank myTank = playerTanks.get(myPlayerIndex);
+
+                // Capture input
+                PlayerInput input = inputHandler.capturePlayerInput();
+
+                // Apply movement locally (skip if paused or dead)
+                if (myTank.isAlive() && playerFreezeDuration <= 0 && !playerPaused[myPlayerIndex]) {
+                    List<Tank> allTanks = new ArrayList<>();
+                    allTanks.addAll(playerTanks);
+                    allTanks.addAll(enemyTanks);
+
+                    if (input.up) {
+                        myTank.move(Direction.UP, gameMap, allTanks, base);
+                    } else if (input.down) {
+                        myTank.move(Direction.DOWN, gameMap, allTanks, base);
+                    } else if (input.left) {
+                        myTank.move(Direction.LEFT, gameMap, allTanks, base);
+                    } else if (input.right) {
+                        myTank.move(Direction.RIGHT, gameMap, allTanks, base);
+                    }
+                }
+
+                // Shoot locally for sound (skip if paused)
+                if (myTank.isAlive() && input.shoot && !playerPaused[myPlayerIndex]) {
+                    myTank.shoot(bullets, soundManager);
+                }
+
+                // Send position and nickname to host (only if alive to avoid overwriting respawn position)
+                if (myTank.isAlive()) {
+                    input.posX = myTank.getX();
+                    input.posY = myTank.getY();
+                    input.direction = myTank.getDirection().ordinal();
+                } else {
+                    // When dead, send invalid position so host knows not to use it
+                    input.posX = -1;
+                    input.posY = -1;
+                    input.direction = 0;
+                }
+                // Always send local nickname from NicknameManager (not from array which may not be set yet)
+                input.nickname = NicknameManager.getNickname();
+                network.sendInput(input);
+            }
+            // Client skips rest of game logic
+            return;
+        }
+
         if (gameOver || victory || paused) {
             return;
         }
 
-        // Network game handling
+        // Network game handling (HOST only now)
         if (isNetworkGame && network != null) {
             if (!network.isConnected()) {
                 // Connection lost
@@ -1014,60 +1077,6 @@ public class Game {
                     }
                 }
                 // Host runs full game logic below
-            } else {
-                // CLIENT: Move locally and send position to host
-                int myPlayerIndex = network.getPlayerNumber() - 1;
-                if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
-                    Tank myTank = playerTanks.get(myPlayerIndex);
-
-                    // Capture input
-                    PlayerInput input = inputHandler.capturePlayerInput();
-
-                    // Apply movement locally (skip if paused or dead)
-                    if (myTank.isAlive() && playerFreezeDuration <= 0 && !playerPaused[myPlayerIndex]) {
-                        List<Tank> allTanks = new ArrayList<>();
-                        allTanks.addAll(playerTanks);
-                        allTanks.addAll(enemyTanks);
-
-                        if (input.up) {
-                            myTank.move(Direction.UP, gameMap, allTanks, base);
-                        } else if (input.down) {
-                            myTank.move(Direction.DOWN, gameMap, allTanks, base);
-                        } else if (input.left) {
-                            myTank.move(Direction.LEFT, gameMap, allTanks, base);
-                        } else if (input.right) {
-                            myTank.move(Direction.RIGHT, gameMap, allTanks, base);
-                        }
-                    }
-
-                    // Shoot locally for sound (skip if paused)
-                    if (myTank.isAlive() && input.shoot && !playerPaused[myPlayerIndex]) {
-                        myTank.shoot(bullets, soundManager);
-                    }
-
-                    // Send position and nickname to host (only if alive to avoid overwriting respawn position)
-                    if (myTank.isAlive()) {
-                        input.posX = myTank.getX();
-                        input.posY = myTank.getY();
-                        input.direction = myTank.getDirection().ordinal();
-                    } else {
-                        // When dead, send invalid position so host knows not to use it
-                        input.posX = -1;
-                        input.posY = -1;
-                        input.direction = 0;
-                    }
-                    // Always send local nickname from NicknameManager (not from array which may not be set yet)
-                    input.nickname = NicknameManager.getNickname();
-                    network.sendInput(input);
-                }
-
-                // CLIENT: Receive and apply game state from host
-                GameState state = network.getLatestGameState();
-                if (state != null) {
-                    applyGameState(state);
-                }
-                // Client skips rest of game logic
-                return;
             }
         }
 

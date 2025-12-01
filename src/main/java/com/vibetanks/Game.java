@@ -1988,7 +1988,9 @@ public class Game {
                     enemy.getY(),
                     enemy.getDirection().ordinal(),
                     enemy.isAlive(),
-                    enemy.getEnemyType().ordinal()
+                    enemy.getEnemyType().ordinal(),
+                    enemy.getHealth(),
+                    enemy.getMaxHealth()
                 ));
             }
         }
@@ -2198,14 +2200,17 @@ public class Game {
         while (enemyTanks.size() < state.enemies.size()) {
             enemyTanks.add(new Tank(0, 0, Direction.UP, false, 0, Tank.EnemyType.REGULAR));
         }
-        // Update each enemy tank's position (setPosition will animate tracks)
+        // Update each enemy tank's state
         for (int i = 0; i < state.enemies.size(); i++) {
             GameState.EnemyData eData = state.enemies.get(i);
             Tank enemy = enemyTanks.get(i);
+            enemy.setAlive(eData.alive);
+            enemy.setEnemyType(Tank.EnemyType.values()[eData.enemyType]);
+            enemy.setHealth(eData.health);
+            enemy.setMaxHealth(eData.maxHealth);
             if (eData.alive) {
                 enemy.setPosition(eData.x, eData.y);
                 enemy.setDirection(Direction.values()[eData.direction]);
-                enemy.setEnemyType(Tank.EnemyType.values()[eData.enemyType]);
             }
         }
 

@@ -163,13 +163,17 @@ public class GameState implements Serializable {
         public int direction;
         public boolean alive;
         public int enemyType; // 0=REGULAR, 1=ARMORED, etc.
+        public int health;
+        public int maxHealth;
 
-        public EnemyData(double x, double y, int direction, boolean alive, int enemyType) {
+        public EnemyData(double x, double y, int direction, boolean alive, int enemyType, int health, int maxHealth) {
             this.x = x;
             this.y = y;
             this.direction = direction;
             this.alive = alive;
             this.enemyType = enemyType;
+            this.health = health;
+            this.maxHealth = maxHealth;
         }
     }
 

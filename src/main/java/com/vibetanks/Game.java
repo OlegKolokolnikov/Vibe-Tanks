@@ -2464,6 +2464,9 @@ public class Game {
         // Update Player 1
         if (playerTanks.size() >= 1) {
             Tank p1 = playerTanks.get(0);
+            if (p1.getLives() != state.p1Lives) {
+                System.out.println("Syncing P1 lives: " + p1.getLives() + " -> " + state.p1Lives);
+            }
             p1.setLives(state.p1Lives);
             p1.setAlive(state.p1Alive);
             if (state.p1Alive) {

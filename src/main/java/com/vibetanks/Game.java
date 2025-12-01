@@ -1056,7 +1056,8 @@ public class Game {
                         input.posY = -1;
                         input.direction = 0;
                     }
-                    input.nickname = playerNicknames[myPlayerIndex];
+                    // Always send local nickname from NicknameManager (not from array which may not be set yet)
+                    input.nickname = NicknameManager.getNickname();
                     network.sendInput(input);
                 }
 

@@ -82,6 +82,11 @@ public class Game {
 
     // Dancing aliens/humans when enemies destroy base
     private List<DancingCharacter> dancingCharacters = new ArrayList<>();
+
+    // UFO bonus enemy
+    private UFO ufo;
+    private boolean ufoSpawnedThisLevel = false;
+    private int[] playerMachinegunKills = new int[4]; // Kills while player had machinegun
     private boolean dancingInitialized = false;
 
     // Victory dancing girls
@@ -779,6 +784,13 @@ public class Game {
             victoryImageView.setVisible(false);
         }
 
+        // Reset UFO state for new level
+        ufo = null;
+        ufoSpawnedThisLevel = false;
+        for (int i = 0; i < playerMachinegunKills.length; i++) {
+            playerMachinegunKills[i] = 0;
+        }
+
         // Play intro sound for new level
         soundManager.playIntro();
 
@@ -835,6 +847,13 @@ public class Game {
         // Hide game over image
         if (gameOverImageView != null) {
             gameOverImageView.setVisible(false);
+        }
+
+        // Reset UFO state for restart
+        ufo = null;
+        ufoSpawnedThisLevel = false;
+        for (int i = 0; i < playerMachinegunKills.length; i++) {
+            playerMachinegunKills[i] = 0;
         }
 
         // Play intro sound for retry
@@ -899,6 +918,40 @@ public class Game {
         PowerUp tempPowerUp = new PowerUp(0, 0, type);
         tempPowerUp.applyEffect(player);
         System.out.println("BOSS KILL REWARD: Player received " + type + "!");
+    }
+
+    private void checkAndSpawnUFO() {
+        // UFO spawn conditions:
+        // 1. 10 or fewer enemies remaining (but more than 1 - BOSS not yet spawned)
+        // 2. At least one player has machinegun and has killed 5+ enemies with it
+        int remaining = enemySpawner.getRemainingEnemies();
+        if (remaining > 10 || remaining <= 1) {
+            return; // Not in the right enemy count range
+        }
+
+        // Check if any player qualifies (has machinegun and 5+ machinegun kills)
+        boolean qualified = false;
+        for (int i = 0; i < playerTanks.size(); i++) {
+            Tank player = playerTanks.get(i);
+            if (player.getMachinegunCount() > 0 && playerMachinegunKills[i] >= 5) {
+                qualified = true;
+                break;
+            }
+        }
+
+        if (!qualified) {
+            return;
+        }
+
+        // Spawn UFO from random side
+        Random random = new Random();
+        boolean fromRight = random.nextBoolean();
+        double startX = fromRight ? width + 10 : -58;
+        double startY = 100 + random.nextInt(height - 300);
+
+        ufo = new UFO(startX, startY, !fromRight); // Moving opposite to start side
+        ufoSpawnedThisLevel = true;
+        System.out.println("UFO spawned! From " + (fromRight ? "right" : "left") + " side");
     }
 
     private void update() {
@@ -1034,6 +1087,19 @@ public class Game {
         // Spawn enemies if needed
         enemySpawner.update(enemyTanks);
 
+        // Check UFO spawn conditions (only host spawns UFO)
+        if (!ufoSpawnedThisLevel && ufo == null) {
+            checkAndSpawnUFO();
+        }
+
+        // Update UFO if exists
+        if (ufo != null && ufo.isAlive()) {
+            ufo.update(bullets, width, height, soundManager);
+            if (!ufo.isAlive()) {
+                ufo = null; // UFO disappeared or was destroyed
+            }
+        }
+
         // Update player tanks and handle respawn
         for (int i = 0; i < playerTanks.size(); i++) {
             Tank player = playerTanks.get(i);
@@ -1088,6 +1154,25 @@ public class Game {
             // Check bullet collision with tanks
             boolean bulletRemoved = false;
 
+            // Check collision with UFO (from player bullets)
+            if (!bullet.isFromEnemy() && ufo != null && ufo.isAlive()) {
+                if (ufo.collidesWith(bullet)) {
+                    boolean destroyed = ufo.damage();
+                    if (destroyed) {
+                        soundManager.playExplosion();
+                        // Award 20 points to the player who killed UFO
+                        int killerPlayer = bullet.getOwnerPlayerNumber();
+                        if (killerPlayer >= 1 && killerPlayer <= 4) {
+                            playerScores[killerPlayer - 1] += 20;
+                            System.out.println("UFO destroyed by Player " + killerPlayer + " - awarded 20 points!");
+                        }
+                        ufo = null;
+                    }
+                    bulletIterator.remove();
+                    continue;
+                }
+            }
+
             // Check collision with enemy tanks (from player bullets)
             if (!bullet.isFromEnemy()) {
                 for (Tank enemy : enemyTanks) {
@@ -1106,6 +1191,13 @@ public class Game {
                             int killerPlayer = bullet.getOwnerPlayerNumber();
                             if (killerPlayer >= 1 && killerPlayer <= 4) {
                                 playerKills[killerPlayer - 1]++;
+
+                                // Track machinegun kills for UFO spawn condition
+                                Tank killer = playerTanks.get(killerPlayer - 1);
+                                if (killer.getMachinegunCount() > 0) {
+                                    playerMachinegunKills[killerPlayer - 1]++;
+                                }
+
                                 // Award points based on enemy type
                                 int points = switch (enemy.getEnemyType()) {
                                     case POWER -> 2;  // Rainbow tank
@@ -1117,7 +1209,6 @@ public class Game {
 
                                 // BOSS kill rewards the player with a random power-up
                                 if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
-                                    Tank killer = playerTanks.get(killerPlayer - 1);
                                     System.out.println("BOSS killed by Player " + killerPlayer + " - awarding power-up!");
                                     applyRandomPowerUp(killer);
                                 }
@@ -1339,6 +1430,11 @@ public class Game {
                     }
                 }
             }
+        }
+
+        // Render UFO (above tanks, below trees)
+        if (ufo != null && ufo.isAlive()) {
+            ufo.render(gc);
         }
 
         // Render trees ON TOP of tanks to make tanks partially visible in forest
@@ -2171,6 +2267,18 @@ public class Game {
         state.tileChanges.addAll(mapChanges);
         mapChanges.clear(); // Clear after sending
 
+        // UFO data
+        if (ufo != null && ufo.isAlive()) {
+            state.ufoData = new GameState.UFOData(
+                ufo.getX(), ufo.getY(),
+                ufo.getDx(), ufo.getDy(),
+                ufo.isAlive(), ufo.getHealth(),
+                ufo.getLifetime(), ufo.isMovingRight()
+            );
+        } else {
+            state.ufoData = null;
+        }
+
         return state;
     }
 
@@ -2384,6 +2492,22 @@ public class Game {
                     gData.danceStyle, gData.dressColorIndex, gData.hairColorIndex
                 ));
             }
+        }
+
+        // Sync UFO from host
+        if (state.ufoData != null && state.ufoData.alive) {
+            if (ufo == null) {
+                ufo = new UFO(state.ufoData.x, state.ufoData.y, state.ufoData.movingRight);
+            }
+            ufo.setX(state.ufoData.x);
+            ufo.setY(state.ufoData.y);
+            ufo.setDx(state.ufoData.dx);
+            ufo.setDy(state.ufoData.dy);
+            ufo.setHealth(state.ufoData.health);
+            ufo.setLifetime(state.ufoData.lifetime);
+            ufo.setAlive(state.ufoData.alive);
+        } else {
+            ufo = null;
         }
 
         // Check if level changed (host went to next level)

@@ -113,6 +113,29 @@ public class GameState implements Serializable {
     public List<DancingGirlData> victoryDancingGirls = new ArrayList<>();
     public boolean victoryDancingInitialized;
 
+    // UFO bonus enemy
+    public UFOData ufoData;
+
+    public static class UFOData implements Serializable {
+        public double x, y;
+        public double dx, dy;
+        public boolean alive;
+        public int health;
+        public int lifetime;
+        public boolean movingRight;
+
+        public UFOData(double x, double y, double dx, double dy, boolean alive, int health, int lifetime, boolean movingRight) {
+            this.x = x;
+            this.y = y;
+            this.dx = dx;
+            this.dy = dy;
+            this.alive = alive;
+            this.health = health;
+            this.lifetime = lifetime;
+            this.movingRight = movingRight;
+        }
+    }
+
     public static class DancingCharacterData implements Serializable {
         public double x, y;
         public boolean isAlien;

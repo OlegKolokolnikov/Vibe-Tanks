@@ -624,7 +624,9 @@ public class Game {
         root.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
             // Pause menu handling
             if (event.getCode() == KeyCode.ESCAPE) {
-                if (gameOver || victory) {
+                // ESC on victory/game over screen returns to menu
+                // Check both flags and visual state (for client sync)
+                if (gameOver || victory || victoryDancingInitialized || dancingInitialized) {
                     returnToMenu();
                 } else if (isNetworkGame) {
                     // Multiplayer: toggle per-player pause with shield

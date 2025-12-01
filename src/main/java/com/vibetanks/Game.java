@@ -634,7 +634,7 @@ public class Game {
         enemyTanks = new ArrayList<>();
 
         // Initialize enemy spawner
-        enemySpawner = new EnemySpawner(totalEnemies, 10, gameMap);
+        enemySpawner = new EnemySpawner(totalEnemies, 5, gameMap);
 
         // Initialize input handler
         inputHandler = new InputHandler(root, playerTanks);
@@ -781,7 +781,7 @@ public class Game {
 
         // Clear enemy tanks and reset spawner
         enemyTanks.clear();
-        enemySpawner = new EnemySpawner(totalEnemies, 10, gameMap);
+        enemySpawner = new EnemySpawner(totalEnemies, 5, gameMap);
 
         // Reset base protection state
         baseProtectionDuration = 0;
@@ -849,7 +849,7 @@ public class Game {
 
         // Clear enemy tanks and reset spawner
         enemyTanks.clear();
-        enemySpawner = new EnemySpawner(totalEnemies, 10, gameMap);
+        enemySpawner = new EnemySpawner(totalEnemies, 5, gameMap);
 
         // Reset base protection state
         baseProtectionDuration = 0;

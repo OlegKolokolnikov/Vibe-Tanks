@@ -1377,15 +1377,15 @@ public class Game {
         gc.setFill(Color.DARKRED);
         gc.fillRect(barX, barY, barWidth, barHeight);
 
-        // Current health (rainbow animated like BOSS tank)
+        // Current health (pulsing red like BOSS tank)
         double healthPercent = (double) boss.getHealth() / boss.getMaxHealth();
         double healthWidth = barWidth * healthPercent;
 
-        // Rainbow color cycling
-        long time = System.currentTimeMillis();
-        int colorIndex = (int) ((time / 100) % 6);
-        Color[] rainbowColors = {Color.RED, Color.ORANGE, Color.YELLOW, Color.LIME, Color.CYAN, Color.MAGENTA};
-        gc.setFill(rainbowColors[colorIndex]);
+        // Pulsing red color matching BOSS tank
+        double pulse = (Math.sin(System.currentTimeMillis() / 150.0) + 1) / 2; // 0 to 1
+        int red = (int) (150 + pulse * 105); // 150 to 255
+        int green = (int) (pulse * 50); // 0 to 50
+        gc.setFill(Color.rgb(red, green, 0));
         gc.fillRect(barX, barY, healthWidth, barHeight);
 
         // Border

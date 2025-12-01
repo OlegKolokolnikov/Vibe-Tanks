@@ -574,12 +574,20 @@ public class Tank {
                 case REGULAR -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
                 case ARMORED -> { tankColor = Color.DARKRED; darkColor = Color.rgb(80, 0, 0); }
                 case FAST -> { tankColor = Color.rgb(255, 100, 100); darkColor = Color.rgb(200, 60, 60); }
-                case POWER, BOSS -> {
-                    // Rainbow color animation for POWER and BOSS tanks
+                case POWER -> {
+                    // Rainbow color animation for POWER tanks
                     int frame = (int) (System.currentTimeMillis() / 100) % 7;
                     Color[] rainbow = { Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.PURPLE };
                     tankColor = rainbow[frame];
                     darkColor = tankColor.darker();
+                }
+                case BOSS -> {
+                    // Pulsing red color for BOSS tank
+                    double pulse = (Math.sin(System.currentTimeMillis() / 150.0) + 1) / 2; // 0 to 1
+                    int red = (int) (150 + pulse * 105); // 150 to 255
+                    int green = (int) (pulse * 50); // 0 to 50
+                    tankColor = Color.rgb(red, green, 0);
+                    darkColor = Color.rgb((int)(red * 0.6), 0, 0);
                 }
                 case HEAVY -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
                 default -> { tankColor = Color.RED; darkColor = Color.DARKRED; }

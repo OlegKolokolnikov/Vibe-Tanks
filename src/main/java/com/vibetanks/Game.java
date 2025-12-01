@@ -1955,9 +1955,10 @@ public class Game {
             String playerName = getPlayerDisplayName(i);
             double yOffset = 40 + i * 60;
 
-            // Display lives, kills and score
+            // Display lives (show remaining respawns, not total lives), kills and score
+            int displayLives = Math.max(0, player.getLives() - 1);
             gc.setFill(Color.WHITE);
-            gc.fillText(playerName + " Lives: " + player.getLives() + "  Kills: " + playerKills[i] + "  Score: " + playerScores[i], 10, yOffset);
+            gc.fillText(playerName + " Lives: " + displayLives + "  Kills: " + playerKills[i] + "  Score: " + playerScores[i], 10, yOffset);
 
             // Display power-ups
             double xOffset = 10;

@@ -1552,15 +1552,17 @@ public class Game {
     }
 
     private void renderUfoKilledMessage() {
+        // Save current font to restore later
+        javafx.scene.text.Font savedFont = gc.getFont();
+
         // Calculate fade effect (fade out in last second)
         double alpha = 1.0;
         if (ufoKilledMessageTimer < 60) { // Last second
             alpha = ufoKilledMessageTimer / 60.0;
         }
 
-        // Pulsing effect
-        double pulse = 1.0 + Math.sin(System.currentTimeMillis() / 100.0) * 0.1;
-        int fontSize = (int)(50 * pulse);
+        // Fixed font size (no pulsing to avoid layout jumps)
+        int fontSize = 50;
 
         // Draw "Zed is dead!" message in the center of the screen
         gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize));
@@ -1573,7 +1575,7 @@ public class Game {
         gc.setFill(Color.rgb(50, 255, 50, alpha));
         gc.fillText("Zed is dead!", width / 2 - 130, height / 3);
 
-        // Explosion effect around text
+        // Explosion effect around text (pulsing particles only)
         double centerX = width / 2;
         double centerY = height / 3 - 40;
         gc.setFill(Color.rgb(255, 200, 50, alpha * 0.6));
@@ -1584,6 +1586,9 @@ public class Game {
             double starY = centerY + Math.sin(angle) * dist * 0.5;
             gc.fillOval(starX - 5, starY - 5, 10, 10);
         }
+
+        // Restore original font
+        gc.setFont(savedFont);
     }
 
     private void renderBossHealthBar() {

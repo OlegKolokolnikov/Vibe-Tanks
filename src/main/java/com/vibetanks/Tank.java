@@ -96,6 +96,8 @@ public class Tank {
                     this.speedMultiplier = 1.5;
                     this.bulletPower = 2; // Can destroy iron/steel
                     this.size = BASE_SIZE * 4; // 4x bigger
+                    this.canSwim = true; // BOSS can swim without SHIP
+                    this.canDestroyTrees = true; // BOSS destroys everything
                 }
             }
         } else {
@@ -293,7 +295,13 @@ public class Tank {
         for (Tank other : otherTanks) {
             if (other != this && other.isAlive()) {
                 if (checkCollision(newX, newY, other.x, other.y, size, other.size)) {
-                    return; // Can't move through other tanks
+                    // BOSS destroys any tank it touches
+                    if (enemyType == EnemyType.BOSS) {
+                        other.damage();
+                        // Continue moving - BOSS doesn't stop for tanks
+                    } else {
+                        return; // Can't move through other tanks
+                    }
                 }
             }
         }
@@ -301,17 +309,52 @@ public class Tank {
         // Check collision with base (only if base is still alive)
         if (base.isAlive()) {
             if (checkCollision(newX, newY, base.getX(), base.getY(), size, 32)) {
-                return; // Can't move through base
+                // BOSS destroys the base on contact
+                if (enemyType == EnemyType.BOSS) {
+                    base.destroy();
+                    // Continue moving
+                } else {
+                    return; // Can't move through base
+                }
             }
         }
 
-        // Check collision with map tiles (pass canSwim for SHIP power-up)
-        if (!map.checkTankCollision(newX, newY, size, canSwim)) {
+        // BOSS tank destroys all tiles in its path
+        if (enemyType == EnemyType.BOSS) {
+            destroyTilesInPath(map, newX, newY);
             x = newX;
             y = newY;
-            // Animate tracks when moving
             isMoving = true;
             trackAnimationFrame++;
+        } else {
+            // Check collision with map tiles (pass canSwim for SHIP power-up)
+            if (!map.checkTankCollision(newX, newY, size, canSwim)) {
+                x = newX;
+                y = newY;
+                // Animate tracks when moving
+                isMoving = true;
+                trackAnimationFrame++;
+            }
+        }
+    }
+
+    // BOSS tank destroys all tiles it touches
+    private void destroyTilesInPath(GameMap map, double newX, double newY) {
+        int startCol = (int) newX / 32;
+        int endCol = (int) (newX + size - 1) / 32;
+        int startRow = (int) newY / 32;
+        int endRow = (int) (newY + size - 1) / 32;
+
+        for (int row = startRow; row <= endRow; row++) {
+            for (int col = startCol; col <= endCol; col++) {
+                GameMap.TileType tile = map.getTile(row, col);
+                // Destroy brick, steel, and trees
+                if (tile == GameMap.TileType.BRICK ||
+                    tile == GameMap.TileType.STEEL ||
+                    tile == GameMap.TileType.TREES) {
+                    map.setTile(row, col, GameMap.TileType.EMPTY);
+                }
+            }
         }
     }
 

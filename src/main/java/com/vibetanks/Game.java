@@ -994,8 +994,8 @@ public class Game {
                     PlayerInput clientInput = network.getPlayerInput(i);
                     if (clientInput != null) {
                         Tank clientTank = playerTanks.get(i - 1);
-                        // Accept client's position directly
-                        if (clientTank.isAlive()) {
+                        // Accept client's position directly (only if valid - client sends -1,-1 when dead)
+                        if (clientTank.isAlive() && clientInput.posX >= 0 && clientInput.posY >= 0) {
                             clientTank.setPosition(clientInput.posX, clientInput.posY);
                             clientTank.setDirection(Direction.values()[clientInput.direction]);
                         }
@@ -1023,7 +1023,7 @@ public class Game {
                     // Capture input
                     PlayerInput input = inputHandler.capturePlayerInput();
 
-                    // Apply movement locally (skip if paused)
+                    // Apply movement locally (skip if paused or dead)
                     if (myTank.isAlive() && playerFreezeDuration <= 0 && !playerPaused[myPlayerIndex]) {
                         List<Tank> allTanks = new ArrayList<>();
                         allTanks.addAll(playerTanks);
@@ -1045,10 +1045,17 @@ public class Game {
                         myTank.shoot(bullets, soundManager);
                     }
 
-                    // Send position and nickname to host
-                    input.posX = myTank.getX();
-                    input.posY = myTank.getY();
-                    input.direction = myTank.getDirection().ordinal();
+                    // Send position and nickname to host (only if alive to avoid overwriting respawn position)
+                    if (myTank.isAlive()) {
+                        input.posX = myTank.getX();
+                        input.posY = myTank.getY();
+                        input.direction = myTank.getDirection().ordinal();
+                    } else {
+                        // When dead, send invalid position so host knows not to use it
+                        input.posX = -1;
+                        input.posY = -1;
+                        input.direction = 0;
+                    }
                     input.nickname = playerNicknames[myPlayerIndex];
                     network.sendInput(input);
                 }
@@ -2701,6 +2708,25 @@ public class Game {
             // Hide end game images
             if (victoryImageView != null) victoryImageView.setVisible(false);
             if (gameOverImageView != null) gameOverImageView.setVisible(false);
+            // Reset local player tank position to start position
+            int localPlayerIdx = network != null ? network.getPlayerNumber() - 1 : -1;
+            if (localPlayerIdx >= 0 && localPlayerIdx < playerTanks.size()) {
+                Tank myTank = playerTanks.get(localPlayerIdx);
+                myTank.setPosition(playerStartPositions[localPlayerIdx][0], playerStartPositions[localPlayerIdx][1]);
+                myTank.setDirection(Direction.UP);
+                myTank.giveTemporaryShield();
+            }
+            // Clear bullets and power-ups for clean state
+            bullets.clear();
+            powerUps.clear();
+            // Clear enemy tanks - will be recreated from state
+            enemyTanks.clear();
+            // Reset spawner with proper enemy count
+            enemySpawner = new EnemySpawner(totalEnemies, 5, gameMap);
+            // Reset UFO state
+            ufo = null;
+            ufoLostMessageTimer = 0;
+            ufoKilledMessageTimer = 0;
             // Play intro sound
             soundManager.playIntro();
         }

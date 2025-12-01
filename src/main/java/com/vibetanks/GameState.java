@@ -32,6 +32,10 @@ public class GameState implements Serializable {
     public int connectedPlayers; // Number of connected players (1-4)
     public int levelNumber; // Current level number for sync
 
+    // Boss kill tracking for victory screen
+    public int bossKillerPlayerIndex = -1; // -1 = not killed, 0-3 = player index
+    public int bossKillPowerUpReward = -1; // PowerUp.Type ordinal, -1 = none
+
     // Freeze state
     public int enemyFreezeDuration;
     public int playerFreezeDuration;

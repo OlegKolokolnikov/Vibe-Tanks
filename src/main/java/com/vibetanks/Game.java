@@ -100,6 +100,10 @@ public class Game {
     // Player nicknames (index 0-3 for players 1-4)
     private String[] playerNicknames = new String[4];
 
+    // Boss kill tracking for victory screen
+    private int bossKillerPlayerIndex = -1; // -1 = not killed yet, 0-3 = player index
+    private PowerUp.Type bossKillPowerUpReward = null; // Power-up received for killing boss
+
     // Inner class for dancing characters
     private static class DancingCharacter {
         static final Color[] ALIEN_COLORS = {Color.LIME, Color.CYAN, Color.MAGENTA, Color.YELLOW};
@@ -788,6 +792,8 @@ public class Game {
         victoryDancingInitialized = false;
         victoryDancingGirls.clear();
         winnerBonusAwarded = false;
+        bossKillerPlayerIndex = -1;
+        bossKillPowerUpReward = null;
 
         // Reset kills for new round (scores persist)
         for (int i = 0; i < playerKills.length; i++) {
@@ -857,10 +863,13 @@ public class Game {
         victoryDancingInitialized = false;
         victoryDancingGirls.clear();
         winnerBonusAwarded = false;
+        bossKillerPlayerIndex = -1;
+        bossKillPowerUpReward = null;
 
-        // Reset kills for this attempt (scores persist)
+        // Reset kills and scores for new game after game over
         for (int i = 0; i < playerKills.length; i++) {
             playerKills[i] = 0;
+            playerScores[i] = 0;
         }
 
         // Reset base
@@ -949,7 +958,7 @@ public class Game {
         return new double[]{13 * 32, 13 * 32};
     }
 
-    private void applyRandomPowerUp(Tank player) {
+    private PowerUp.Type applyRandomPowerUp(Tank player) {
         // Choose a random power-up type (excluding BOMB and FREEZE which affect game state)
         Random random = new Random();
         PowerUp.Type[] goodTypes = {
@@ -968,6 +977,7 @@ public class Game {
         PowerUp tempPowerUp = new PowerUp(0, 0, type);
         tempPowerUp.applyEffect(player);
         System.out.println("BOSS KILL REWARD: Player received " + type + "!");
+        return type;
     }
 
     private void checkAndSpawnUFO() {
@@ -1303,7 +1313,8 @@ public class Game {
                                 // BOSS kill rewards the player with a random power-up
                                 if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
                                     System.out.println("BOSS killed by Player " + killerPlayer + " - awarding power-up!");
-                                    applyRandomPowerUp(killer);
+                                    bossKillerPlayerIndex = killerPlayer - 1;
+                                    bossKillPowerUpReward = applyRandomPowerUp(killer);
                                 }
                             }
                         }
@@ -2278,6 +2289,34 @@ public class Game {
 
         gc.setFill(Color.YELLOW);
         gc.fillText("Total: " + totalKills + " kills", width / 2 - 60, startY + 25 + activePlayers * 22 + 10);
+
+        // Display boss kill info on victory screen
+        if (victory && bossKillerPlayerIndex >= 0 && bossKillPowerUpReward != null) {
+            double bossInfoY = startY + 25 + activePlayers * 22 + 40;
+            gc.setFill(Color.GOLD);
+            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 16));
+            String killerName = getPlayerDisplayName(bossKillerPlayerIndex);
+            String powerUpName = getPowerUpDisplayName(bossKillPowerUpReward);
+            gc.fillText("BOSS slain by " + killerName + "!", width / 2 - 100, bossInfoY);
+            gc.setFill(Color.MAGENTA);
+            gc.fillText("Reward: " + powerUpName, width / 2 - 60, bossInfoY + 22);
+        }
+    }
+
+    private String getPowerUpDisplayName(PowerUp.Type type) {
+        return switch (type) {
+            case GUN -> "Gun (break steel)";
+            case STAR -> "Star (faster shots)";
+            case CAR -> "Car (speed boost)";
+            case SHIP -> "Ship (swim)";
+            case SAW -> "Saw (cut trees)";
+            case TANK -> "Tank (extra life)";
+            case SHIELD -> "Shield (protection)";
+            case MACHINEGUN -> "Machinegun (wrap shots)";
+            case SHOVEL -> "Shovel (steel base)";
+            case FREEZE -> "Freeze";
+            case BOMB -> "Bomb";
+        };
     }
 
     public void stop() {
@@ -2359,6 +2398,8 @@ public class Game {
         state.connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
         state.enemyFreezeDuration = enemyFreezeDuration;
         state.playerFreezeDuration = playerFreezeDuration;
+        state.bossKillerPlayerIndex = bossKillerPlayerIndex;
+        state.bossKillPowerUpReward = bossKillPowerUpReward != null ? bossKillPowerUpReward.ordinal() : -1;
 
         // Full map state for sync
         state.mapTiles = gameMap.exportTiles();
@@ -2626,6 +2667,10 @@ public class Game {
         // Update game state
         gameOver = state.gameOver;
         victory = state.victory;
+
+        // Sync boss kill info for victory screen
+        bossKillerPlayerIndex = state.bossKillerPlayerIndex;
+        bossKillPowerUpReward = state.bossKillPowerUpReward >= 0 ? PowerUp.Type.values()[state.bossKillPowerUpReward] : null;
 
         // Update freeze state
         enemyFreezeDuration = state.enemyFreezeDuration;

@@ -13,6 +13,9 @@ public class PlayerInput implements Serializable {
     public double posX, posY;
     public int direction; // Direction ordinal
 
+    // Client sends its nickname to host
+    public String nickname;
+
     public PlayerInput() {
         this.up = false;
         this.down = false;
@@ -23,6 +26,7 @@ public class PlayerInput implements Serializable {
         this.posX = 0;
         this.posY = 0;
         this.direction = 0;
+        this.nickname = null;
     }
 
     public PlayerInput(boolean up, boolean down, boolean left, boolean right, boolean shoot) {

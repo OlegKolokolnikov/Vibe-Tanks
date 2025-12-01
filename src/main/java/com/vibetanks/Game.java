@@ -1007,6 +1007,10 @@ public class Game {
                         if (clientInput.requestLife) {
                             tryTakeLifeFromTeammate(i - 1);
                         }
+                        // Update client's nickname
+                        if (clientInput.nickname != null) {
+                            playerNicknames[i - 1] = clientInput.nickname;
+                        }
                     }
                 }
                 // Host runs full game logic below
@@ -1041,10 +1045,11 @@ public class Game {
                         myTank.shoot(bullets, soundManager);
                     }
 
-                    // Send position to host
+                    // Send position and nickname to host
                     input.posX = myTank.getX();
                     input.posY = myTank.getY();
                     input.direction = myTank.getDirection().ordinal();
+                    input.nickname = playerNicknames[myPlayerIndex];
                     network.sendInput(input);
                 }
 

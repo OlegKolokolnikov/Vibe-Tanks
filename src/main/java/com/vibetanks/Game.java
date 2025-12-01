@@ -880,6 +880,27 @@ public class Game {
         return new double[]{13 * 32, 13 * 32};
     }
 
+    private void applyRandomPowerUp(Tank player) {
+        // Choose a random power-up type (excluding BOMB and FREEZE which affect game state)
+        Random random = new Random();
+        PowerUp.Type[] goodTypes = {
+            PowerUp.Type.GUN,
+            PowerUp.Type.STAR,
+            PowerUp.Type.CAR,
+            PowerUp.Type.SHIP,
+            PowerUp.Type.SAW,
+            PowerUp.Type.TANK,
+            PowerUp.Type.SHIELD,
+            PowerUp.Type.MACHINEGUN
+        };
+        PowerUp.Type type = goodTypes[random.nextInt(goodTypes.length)];
+
+        // Apply the power-up effect directly to the player
+        PowerUp tempPowerUp = new PowerUp(0, 0, type);
+        tempPowerUp.applyEffect(player);
+        System.out.println("BOSS KILL REWARD: Player received " + type + "!");
+    }
+
     private void update() {
         if (gameOver || victory || paused) {
             return;
@@ -1089,9 +1110,16 @@ public class Game {
                                 int points = switch (enemy.getEnemyType()) {
                                     case POWER -> 2;  // Rainbow tank
                                     case HEAVY -> 5;  // Black tank
+                                    case BOSS -> 10;  // Boss tank
                                     default -> 1;     // Regular, Armored, Fast
                                 };
                                 playerScores[killerPlayer - 1] += points;
+
+                                // BOSS kill rewards the player with a random power-up
+                                if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
+                                    Tank killer = playerTanks.get(killerPlayer - 1);
+                                    applyRandomPowerUp(killer);
+                                }
                             }
                         }
                         bulletIterator.remove();

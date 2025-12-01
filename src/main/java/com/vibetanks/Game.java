@@ -87,6 +87,9 @@ public class Game {
     private UFO ufo;
     private boolean ufoSpawnedThisLevel = false;
     private int[] playerMachinegunKills = new int[4]; // Kills while player had machinegun
+    private boolean ufoWasKilled = false; // Track if UFO was killed vs escaped
+    private int ufoLostMessageTimer = 0; // Timer for "Lost it!" message (3 seconds = 180 frames)
+    private static final int UFO_LOST_MESSAGE_DURATION = 180; // 3 seconds at 60 FPS
     private boolean dancingInitialized = false;
 
     // Victory dancing girls
@@ -787,6 +790,8 @@ public class Game {
         // Reset UFO state for new level
         ufo = null;
         ufoSpawnedThisLevel = false;
+        ufoWasKilled = false;
+        ufoLostMessageTimer = 0;
         for (int i = 0; i < playerMachinegunKills.length; i++) {
             playerMachinegunKills[i] = 0;
         }
@@ -852,6 +857,8 @@ public class Game {
         // Reset UFO state for restart
         ufo = null;
         ufoSpawnedThisLevel = false;
+        ufoWasKilled = false;
+        ufoLostMessageTimer = 0;
         for (int i = 0; i < playerMachinegunKills.length; i++) {
             playerMachinegunKills[i] = 0;
         }
@@ -1096,8 +1103,18 @@ public class Game {
         if (ufo != null && ufo.isAlive()) {
             ufo.update(bullets, width, height, soundManager);
             if (!ufo.isAlive()) {
-                ufo = null; // UFO disappeared or was destroyed
+                // UFO escaped (wasn't killed by player)
+                if (!ufoWasKilled) {
+                    ufoLostMessageTimer = UFO_LOST_MESSAGE_DURATION;
+                    System.out.println("UFO escaped! Lost it!");
+                }
+                ufo = null;
             }
+        }
+
+        // Update "Lost it!" message timer
+        if (ufoLostMessageTimer > 0) {
+            ufoLostMessageTimer--;
         }
 
         // Update player tanks and handle respawn
@@ -1169,6 +1186,7 @@ public class Game {
                         // Easter egg: base becomes decorated easter egg for this level
                         base.setEasterEggMode(true);
                         System.out.println("Easter egg mode activated!");
+                        ufoWasKilled = true;
                         ufo = null;
                     }
                     bulletIterator.remove();
@@ -1440,6 +1458,11 @@ public class Game {
             ufo.render(gc);
         }
 
+        // Render "Lost it!" message when UFO escapes
+        if (ufoLostMessageTimer > 0) {
+            renderUfoLostMessage();
+        }
+
         // Render trees ON TOP of tanks to make tanks partially visible in forest
         gameMap.renderTrees(gc);
 
@@ -1448,6 +1471,37 @@ public class Game {
 
         // Render UI
         renderUI();
+    }
+
+    private void renderUfoLostMessage() {
+        // Calculate fade effect (fade out in last second)
+        double alpha = 1.0;
+        if (ufoLostMessageTimer < 60) { // Last second
+            alpha = ufoLostMessageTimer / 60.0;
+        }
+
+        // Pulsing effect
+        double pulse = 1.0 + Math.sin(System.currentTimeMillis() / 100.0) * 0.1;
+        int fontSize = (int)(50 * pulse);
+
+        // Draw "Lost it!" message in the center of the screen
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize));
+
+        // Shadow/outline effect
+        gc.setFill(Color.rgb(0, 0, 0, alpha * 0.7));
+        gc.fillText("Lost it!", width / 2 - 85 + 3, height / 3 + 3);
+
+        // Main text with red color
+        gc.setFill(Color.rgb(255, 50, 50, alpha));
+        gc.fillText("Lost it!", width / 2 - 85, height / 3);
+
+        // UFO icon above the text (simple representation)
+        double iconX = width / 2;
+        double iconY = height / 3 - 60;
+        gc.setFill(Color.rgb(120, 120, 140, alpha));
+        gc.fillOval(iconX - 25, iconY, 50, 20);
+        gc.setFill(Color.rgb(150, 200, 255, alpha * 0.7));
+        gc.fillOval(iconX - 12, iconY - 15, 24, 20);
     }
 
     private void renderBossHealthBar() {
@@ -2283,6 +2337,9 @@ public class Game {
             state.ufoData = null;
         }
 
+        // UFO lost message timer
+        state.ufoLostMessageTimer = ufoLostMessageTimer;
+
         return state;
     }
 
@@ -2513,6 +2570,9 @@ public class Game {
         } else {
             ufo = null;
         }
+
+        // Sync UFO lost message timer
+        ufoLostMessageTimer = state.ufoLostMessageTimer;
 
         // Check if level changed (host went to next level)
         boolean levelChanged = state.levelNumber != gameMap.getLevelNumber();

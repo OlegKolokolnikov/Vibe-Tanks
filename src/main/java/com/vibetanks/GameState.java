@@ -116,6 +116,7 @@ public class GameState implements Serializable {
 
     // UFO bonus enemy
     public UFOData ufoData;
+    public int ufoLostMessageTimer; // Timer for "Lost it!" message
 
     public static class UFOData implements Serializable {
         public double x, y;

@@ -319,13 +319,16 @@ public class Tank {
             }
         }
 
-        // BOSS tank destroys all tiles in its path
+        // BOSS tank destroys brick/trees but is blocked by steel
         if (enemyType == EnemyType.BOSS) {
-            destroyTilesInPath(map, newX, newY);
-            x = newX;
-            y = newY;
-            isMoving = true;
-            trackAnimationFrame++;
+            // Check if steel is in the way
+            if (!hasBlockingSteel(map, newX, newY)) {
+                destroyTilesInPath(map, newX, newY);
+                x = newX;
+                y = newY;
+                isMoving = true;
+                trackAnimationFrame++;
+            }
         } else {
             // Check collision with map tiles (pass canSwim for SHIP power-up)
             if (!map.checkTankCollision(newX, newY, size, canSwim)) {
@@ -338,7 +341,24 @@ public class Tank {
         }
     }
 
-    // BOSS tank destroys all tiles it touches
+    // Check if steel blocks the path for BOSS tank
+    private boolean hasBlockingSteel(GameMap map, double newX, double newY) {
+        int startCol = (int) newX / 32;
+        int endCol = (int) (newX + size - 1) / 32;
+        int startRow = (int) newY / 32;
+        int endRow = (int) (newY + size - 1) / 32;
+
+        for (int row = startRow; row <= endRow; row++) {
+            for (int col = startCol; col <= endCol; col++) {
+                if (map.getTile(row, col) == GameMap.TileType.STEEL) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // BOSS tank destroys brick and trees it touches (not steel)
     private void destroyTilesInPath(GameMap map, double newX, double newY) {
         int startCol = (int) newX / 32;
         int endCol = (int) (newX + size - 1) / 32;
@@ -348,9 +368,8 @@ public class Tank {
         for (int row = startRow; row <= endRow; row++) {
             for (int col = startCol; col <= endCol; col++) {
                 GameMap.TileType tile = map.getTile(row, col);
-                // Destroy brick, steel, and trees
+                // Destroy brick and trees (not steel)
                 if (tile == GameMap.TileType.BRICK ||
-                    tile == GameMap.TileType.STEEL ||
                     tile == GameMap.TileType.TREES) {
                     map.setTile(row, col, GameMap.TileType.EMPTY);
                 }

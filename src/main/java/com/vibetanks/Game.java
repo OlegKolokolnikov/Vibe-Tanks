@@ -1286,11 +1286,16 @@ public class Game {
                 // Enemy bullet - check collision with players
                 for (Tank player : playerTanks) {
                     if (player.isAlive() && bullet.collidesWith(player)) {
-                        if (!player.hasShield()) {
-                            player.damage();
+                        if (!player.hasShield() && !player.hasPauseShield()) {
+                            boolean damaged = player.damage();
+                            if (bullet.getSize() > 8) {
+                                System.out.println("BOSS bullet hit player! Damaged: " + damaged + ", Player alive: " + player.isAlive());
+                            }
                             if (!player.isAlive()) {
                                 soundManager.playExplosion();
                             }
+                        } else if (bullet.getSize() > 8) {
+                            System.out.println("BOSS bullet hit player but player has shield!");
                         }
                         bulletIterator.remove();
                         bulletRemoved = true;

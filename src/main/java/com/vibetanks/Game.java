@@ -1166,6 +1166,9 @@ public class Game {
                             playerScores[killerPlayer - 1] += 20;
                             System.out.println("UFO destroyed by Player " + killerPlayer + " - awarded 20 points!");
                         }
+                        // Easter egg: base becomes decorated easter egg for this level
+                        base.setEasterEggMode(true);
+                        System.out.println("Easter egg mode activated!");
                         ufo = null;
                     }
                     bulletIterator.remove();
@@ -2217,6 +2220,7 @@ public class Game {
         state.baseFlagHeight = base.getFlagHeight();
         state.baseShowVictoryFlag = base.isShowingVictoryFlag();
         state.baseVictoryFlagHeight = base.getVictoryFlagHeight();
+        state.baseEasterEggMode = base.isEasterEggMode();
         state.connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
         state.enemyFreezeDuration = enemyFreezeDuration;
         state.playerFreezeDuration = playerFreezeDuration;
@@ -2582,6 +2586,8 @@ public class Game {
         base.setFlagState(state.baseShowFlag, state.baseFlagHeight);
         // Sync victory flag state
         base.setVictoryFlagState(state.baseShowVictoryFlag, state.baseVictoryFlagHeight);
+        // Sync easter egg mode
+        base.setEasterEggMode(state.baseEasterEggMode);
 
         // Play explosion sound when enemy dies
         int currentEnemyCount = enemyTanks.size();

@@ -89,6 +89,7 @@ public class GameState implements Serializable {
     public double baseFlagHeight;
     public boolean baseShowVictoryFlag;
     public double baseVictoryFlagHeight;
+    public boolean baseEasterEggMode;
 
     // Map changes (for destructible tiles)
     public List<TileChange> tileChanges = new ArrayList<>();

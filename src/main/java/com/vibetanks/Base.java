@@ -22,6 +22,10 @@ public class Base {
     private double victoryFlagHeight = 0;
     private int victoryFlagWaveFrame = 0;
 
+    // Easter egg mode (when UFO is killed)
+    private boolean easterEggMode = false;
+    private int easterEggAnimFrame = 0;
+
     public Base(double x, double y) {
         this.x = x;
         this.y = y;
@@ -68,29 +72,35 @@ public class Base {
 
     public void render(GraphicsContext gc) {
         if (alive) {
-            // Draw base as classic Battle City eagle
-            // Background
-            gc.setFill(Color.rgb(252, 216, 168)); // Tan background
-            gc.fillRect(x, y, SIZE, SIZE);
+            if (easterEggMode) {
+                // Draw colorful Easter egg instead of eagle
+                easterEggAnimFrame++;
+                renderEasterEgg(gc);
+            } else {
+                // Draw base as classic Battle City eagle
+                // Background
+                gc.setFill(Color.rgb(252, 216, 168)); // Tan background
+                gc.fillRect(x, y, SIZE, SIZE);
 
-            // Eagle body - black
-            gc.setFill(Color.BLACK);
-            // Head
-            gc.fillRect(x + 12, y + 4, 8, 8);
-            // Body center
-            gc.fillRect(x + 8, y + 12, 16, 12);
-            // Wings
-            gc.fillRect(x + 4, y + 16, 6, 8);
-            gc.fillRect(x + 22, y + 16, 6, 8);
-            // Tail/legs
-            gc.fillRect(x + 10, y + 24, 4, 6);
-            gc.fillRect(x + 18, y + 24, 4, 6);
+                // Eagle body - black
+                gc.setFill(Color.BLACK);
+                // Head
+                gc.fillRect(x + 12, y + 4, 8, 8);
+                // Body center
+                gc.fillRect(x + 8, y + 12, 16, 12);
+                // Wings
+                gc.fillRect(x + 4, y + 16, 6, 8);
+                gc.fillRect(x + 22, y + 16, 6, 8);
+                // Tail/legs
+                gc.fillRect(x + 10, y + 24, 4, 6);
+                gc.fillRect(x + 18, y + 24, 4, 6);
 
-            // Orange/red details
-            gc.setFill(Color.rgb(252, 116, 96));
-            gc.fillRect(x + 10, y + 16, 4, 4);
-            gc.fillRect(x + 18, y + 16, 4, 4);
-            gc.fillRect(x + 14, y + 12, 4, 8);
+                // Orange/red details
+                gc.setFill(Color.rgb(252, 116, 96));
+                gc.fillRect(x + 10, y + 16, 4, 4);
+                gc.fillRect(x + 18, y + 16, 4, 4);
+                gc.fillRect(x + 14, y + 12, 4, 8);
+            }
 
             // Draw rising Soviet victory flag
             if (showVictoryFlag) {
@@ -264,8 +274,99 @@ public class Base {
         }
     }
 
+    private void renderEasterEgg(GraphicsContext gc) {
+        // Colorful background
+        gc.setFill(Color.rgb(200, 255, 200)); // Light green grass
+        gc.fillRect(x, y, SIZE, SIZE);
+
+        // Easter egg - oval shape
+        double eggX = x + 4;
+        double eggY = y + 2;
+        double eggWidth = 24;
+        double eggHeight = 28;
+
+        // Color cycling based on animation frame
+        int colorIndex = (easterEggAnimFrame / 30) % 6;
+        Color baseColor = switch (colorIndex) {
+            case 0 -> Color.rgb(255, 182, 193); // Pink
+            case 1 -> Color.rgb(173, 216, 230); // Light blue
+            case 2 -> Color.rgb(144, 238, 144); // Light green
+            case 3 -> Color.rgb(255, 255, 153); // Light yellow
+            case 4 -> Color.rgb(221, 160, 221); // Plum
+            default -> Color.rgb(255, 218, 185); // Peach
+        };
+
+        // Egg base color
+        gc.setFill(baseColor);
+        gc.fillOval(eggX, eggY, eggWidth, eggHeight);
+
+        // Egg outline
+        gc.setStroke(Color.rgb(139, 90, 43)); // Brown outline
+        gc.setLineWidth(2);
+        gc.strokeOval(eggX, eggY, eggWidth, eggHeight);
+
+        // Decorative zigzag band across middle
+        gc.setStroke(Color.GOLD);
+        gc.setLineWidth(2);
+        double bandY = eggY + eggHeight / 2 - 2;
+        gc.beginPath();
+        gc.moveTo(eggX + 2, bandY);
+        for (int i = 0; i < 6; i++) {
+            double px = eggX + 4 + i * 3.5;
+            double py = bandY + ((i % 2 == 0) ? -3 : 3);
+            gc.lineTo(px, py);
+        }
+        gc.stroke();
+
+        // Decorative dots
+        gc.setFill(Color.MAGENTA);
+        gc.fillOval(eggX + 6, eggY + 6, 4, 4);
+        gc.fillOval(eggX + 14, eggY + 6, 4, 4);
+
+        gc.setFill(Color.CYAN);
+        gc.fillOval(eggX + 10, eggY + 20, 4, 4);
+
+        gc.setFill(Color.ORANGE);
+        gc.fillOval(eggX + 5, eggY + 18, 3, 3);
+        gc.fillOval(eggX + 16, eggY + 18, 3, 3);
+
+        // Star on top
+        gc.setFill(Color.GOLD);
+        double starX = eggX + eggWidth / 2;
+        double starY = eggY + 4;
+        double starSize = 4;
+        double[] starXPoints = new double[10];
+        double[] starYPoints = new double[10];
+        for (int i = 0; i < 10; i++) {
+            double angle = Math.PI / 2 + (Math.PI * i / 5);
+            double r = (i % 2 == 0) ? starSize : starSize * 0.4;
+            starXPoints[i] = starX + r * Math.cos(angle);
+            starYPoints[i] = starY - r * Math.sin(angle);
+        }
+        gc.fillPolygon(starXPoints, starYPoints, 10);
+
+        // Sparkle effect (rotating)
+        double sparkleAngle = (easterEggAnimFrame * 0.1) % (2 * Math.PI);
+        gc.setFill(Color.WHITE);
+        for (int i = 0; i < 4; i++) {
+            double angle = sparkleAngle + (i * Math.PI / 2);
+            double sx = x + SIZE / 2 + Math.cos(angle) * 18;
+            double sy = y + SIZE / 2 + Math.sin(angle) * 14;
+            gc.fillOval(sx - 2, sy - 2, 4, 4);
+        }
+    }
+
     public double getX() { return x; }
     public double getY() { return y; }
     public int getSize() { return SIZE; }
     public boolean isAlive() { return alive; }
+
+    // Easter egg mode
+    public void setEasterEggMode(boolean easterEgg) {
+        this.easterEggMode = easterEgg;
+    }
+
+    public boolean isEasterEggMode() {
+        return easterEggMode;
+    }
 }

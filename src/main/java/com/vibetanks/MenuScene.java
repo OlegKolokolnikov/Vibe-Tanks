@@ -103,32 +103,6 @@ public class MenuScene {
         ));
         joinButton.setOnAction(e -> joinGame());
 
-        // Test button
-        Button testButton = new Button("TEST (20 ENEMIES)");
-        styleButton(testButton);
-        testButton.setStyle(
-            "-fx-background-color: #555555;" +
-            "-fx-text-fill: orange;" +
-            "-fx-border-color: orange;" +
-            "-fx-border-width: 2px;" +
-            "-fx-cursor: hand;"
-        );
-        testButton.setOnMouseEntered(e -> testButton.setStyle(
-            "-fx-background-color: #777777;" +
-            "-fx-text-fill: orange;" +
-            "-fx-border-color: orange;" +
-            "-fx-border-width: 3px;" +
-            "-fx-cursor: hand;"
-        ));
-        testButton.setOnMouseExited(e -> testButton.setStyle(
-            "-fx-background-color: #555555;" +
-            "-fx-text-fill: orange;" +
-            "-fx-border-color: orange;" +
-            "-fx-border-width: 2px;" +
-            "-fx-cursor: hand;"
-        ));
-        testButton.setOnAction(e -> startGame(1, 20));
-
         // Explanation button
         Button explanationButton = new Button("EXPLANATION");
         styleButton(explanationButton);
@@ -153,7 +127,6 @@ public class MenuScene {
             playButton,
             hostButton,
             joinButton,
-            testButton,
             explanationButton,
             instructions,
             controls,

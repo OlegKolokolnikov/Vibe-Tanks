@@ -2290,16 +2290,35 @@ public class Game {
         gc.setFill(Color.YELLOW);
         gc.fillText("Total: " + totalKills + " kills", width / 2 - 60, startY + 25 + activePlayers * 22 + 10);
 
-        // Display boss kill info on victory screen
+        // Display boss kill info on victory screen - positioned at top of screen
         if (victory && bossKillerPlayerIndex >= 0 && bossKillPowerUpReward != null) {
-            double bossInfoY = startY + 25 + activePlayers * 22 + 40;
-            gc.setFill(Color.GOLD);
-            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 16));
             String killerName = getPlayerDisplayName(bossKillerPlayerIndex);
             String powerUpName = getPowerUpDisplayName(bossKillPowerUpReward);
-            gc.fillText("BOSS slain by " + killerName + "!", width / 2 - 100, bossInfoY);
+
+            // Draw at top of screen with background box for visibility
+            double boxX = width / 2 - 150;
+            double boxY = 10;
+            double boxWidth = 300;
+            double boxHeight = 55;
+
+            // Semi-transparent background
+            gc.setFill(Color.rgb(0, 0, 0, 0.7));
+            gc.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 10, 10);
+
+            // Gold border
+            gc.setStroke(Color.GOLD);
+            gc.setLineWidth(2);
+            gc.strokeRoundRect(boxX, boxY, boxWidth, boxHeight, 10, 10);
+
+            // Boss slain text
+            gc.setFill(Color.GOLD);
+            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 18));
+            gc.fillText("BOSS slain by " + killerName + "!", boxX + 20, boxY + 25);
+
+            // Reward text
             gc.setFill(Color.MAGENTA);
-            gc.fillText("Reward: " + powerUpName, width / 2 - 60, bossInfoY + 22);
+            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 16));
+            gc.fillText("Reward: " + powerUpName, boxX + 20, boxY + 45);
         }
     }
 

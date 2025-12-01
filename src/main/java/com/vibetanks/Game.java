@@ -89,7 +89,8 @@ public class Game {
     private int[] playerMachinegunKills = new int[4]; // Kills while player had machinegun
     private boolean ufoWasKilled = false; // Track if UFO was killed vs escaped
     private int ufoLostMessageTimer = 0; // Timer for "Lost it!" message (3 seconds = 180 frames)
-    private static final int UFO_LOST_MESSAGE_DURATION = 180; // 3 seconds at 60 FPS
+    private int ufoKilledMessageTimer = 0; // Timer for "Zed is dead!" message (3 seconds = 180 frames)
+    private static final int UFO_MESSAGE_DURATION = 180; // 3 seconds at 60 FPS
     private boolean dancingInitialized = false;
 
     // Victory dancing girls
@@ -802,6 +803,7 @@ public class Game {
         ufoSpawnedThisLevel = false;
         ufoWasKilled = false;
         ufoLostMessageTimer = 0;
+        ufoKilledMessageTimer = 0;
         for (int i = 0; i < playerMachinegunKills.length; i++) {
             playerMachinegunKills[i] = 0;
         }
@@ -869,6 +871,7 @@ public class Game {
         ufoSpawnedThisLevel = false;
         ufoWasKilled = false;
         ufoLostMessageTimer = 0;
+        ufoKilledMessageTimer = 0;
         for (int i = 0; i < playerMachinegunKills.length; i++) {
             playerMachinegunKills[i] = 0;
         }
@@ -1115,7 +1118,7 @@ public class Game {
             if (!ufo.isAlive()) {
                 // UFO escaped (wasn't killed by player)
                 if (!ufoWasKilled) {
-                    ufoLostMessageTimer = UFO_LOST_MESSAGE_DURATION;
+                    ufoLostMessageTimer = UFO_MESSAGE_DURATION;
                     System.out.println("UFO escaped! Lost it!");
                 }
                 ufo = null;
@@ -1125,6 +1128,11 @@ public class Game {
         // Update "Lost it!" message timer
         if (ufoLostMessageTimer > 0) {
             ufoLostMessageTimer--;
+        }
+
+        // Update "Zed is dead!" message timer
+        if (ufoKilledMessageTimer > 0) {
+            ufoKilledMessageTimer--;
         }
 
         // Update player tanks and handle respawn
@@ -1197,6 +1205,8 @@ public class Game {
                         base.setEasterEggMode(true);
                         System.out.println("Easter egg mode activated!");
                         ufoWasKilled = true;
+                        ufoKilledMessageTimer = UFO_MESSAGE_DURATION;
+                        System.out.println("Zed is dead!");
                         ufo = null;
                     }
                     bulletIterator.remove();
@@ -1473,6 +1483,11 @@ public class Game {
             renderUfoLostMessage();
         }
 
+        // Render "Zed is dead!" message when UFO is killed
+        if (ufoKilledMessageTimer > 0) {
+            renderUfoKilledMessage();
+        }
+
         // Render trees ON TOP of tanks to make tanks partially visible in forest
         gameMap.renderTrees(gc);
 
@@ -1512,6 +1527,41 @@ public class Game {
         gc.fillOval(iconX - 25, iconY, 50, 20);
         gc.setFill(Color.rgb(150, 200, 255, alpha * 0.7));
         gc.fillOval(iconX - 12, iconY - 15, 24, 20);
+    }
+
+    private void renderUfoKilledMessage() {
+        // Calculate fade effect (fade out in last second)
+        double alpha = 1.0;
+        if (ufoKilledMessageTimer < 60) { // Last second
+            alpha = ufoKilledMessageTimer / 60.0;
+        }
+
+        // Pulsing effect
+        double pulse = 1.0 + Math.sin(System.currentTimeMillis() / 100.0) * 0.1;
+        int fontSize = (int)(50 * pulse);
+
+        // Draw "Zed is dead!" message in the center of the screen
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize));
+
+        // Shadow/outline effect
+        gc.setFill(Color.rgb(0, 0, 0, alpha * 0.7));
+        gc.fillText("Zed is dead!", width / 2 - 130 + 3, height / 3 + 3);
+
+        // Main text with green color (victory!)
+        gc.setFill(Color.rgb(50, 255, 50, alpha));
+        gc.fillText("Zed is dead!", width / 2 - 130, height / 3);
+
+        // Explosion effect around text
+        double centerX = width / 2;
+        double centerY = height / 3 - 40;
+        gc.setFill(Color.rgb(255, 200, 50, alpha * 0.6));
+        for (int i = 0; i < 8; i++) {
+            double angle = (System.currentTimeMillis() / 50.0 + i * Math.PI / 4) % (2 * Math.PI);
+            double dist = 50 + Math.sin(System.currentTimeMillis() / 100.0 + i) * 10;
+            double starX = centerX + Math.cos(angle) * dist;
+            double starY = centerY + Math.sin(angle) * dist * 0.5;
+            gc.fillOval(starX - 5, starY - 5, 10, 10);
+        }
     }
 
     private void renderBossHealthBar() {
@@ -2363,8 +2413,9 @@ public class Game {
             state.ufoData = null;
         }
 
-        // UFO lost message timer
+        // UFO message timers
         state.ufoLostMessageTimer = ufoLostMessageTimer;
+        state.ufoKilledMessageTimer = ufoKilledMessageTimer;
 
         return state;
     }
@@ -2604,8 +2655,9 @@ public class Game {
             ufo = null;
         }
 
-        // Sync UFO lost message timer
+        // Sync UFO message timers
         ufoLostMessageTimer = state.ufoLostMessageTimer;
+        ufoKilledMessageTimer = state.ufoKilledMessageTimer;
 
         // Check if level changed (host went to next level)
         boolean levelChanged = state.levelNumber != gameMap.getLevelNumber();

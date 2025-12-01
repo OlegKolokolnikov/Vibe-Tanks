@@ -149,6 +149,11 @@ public class MenuScene {
         ));
         nicknameButton.setOnAction(e -> showNicknameDialog(nicknameButton));
 
+        // Credits label at the bottom
+        Label creditsLabel = new Label("Designed by Oleg and Artiom");
+        creditsLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 11));
+        creditsLabel.setTextFill(Color.GRAY);
+
         menuLayout.getChildren().addAll(
             title,
             subtitle,
@@ -159,7 +164,8 @@ public class MenuScene {
             instructions,
             controls,
             multiplayerInfo,
-            nicknameButton
+            nicknameButton,
+            creditsLabel
         );
 
         scene = new Scene(menuLayout, windowWidth, windowHeight);

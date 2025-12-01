@@ -295,9 +295,9 @@ public class Tank {
         for (Tank other : otherTanks) {
             if (other != this && other.isAlive()) {
                 if (checkCollision(newX, newY, other.x, other.y, size, other.size)) {
-                    // BOSS destroys any tank it touches
+                    // BOSS instantly kills any tank it touches (ignores shields)
                     if (enemyType == EnemyType.BOSS) {
-                        other.damage();
+                        other.instantKill();
                         // Continue moving - BOSS doesn't stop for tanks
                     } else {
                         return; // Can't move through other tanks
@@ -513,6 +513,17 @@ public class Tank {
         }
 
         return dropPowerUp;
+    }
+
+    // Instant kill - used by BOSS tank contact, ignores all shields
+    public void instantKill() {
+        health = 0;
+        lives--;
+        alive = false;
+        // Remove all shields
+        hasShield = false;
+        hasPauseShield = false;
+        System.out.println("Tank instantly killed by BOSS contact!");
     }
 
     public void render(GraphicsContext gc) {

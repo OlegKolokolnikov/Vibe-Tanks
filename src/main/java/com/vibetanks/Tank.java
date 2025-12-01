@@ -688,7 +688,51 @@ public class Tank {
                     gc.strokeLine(10 * scale, size - 6 * scale, 14 * scale, size - 6 * scale);
                     gc.strokeLine(size - 14 * scale, size - 6 * scale, size - 10 * scale, size - 6 * scale);
                 }
-                // POWER and BOSS have rainbow colors - no extra markings needed
+                case BOSS -> {
+                    // Skull with crossbones
+                    double cx = size / 2.0;
+                    double cy = size / 2.0 - 2 * scale;
+
+                    // Skull (white oval)
+                    gc.setFill(Color.WHITE);
+                    gc.fillOval(cx - 8 * scale, cy - 6 * scale, 16 * scale, 14 * scale);
+
+                    // Eye sockets (black)
+                    gc.setFill(Color.BLACK);
+                    gc.fillOval(cx - 5 * scale, cy - 2 * scale, 4 * scale, 4 * scale);
+                    gc.fillOval(cx + 1 * scale, cy - 2 * scale, 4 * scale, 4 * scale);
+
+                    // Nose (black triangle)
+                    gc.fillPolygon(
+                        new double[]{cx - 1 * scale, cx + 1 * scale, cx},
+                        new double[]{cy + 3 * scale, cy + 3 * scale, cy + 5 * scale},
+                        3
+                    );
+
+                    // Teeth (white rectangles on black mouth)
+                    gc.setFill(Color.BLACK);
+                    gc.fillRect(cx - 4 * scale, cy + 5 * scale, 8 * scale, 3 * scale);
+                    gc.setFill(Color.WHITE);
+                    for (int i = 0; i < 4; i++) {
+                        gc.fillRect(cx - 3.5 * scale + i * 2 * scale, cy + 5 * scale, 1.5 * scale, 3 * scale);
+                    }
+
+                    // Crossbones behind skull
+                    gc.setStroke(Color.WHITE);
+                    gc.setLineWidth(2 * scale);
+                    // Bone 1 (top-left to bottom-right)
+                    gc.strokeLine(cx - 12 * scale, cy - 8 * scale, cx + 12 * scale, cy + 12 * scale);
+                    // Bone 2 (top-right to bottom-left)
+                    gc.strokeLine(cx + 12 * scale, cy - 8 * scale, cx - 12 * scale, cy + 12 * scale);
+
+                    // Bone ends (small circles)
+                    gc.setFill(Color.WHITE);
+                    gc.fillOval(cx - 14 * scale, cy - 10 * scale, 4 * scale, 4 * scale);
+                    gc.fillOval(cx + 10 * scale, cy - 10 * scale, 4 * scale, 4 * scale);
+                    gc.fillOval(cx - 14 * scale, cy + 10 * scale, 4 * scale, 4 * scale);
+                    gc.fillOval(cx + 10 * scale, cy + 10 * scale, 4 * scale, 4 * scale);
+                }
+                // POWER has rainbow colors - no extra markings needed
             }
         }
 

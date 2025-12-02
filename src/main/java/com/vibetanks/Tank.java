@@ -33,6 +33,7 @@ public class Tank {
     private int maxHealth;
 
     private int shootCooldown;
+    private int activeBulletCount; // Track how many bullets this tank has active
     private boolean hasShield;
     private int shieldDuration;
     private boolean hasPauseShield; // Shield while player is paused (multiplayer)
@@ -106,6 +107,7 @@ public class Tank {
 
         this.health = maxHealth;
         this.shootCooldown = 0;
+        this.activeBulletCount = 0;
         this.hasShield = isPlayer; // Players start with shield
         this.shieldDuration = isPlayer ? 180 : 0; // 3 seconds
         if (isPlayer) {
@@ -401,7 +403,8 @@ public class Tank {
     }
 
     public void shoot(List<Bullet> bullets, SoundManager soundManager) {
-        if (!alive || shootCooldown > 0) return;
+        // Can shoot if: cooldown is 0 OR no active bullets from this tank
+        if (!alive || (shootCooldown > 0 && activeBulletCount > 0)) return;
 
         // BOSS tanks have bigger bullets (4x size = 32 pixels)
         int bulletSize = (enemyType == EnemyType.BOSS) ? 32 : 8;
@@ -436,11 +439,19 @@ public class Tank {
             }
 
             bullets.add(new Bullet(offsetX, offsetY, direction, !isPlayer, bulletPower, canDestroyTrees, isPlayer ? playerNumber : 0, bulletSize));
+            activeBulletCount++;
         }
 
         // Apply shoot cooldown reduction from STAR power-ups (min cooldown is 5 frames)
         shootCooldown = Math.max(5, SHOOT_COOLDOWN - (shootCooldownReduction * 5));
         soundManager.playShoot();
+    }
+
+    // Called when a bullet from this tank is destroyed
+    public void bulletDestroyed() {
+        if (activeBulletCount > 0) {
+            activeBulletCount--;
+        }
     }
 
     public void updateAI(GameMap map, List<Bullet> bullets, List<Tank> allTanks, Base base, SoundManager soundManager) {

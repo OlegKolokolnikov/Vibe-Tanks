@@ -1010,6 +1010,20 @@ public class Game {
         }
     }
 
+    /**
+     * Notify the owner tank that their bullet was destroyed.
+     * This allows the tank to shoot again immediately.
+     */
+    private void notifyBulletDestroyed(Bullet bullet) {
+        if (!bullet.isFromEnemy()) {
+            int playerNum = bullet.getOwnerPlayerNumber();
+            if (playerNum >= 1 && playerNum <= playerTanks.size()) {
+                playerTanks.get(playerNum - 1).bulletDestroyed();
+            }
+        }
+        // Enemies don't need this optimization - they have AI cooldowns
+    }
+
     private void checkAndSpawnUFO() {
         // UFO spawn conditions:
         // 1. 10 or fewer enemies remaining (but more than 1 - BOSS not yet spawned)
@@ -1265,6 +1279,7 @@ public class Game {
 
             // Check bullet collisions with map
             if (gameMap.checkBulletCollision(bullet)) {
+                notifyBulletDestroyed(bullet);
                 bulletIterator.remove();
                 continue;
             }
@@ -1273,6 +1288,7 @@ public class Game {
             if (bullet.isOutOfBounds(width, height)) {
                 // Try to wrap around if border is destroyed, otherwise remove bullet
                 if (!bullet.handleWraparound(gameMap, width, height)) {
+                    notifyBulletDestroyed(bullet);
                     bulletIterator.remove();
                     continue;
                 }
@@ -1302,6 +1318,7 @@ public class Game {
                         System.out.println("Zed is dead!");
                         ufo = null;
                     }
+                    notifyBulletDestroyed(bullet);
                     bulletIterator.remove();
                     continue;
                 }
@@ -1349,6 +1366,7 @@ public class Game {
                                 }
                             }
                         }
+                        notifyBulletDestroyed(bullet);
                         bulletIterator.remove();
                         bulletRemoved = true;
                         break;
@@ -1369,6 +1387,7 @@ public class Game {
                         } else if (bullet.getSize() > 8) {
                             System.out.println("BOSS bullet hit player but player has shield!");
                         }
+                        notifyBulletDestroyed(bullet);
                         bulletIterator.remove();
                         bulletRemoved = true;
                         break;
@@ -1380,6 +1399,7 @@ public class Game {
             if (!bulletRemoved && bullet.collidesWith(base)) {
                 base.destroy();
                 soundManager.playExplosion();
+                notifyBulletDestroyed(bullet);
                 bulletIterator.remove();
                 bulletRemoved = true;
                 gameOver = true;
@@ -1392,6 +1412,8 @@ public class Game {
             for (int j = i + 1; j < bullets.size(); j++) {
                 Bullet bullet2 = bullets.get(j);
                 if (bullet1.collidesWith(bullet2)) {
+                    notifyBulletDestroyed(bullet1);
+                    notifyBulletDestroyed(bullet2);
                     bullets.remove(j);
                     bullets.remove(i);
                     i--; // Adjust index after removal

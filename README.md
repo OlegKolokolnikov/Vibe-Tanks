@@ -5,10 +5,10 @@ A classic tank battle game using JavaFX.
 ## Features
 
 - **Start Menu** with game mode selection
-- **Single-player mode** - Battle 100 enemy tanks solo
-- **Online multiplayer** - Up to 4 players can team up over the network
+- **Single-player mode** - Battle enemy tanks solo
+- **Online multiplayer** - 2 players can team up over the network
 - **Auto-generated sound effects** - Sounds are created automatically on first run
-- 100 AI enemy tanks (max 10 on screen at once)
+- 25 AI enemy tanks per level (max 5 on screen at once)
 - 6 different enemy tank types with varying abilities
 - Multiple power-ups:
   - **GUN**: Bullets can destroy steel walls
@@ -19,7 +19,7 @@ A classic tank battle game using JavaFX.
   - **SAW**: Can destroy trees/forest
   - **TANK**: Extra life
   - **SHIELD**: Temporary invincibility (1 minute)
-  - **MACHINEGUN**: Rapid-fire bullets
+  - **MACHINEGUN**: Multiple bullets in a line (stackable)
   - **FREEZE**: Freeze all enemies for 10 seconds
   - **BOMB**: Destroy all enemies on screen
 - Destructible terrain:
@@ -36,23 +36,23 @@ A classic tank battle game using JavaFX.
 
 ### Single Player
 1. **Start Menu**: When you launch the game, you'll see a start menu
-2. **Select "1 PLAYER"**: Start a solo game against 100 enemy tanks
+2. **Select "1 PLAYER"**: Start a solo game against enemy tanks
 3. **Defend Your Base**: Destroy all enemy tanks before they destroy your base
 4. **Press ENTER**: Continue to next level after victory, or restart after game over
 5. **Return to Menu**: Press **ESC** to return to menu
 
-### Online Multiplayer (Up to 4 Players)
+### Online Multiplayer (2 Players)
 1. **Host**: One player clicks "HOST GAME (ONLINE)" and shares their IP address
-2. **Join**: Up to 3 other players click "JOIN GAME (ONLINE)" and enter the host's IP
-3. **Team Up**: Work together to defend the base from 100 enemy tanks
+2. **Join**: The other player clicks "JOIN GAME (ONLINE)" and enters the host's IP
+3. **Team Up**: Work together to defend the base from enemy tanks
 4. **Per-Player Pause**: Press ESC to pause with shield (game continues for others)
 5. **Share Lives**: Press ENTER to take a life from a teammate when dead
-6. **Have Fun**: Coordinate with your teammates to survive!
+6. **Have Fun**: Coordinate with your teammate to survive!
 
 ## Controls
 
 **All Players** (both local and online):
-- **Arrow Keys** (↑ ↓ ← →): Move tank
+- **Arrow Keys or WASD**: Move tank
 - **Space**: Shoot
 - **ENTER**: Take life from teammate (when dead) / Next level / Restart
 - **ESC**: Pause (single player) / Pause with shield (multiplayer) / Return to menu
@@ -91,37 +91,45 @@ These files are created in `src/main/resources/sounds/` using procedurally gener
 ## Game Mechanics
 
 ### Victory Condition
-Destroy all 100 enemy tanks without losing your base.
+Destroy all enemy tanks without losing your base.
 
 ### Game Over Conditions
 - All players lose all their lives
 - The base is destroyed
 
+### Score System
+- **1 point** per regular enemy kill
+- **2 points** for POWER (rainbow) tanks
+- **5 points** for HEAVY (black) tanks
+- **10 points** for BOSS
+- **Extra life** every 100 points!
+
 ### Power-ups
-Power-ups randomly spawn on the map every 15 seconds. They last for 10 seconds before disappearing.
+Power-ups randomly spawn on the map. They last for 10 seconds before disappearing.
 Some power-ups are stackable (STAR, CAR, MACHINEGUN) - collect multiple for enhanced effects!
 
 **Warning**: Enemies can also collect power-ups! FREEZE will freeze players (but they can still shoot), and BOMB will damage all players.
 
 ### Lives System
 - Each player starts with 3 lives
+- Display shows remaining respawns (lives - 1)
 - Players respawn with a temporary shield after losing a life
 - Shield power-up provides 1 minute of invincibility
 - Press ENTER to take a life from a teammate who has lives to spare
 
 ### Enemy Types
 6 different enemy tank types with increasing difficulty:
-- **REGULAR**: Standard enemy tank (red)
-- **FAST**: Moves faster than normal (light red)
-- **ARMORED**: Takes 4 hits to destroy (dark red)
-- **POWER**: Shoots stronger bullets, drops power-ups (rainbow)
-- **HEAVY**: Fast, can destroy steel walls (black) - last 10 enemies
-- **BOSS**: 4x size, 12 health, rainbow color, immune to freeze, big bullets - spawns last!
+- **REGULAR**: Standard enemy tank (red) - 1 point
+- **FAST**: Moves faster than normal (light red) - 1 point
+- **ARMORED**: Takes 2 hits to destroy (dark red) - 1 point
+- **POWER**: Drops power-ups on every hit (rainbow) - 2 points
+- **HEAVY**: Fast, 3 health, appears in last 5 enemies (black) - 5 points
+- **BOSS**: 4x size, 12 health, rainbow color, immune to freeze, big bullets - spawns last! 10 points
 
 ### Network Multiplayer
 - Host runs the authoritative game logic
 - Client-authoritative movement for smooth gameplay
-- Supports up to 4 players cooperating
+- Supports 2 players cooperating
 - Works best on local network (LAN)
 - Uses TCP on port 25565
 - Per-player pause with shield protection

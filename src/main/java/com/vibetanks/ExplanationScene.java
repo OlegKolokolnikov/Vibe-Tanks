@@ -53,6 +53,8 @@ public class ExplanationScene {
         addPowerUpExplanation(content, "TANK (Green)", "Extra life");
         addPowerUpExplanation(content, "SHIELD (Blue)", "Shield for 1 minute (Players) / Extra life (Enemies)");
         addPowerUpExplanation(content, "MACHINEGUN (Purple)", "Shoots multiple bullets in a line (stackable, max 5 bullets)");
+        addPowerUpExplanation(content, "FREEZE (Light Blue)", "Freeze all enemies for 10 seconds (or players if enemy takes it)");
+        addPowerUpExplanation(content, "BOMB (Black)", "Destroy all enemies on screen (or damage all players if enemy takes it)");
 
         // Enemy tanks section
         Label enemiesTitle = new Label("\nENEMY TANK TYPES:");
@@ -65,6 +67,7 @@ public class ExplanationScene {
         addEnemyExplanation(content, "FAST (Light Red/Pink)", "1 shot to kill, 1.5x faster speed");
         addEnemyExplanation(content, "POWER (Rainbow)", "2 shots to kill, drops power-up on EVERY hit");
         addEnemyExplanation(content, "HEAVY (Black)", "3 shots to kill, 1.5x faster, appears in last 5 enemies");
+        addEnemyExplanation(content, "BOSS (4x size, Rainbow)", "12 health, immune to freeze, big bullets - spawns LAST!");
 
         // Game mechanics section
         Label mechanicsTitle = new Label("\nGAME MECHANICS:");
@@ -76,6 +79,7 @@ public class ExplanationScene {
         addMechanicExplanation(content, "Bullet Collision", "Bullets destroy each other when they collide");
         addMechanicExplanation(content, "Tank Collision", "Tanks cannot pass through each other or the base");
         addMechanicExplanation(content, "Death & Respawn", "Lose all power-ups on death, respawn with shield at start position");
+        addMechanicExplanation(content, "Score System", "1 point per kill, bonus for special enemies. Extra life every 100 points!");
 
         // Controls section
         Label controlsTitle = new Label("\nCONTROLS:");
@@ -83,9 +87,11 @@ public class ExplanationScene {
         controlsTitle.setTextFill(Color.CYAN);
         content.getChildren().add(controlsTitle);
 
-        addControlExplanation(content, "Player 1", "WASD to move, SPACE to shoot");
-        addControlExplanation(content, "Player 2", "Arrow keys to move, ENTER to shoot");
-        addControlExplanation(content, "Menu", "ESC to return to menu during game");
+        addControlExplanation(content, "Movement", "Arrow Keys or WASD to move");
+        addControlExplanation(content, "Shoot", "SPACE to shoot");
+        addControlExplanation(content, "Menu/Pause", "ESC to pause or return to menu");
+        addControlExplanation(content, "Next Level", "ENTER after victory to continue");
+        addControlExplanation(content, "Take Life", "ENTER when dead to take life from teammate (multiplayer)");
 
         // Wrap content in ScrollPane
         ScrollPane scrollPane = new ScrollPane(content);

@@ -994,6 +994,7 @@ public class Game {
         int oldScore = playerScores[playerIndex];
         int newScore = oldScore + points;
         playerScores[playerIndex] = newScore;
+        System.out.println("SCORE: Player " + (playerIndex + 1) + " score: " + oldScore + " -> " + newScore + " (+" + points + ")");
 
         // Check if crossed a 100-point threshold (e.g., 0->100, 95->105, 199->201)
         int oldHundreds = oldScore / 100;
@@ -2429,6 +2430,10 @@ public class Game {
             Tank tank = playerTanks.get(i);
             state.players[i].copyFromTank(tank, playerKills[i], playerScores[i], playerNicknames[i]);
         }
+        // Debug: Log scores being sent
+        if (playerScores[0] > 0 || playerScores[1] > 0) {
+            System.out.println("BUILD_STATE: Sending scores P1=" + playerScores[0] + " P2=" + playerScores[1]);
+        }
 
         // Enemy tanks
         for (Tank enemy : enemyTanks) {
@@ -2589,7 +2594,11 @@ public class Game {
 
             // Update kills, scores, and nicknames
             playerKills[i] = pData.kills;
+            int oldScore = playerScores[i];
             playerScores[i] = pData.score;
+            if (pData.score != oldScore) {
+                System.out.println("APPLY_STATE: Player " + (i + 1) + " score updated: " + oldScore + " -> " + pData.score);
+            }
             // Don't overwrite local player's nickname
             if (i != myPlayerIndex && pData.nickname != null) {
                 playerNicknames[i] = pData.nickname;

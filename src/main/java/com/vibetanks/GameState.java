@@ -70,6 +70,20 @@ public class GameState implements Serializable {
     public int ufoLostMessageTimer; // Timer for "Lost it!" message
     public int ufoKilledMessageTimer; // Timer for "Zed is dead!" message
 
+    // Easter egg collectible
+    public EasterEggData easterEggData;
+
+    public static class EasterEggData implements Serializable {
+        public double x, y;
+        public int lifetime;
+
+        public EasterEggData(double x, double y, int lifetime) {
+            this.x = x;
+            this.y = y;
+            this.lifetime = lifetime;
+        }
+    }
+
     public static class UFOData implements Serializable {
         public double x, y;
         public double dx, dy;

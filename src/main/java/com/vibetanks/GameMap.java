@@ -17,6 +17,7 @@ public class GameMap {
     private TileType[][] tiles;
     private Random random = new Random();
     private int levelNumber = 1;
+    private long currentLevelSeed; // Seed used for current level (for restart)
 
     // Track burning trees: key = row*1000+col, value = frames remaining
     private Map<Integer, Integer> burningTiles = new HashMap<>();
@@ -44,18 +45,25 @@ public class GameMap {
     public void nextLevel() {
         levelNumber++;
         burningTiles.clear();
+        // Generate new seed for new level
+        currentLevelSeed = System.currentTimeMillis();
+        random.setSeed(currentLevelSeed);
         generateRandomLevel();
     }
 
     public void resetToLevel1() {
         levelNumber = 1;
         burningTiles.clear();
+        // Generate new seed for fresh start
+        currentLevelSeed = System.currentTimeMillis();
+        random.setSeed(currentLevelSeed);
         generateRandomLevel();
     }
 
     public void regenerateCurrentLevel() {
-        // Keep the same level number but regenerate the map
+        // Keep the same level number AND same seed to get identical map
         burningTiles.clear();
+        random.setSeed(currentLevelSeed);
         generateRandomLevel();
     }
 

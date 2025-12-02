@@ -93,6 +93,9 @@ public class Game {
     private static final int UFO_MESSAGE_DURATION = 180; // 3 seconds at 60 FPS
     private boolean dancingInitialized = false;
 
+    // Easter egg collectible (spawns when UFO is killed)
+    private EasterEgg easterEgg = null;
+
     // Victory dancing girls
     private List<DancingGirl> victoryDancingGirls = new ArrayList<>();
     private boolean victoryDancingInitialized = false;
@@ -840,6 +843,7 @@ public class Game {
         ufoWasKilled = false;
         ufoLostMessageTimer = 0;
         ufoKilledMessageTimer = 0;
+        easterEgg = null;
         for (int i = 0; i < playerMachinegunKills.length; i++) {
             playerMachinegunKills[i] = 0;
         }
@@ -911,6 +915,7 @@ public class Game {
         ufoWasKilled = false;
         ufoLostMessageTimer = 0;
         ufoKilledMessageTimer = 0;
+        easterEgg = null;
         for (int i = 0; i < playerMachinegunKills.length; i++) {
             playerMachinegunKills[i] = 0;
         }
@@ -978,6 +983,30 @@ public class Game {
         tempPowerUp.applyEffect(player);
         System.out.println("BOSS KILL REWARD: Player received " + type + "!");
         return type;
+    }
+
+    /**
+     * Add points to a player's score and award extra life for every 100 points.
+     */
+    private void addScore(int playerIndex, int points) {
+        if (playerIndex < 0 || playerIndex >= 4) return;
+
+        int oldScore = playerScores[playerIndex];
+        int newScore = oldScore + points;
+        playerScores[playerIndex] = newScore;
+
+        // Check if crossed a 100-point threshold (e.g., 0->100, 95->105, 199->201)
+        int oldHundreds = oldScore / 100;
+        int newHundreds = newScore / 100;
+
+        if (newHundreds > oldHundreds && playerIndex < playerTanks.size()) {
+            Tank player = playerTanks.get(playerIndex);
+            int livesAwarded = newHundreds - oldHundreds;
+            for (int i = 0; i < livesAwarded; i++) {
+                player.addLife();
+            }
+            System.out.println("Player " + (playerIndex + 1) + " earned " + livesAwarded + " extra life(s) for reaching " + (newHundreds * 100) + " points!");
+        }
     }
 
     private void checkAndSpawnUFO() {
@@ -1260,12 +1289,13 @@ public class Game {
                         // Award 20 points to the player who killed UFO
                         int killerPlayer = bullet.getOwnerPlayerNumber();
                         if (killerPlayer >= 1 && killerPlayer <= 4) {
-                            playerScores[killerPlayer - 1] += 20;
+                            addScore(killerPlayer - 1, 20);
                             System.out.println("UFO destroyed by Player " + killerPlayer + " - awarded 20 points!");
                         }
-                        // Easter egg: base becomes decorated easter egg for this level
-                        base.setEasterEggMode(true);
-                        System.out.println("Easter egg mode activated!");
+                        // Spawn easter egg at random position
+                        double[] eggPos = getRandomPowerUpSpawnPosition();
+                        easterEgg = new EasterEgg(eggPos[0], eggPos[1]);
+                        System.out.println("Easter egg spawned at " + eggPos[0] + ", " + eggPos[1]);
                         ufoWasKilled = true;
                         ufoKilledMessageTimer = UFO_MESSAGE_DURATION;
                         System.out.println("Zed is dead!");
@@ -1308,7 +1338,7 @@ public class Game {
                                     case BOSS -> 10;  // Boss tank
                                     default -> 1;     // Regular, Armored, Fast
                                 };
-                                playerScores[killerPlayer - 1] += points;
+                                addScore(killerPlayer - 1, points);
 
                                 // BOSS kill rewards the player with a random power-up
                                 if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
@@ -1453,6 +1483,41 @@ public class Game {
             }
         }
 
+        // Update easter egg (only players can collect it)
+        if (easterEgg != null) {
+            easterEgg.update();
+
+            // Check if collected by any player
+            for (int i = 0; i < playerTanks.size(); i++) {
+                Tank player = playerTanks.get(i);
+                if (player.isAlive() && easterEgg.collidesWith(player)) {
+                    // Give collecting player 3 extra lives
+                    for (int j = 0; j < 3; j++) {
+                        player.addLife();
+                    }
+                    System.out.println("Easter egg collected by Player " + (i + 1) + "! +3 lives!");
+
+                    // Turn all enemies (except BOSS) into rainbow/POWER tanks
+                    for (Tank enemy : enemyTanks) {
+                        if (enemy.isAlive() && enemy.getEnemyType() != Tank.EnemyType.BOSS) {
+                            enemy.setEnemyType(Tank.EnemyType.POWER);
+                            System.out.println("Enemy turned into rainbow tank!");
+                        }
+                    }
+
+                    easterEgg.collect();
+                    easterEgg = null;
+                    break;
+                }
+            }
+
+            // Remove if expired
+            if (easterEgg != null && easterEgg.isExpired()) {
+                System.out.println("Easter egg expired!");
+                easterEgg = null;
+            }
+        }
+
         // Remove dead enemy tanks
         enemyTanks.removeIf(tank -> !tank.isAlive());
 
@@ -1492,6 +1557,11 @@ public class Game {
         // Render power-ups
         for (PowerUp powerUp : powerUps) {
             powerUp.render(gc);
+        }
+
+        // Render easter egg
+        if (easterEgg != null) {
+            easterEgg.render(gc);
         }
 
         // Render bullets
@@ -2252,7 +2322,7 @@ public class Game {
 
             // Award winner bonus (10 points) if no tie - only once
             if (!isTie && winnerIndex >= 0 && !winnerBonusAwarded) {
-                playerScores[winnerIndex] += 10;
+                addScore(winnerIndex, 10);
                 winnerBonusAwarded = true;
             }
         }
@@ -2470,6 +2540,15 @@ public class Game {
         state.ufoLostMessageTimer = ufoLostMessageTimer;
         state.ufoKilledMessageTimer = ufoKilledMessageTimer;
 
+        // Easter egg data
+        if (easterEgg != null) {
+            state.easterEggData = new GameState.EasterEggData(
+                easterEgg.getX(), easterEgg.getY(), easterEgg.getLifetime()
+            );
+        } else {
+            state.easterEggData = null;
+        }
+
         return state;
     }
 
@@ -2497,7 +2576,15 @@ public class Game {
             PlayerData pData = state.players[i];
 
             // Skip position update for local player (client-authoritative movement)
-            boolean skipPosition = (i == myPlayerIndex);
+            // EXCEPT when respawning (was dead, now alive) - accept respawn position from host
+            boolean isLocalPlayer = (i == myPlayerIndex);
+            boolean justRespawned = isLocalPlayer && !tank.isAlive() && pData.alive;
+            boolean skipPosition = isLocalPlayer && !justRespawned;
+
+            if (justRespawned) {
+                System.out.println("Client respawning at host position: " + pData.x + ", " + pData.y);
+            }
+
             pData.applyToTank(tank, skipPosition);
 
             // Update kills, scores, and nicknames
@@ -2622,6 +2709,17 @@ public class Game {
         // Sync UFO message timers
         ufoLostMessageTimer = state.ufoLostMessageTimer;
         ufoKilledMessageTimer = state.ufoKilledMessageTimer;
+
+        // Sync easter egg from host
+        if (state.easterEggData != null) {
+            if (easterEgg == null) {
+                easterEgg = new EasterEgg(state.easterEggData.x, state.easterEggData.y);
+            }
+            easterEgg.setPosition(state.easterEggData.x, state.easterEggData.y);
+            easterEgg.setLifetime(state.easterEggData.lifetime);
+        } else {
+            easterEgg = null;
+        }
 
         // Check if level changed (host went to next level)
         boolean levelChanged = state.levelNumber != gameMap.getLevelNumber();

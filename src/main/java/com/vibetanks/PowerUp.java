@@ -12,6 +12,7 @@ public class PowerUp {
     public enum Type {
         GUN,        // Ability to break iron/steel walls
         STAR,       // Shooting faster (stackable)
+
         CAR,        // Tank becomes faster (stackable)
         SHIP,       // Tank can swim through water
         SHOVEL,     // Base surrounded by steel for 1 minute

@@ -768,6 +768,7 @@ public class Tank {
     public void setAlive(boolean alive) { this.alive = alive; }
     public int getLives() { return lives; }
     public void setLives(int lives) { this.lives = lives; }
+    public void addLife() { this.lives++; }
     public int getHealth() { return health; }
     public int getMaxHealth() { return maxHealth; }
     public void setHealth(int health) { this.health = health; }

@@ -109,15 +109,15 @@ public class MenuScene {
         explanationButton.setOnAction(e -> showExplanation());
 
         // Instructions
-        Label instructions = new Label("Defend your base from 100 enemy tanks!");
+        Label instructions = new Label("Defend your base from enemy tanks!");
         instructions.setFont(Font.font("Arial", FontWeight.NORMAL, 14));
         instructions.setTextFill(Color.LIGHTGRAY);
 
-        Label controls = new Label("Controls: Arrow Keys + SPACE to shoot");
+        Label controls = new Label("Controls: Arrow Keys or WASD + SPACE to shoot");
         controls.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
         controls.setTextFill(Color.LIGHTGRAY);
 
-        Label multiplayerInfo = new Label("Online: Host game or join up to 4 players!");
+        Label multiplayerInfo = new Label("Online: Host or join a game with 2 players!");
         multiplayerInfo.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
         multiplayerInfo.setTextFill(Color.LIGHTBLUE);
 

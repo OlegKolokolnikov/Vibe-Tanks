@@ -52,21 +52,21 @@ public class InputHandler {
 
         boolean isMoving = false;
 
-        // Movement with arrow keys (skip if frozen)
+        // Movement with arrow keys or WASD (skip if frozen)
         if (!movementFrozen) {
-            if (pressedKeys.contains(KeyCode.UP)) {
+            if (pressedKeys.contains(KeyCode.UP) || pressedKeys.contains(KeyCode.W)) {
                 player.move(Direction.UP, map, allTanks, base);
                 lastDirection = Direction.UP;
                 isMoving = true;
-            } else if (pressedKeys.contains(KeyCode.DOWN)) {
+            } else if (pressedKeys.contains(KeyCode.DOWN) || pressedKeys.contains(KeyCode.S)) {
                 player.move(Direction.DOWN, map, allTanks, base);
                 lastDirection = Direction.DOWN;
                 isMoving = true;
-            } else if (pressedKeys.contains(KeyCode.LEFT)) {
+            } else if (pressedKeys.contains(KeyCode.LEFT) || pressedKeys.contains(KeyCode.A)) {
                 player.move(Direction.LEFT, map, allTanks, base);
                 lastDirection = Direction.LEFT;
                 isMoving = true;
-            } else if (pressedKeys.contains(KeyCode.RIGHT)) {
+            } else if (pressedKeys.contains(KeyCode.RIGHT) || pressedKeys.contains(KeyCode.D)) {
                 player.move(Direction.RIGHT, map, allTanks, base);
                 lastDirection = Direction.RIGHT;
                 isMoving = true;
@@ -85,13 +85,13 @@ public class InputHandler {
         }
     }
 
-    // Capture input state (for network) - arrow keys + space + enter
+    // Capture input state (for network) - arrow keys/WASD + space + enter
     public PlayerInput capturePlayerInput() {
         return new PlayerInput(
-            pressedKeys.contains(KeyCode.UP),
-            pressedKeys.contains(KeyCode.DOWN),
-            pressedKeys.contains(KeyCode.LEFT),
-            pressedKeys.contains(KeyCode.RIGHT),
+            pressedKeys.contains(KeyCode.UP) || pressedKeys.contains(KeyCode.W),
+            pressedKeys.contains(KeyCode.DOWN) || pressedKeys.contains(KeyCode.S),
+            pressedKeys.contains(KeyCode.LEFT) || pressedKeys.contains(KeyCode.A),
+            pressedKeys.contains(KeyCode.RIGHT) || pressedKeys.contains(KeyCode.D),
             pressedKeys.contains(KeyCode.SPACE),
             pressedKeys.contains(KeyCode.ENTER)
         );

@@ -330,6 +330,17 @@ public class GameMap {
         tiles[25][12] = TileType.BRICK;
         tiles[25][13] = TileType.BRICK;
         tiles[25][14] = TileType.BRICK;
+
+        // Add steel wall above base to protect from center spawn
+        // Random width 1-5 blocks, centered above base
+        int steelWidth = 1 + random.nextInt(5); // 1-5 blocks
+        int startCol = 12 - steelWidth / 2; // Center around col 12-13
+        int steelRow = 20 + random.nextInt(2); // Row 20 or 21
+        for (int col = startCol; col < startCol + steelWidth && col < width - 1; col++) {
+            if (col > 0) {
+                tiles[steelRow][col] = TileType.STEEL;
+            }
+        }
     }
 
     private void clearSpawnAreas() {

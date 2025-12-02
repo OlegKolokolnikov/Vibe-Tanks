@@ -32,7 +32,7 @@ public class MenuScene {
     }
 
     private void createMenu() {
-        VBox menuLayout = new VBox(30);
+        VBox menuLayout = new VBox(20);
         menuLayout.setAlignment(Pos.CENTER);
         menuLayout.setStyle("-fx-background-color: black;");
 
@@ -103,6 +103,32 @@ public class MenuScene {
         ));
         joinButton.setOnAction(e -> joinGame());
 
+        // Level Editor button
+        Button editorButton = new Button("LEVEL EDITOR");
+        styleButton(editorButton);
+        editorButton.setStyle(
+            "-fx-background-color: #5a2a5a;" +
+            "-fx-text-fill: #ff99ff;" +
+            "-fx-border-color: #ff99ff;" +
+            "-fx-border-width: 2px;" +
+            "-fx-cursor: hand;"
+        );
+        editorButton.setOnMouseEntered(e -> editorButton.setStyle(
+            "-fx-background-color: #7a3a7a;" +
+            "-fx-text-fill: #ff99ff;" +
+            "-fx-border-color: #ff99ff;" +
+            "-fx-border-width: 3px;" +
+            "-fx-cursor: hand;"
+        ));
+        editorButton.setOnMouseExited(e -> editorButton.setStyle(
+            "-fx-background-color: #5a2a5a;" +
+            "-fx-text-fill: #ff99ff;" +
+            "-fx-border-color: #ff99ff;" +
+            "-fx-border-width: 2px;" +
+            "-fx-cursor: hand;"
+        ));
+        editorButton.setOnAction(e -> showLevelEditor());
+
         // Explanation button
         Button explanationButton = new Button("EXPLANATION");
         styleButton(explanationButton);
@@ -160,6 +186,7 @@ public class MenuScene {
             playButton,
             hostButton,
             joinButton,
+            editorButton,
             explanationButton,
             instructions,
             controls,
@@ -172,9 +199,9 @@ public class MenuScene {
     }
 
     private void styleButton(Button button) {
-        button.setFont(Font.font("Arial", FontWeight.BOLD, 24));
-        button.setPrefWidth(300);
-        button.setPrefHeight(60);
+        button.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        button.setPrefWidth(280);
+        button.setPrefHeight(45);
         button.setStyle(
             "-fx-background-color: #333333;" +
             "-fx-text-fill: white;" +
@@ -213,6 +240,11 @@ public class MenuScene {
     private void showExplanation() {
         ExplanationScene explanationScene = new ExplanationScene(stage, scene, windowWidth, windowHeight);
         stage.setScene(explanationScene.getScene());
+    }
+
+    private void showLevelEditor() {
+        LevelEditor levelEditor = new LevelEditor(stage, scene, windowWidth, windowHeight);
+        stage.setScene(levelEditor.getScene());
     }
 
     private void hostGame() {

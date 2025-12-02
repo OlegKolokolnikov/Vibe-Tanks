@@ -18,6 +18,7 @@ public class GameMap {
     private Random random = new Random();
     private int levelNumber = 1;
     private long currentLevelSeed; // Seed used for current level (for restart)
+    private LevelData customLevelData; // Custom level data (if using custom level)
 
     // Track burning trees: key = row*1000+col, value = frames remaining
     private Map<Integer, Integer> burningTiles = new HashMap<>();
@@ -35,7 +36,7 @@ public class GameMap {
         this.width = width;
         this.height = height;
         this.tiles = new TileType[height][width];
-        generateLevel1();
+        generateLevelForNumber(1);
     }
 
     public int getLevelNumber() {
@@ -45,24 +46,50 @@ public class GameMap {
     public void nextLevel() {
         levelNumber++;
         burningTiles.clear();
-        // Generate new seed for new level
-        currentLevelSeed = System.currentTimeMillis();
-        random.setSeed(currentLevelSeed);
-        generateRandomLevel();
+        generateLevelForNumber(levelNumber);
     }
 
     public void resetToLevel1() {
         levelNumber = 1;
         burningTiles.clear();
-        // Generate new seed for fresh start
-        currentLevelSeed = System.currentTimeMillis();
-        random.setSeed(currentLevelSeed);
-        generateRandomLevel();
+        generateLevelForNumber(1);
     }
 
     public void regenerateCurrentLevel() {
         // Keep the same level number AND same seed to get identical map
         burningTiles.clear();
+        if (customLevelData != null) {
+            // Custom level - just reload from data
+            importTiles(customLevelData.getTiles());
+        } else {
+            // Random level - use same seed
+            random.setSeed(currentLevelSeed);
+            generateRandomLevel();
+        }
+    }
+
+    /**
+     * Generate level for a specific level number.
+     * Checks if a custom level exists, otherwise generates random.
+     */
+    private void generateLevelForNumber(int num) {
+        this.levelNumber = num;
+        this.customLevelData = null; // Reset custom level
+
+        // Check if custom level exists for this level number
+        if (LevelManager.hasCustomLevel(num)) {
+            LevelData customLevel = LevelManager.loadLevelByNumber(num);
+            if (customLevel != null) {
+                System.out.println("Loading custom level " + num);
+                this.customLevelData = customLevel;
+                importTiles(customLevel.getTiles());
+                return;
+            }
+        }
+
+        // No custom level, generate random
+        System.out.println("Generating random level " + num);
+        currentLevelSeed = System.currentTimeMillis();
         random.setSeed(currentLevelSeed);
         generateRandomLevel();
     }
@@ -730,5 +757,39 @@ public class GameMap {
 
     public void resetBaseProtection() {
         setBaseProtection(TileType.BRICK);
+    }
+
+    // Custom level support
+    public void setCustomLevel(LevelData levelData) {
+        this.customLevelData = levelData;
+        if (levelData != null) {
+            importTiles(levelData.getTiles());
+        }
+    }
+
+    public boolean hasCustomLevel() {
+        return customLevelData != null;
+    }
+
+    public LevelData getCustomLevelData() {
+        return customLevelData;
+    }
+
+    // Load custom level (replacing random generation)
+    public void loadCustomLevel() {
+        if (customLevelData != null) {
+            importTiles(customLevelData.getTiles());
+        }
+    }
+
+    // For custom levels, regenerate means reload from the same data
+    public void regenerateOrReloadLevel() {
+        burningTiles.clear();
+        if (customLevelData != null) {
+            loadCustomLevel();
+        } else {
+            random.setSeed(currentLevelSeed);
+            generateRandomLevel();
+        }
     }
 }

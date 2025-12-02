@@ -409,7 +409,15 @@ public class Game {
 
     // Constructor for local game
     public Game(Pane root, int width, int height, int playerCount, int totalEnemies, Stage stage) {
-        this(root, width, height, playerCount, totalEnemies, stage, null);
+        this(root, width, height, playerCount, totalEnemies, stage, (NetworkManager) null);
+    }
+
+    // Constructor for custom level (test from editor)
+    public Game(Pane root, int width, int height, int playerCount, int totalEnemies, Stage stage, LevelData customLevel) {
+        this(root, width, height, playerCount, totalEnemies, stage, (NetworkManager) null);
+        if (customLevel != null && gameMap != null) {
+            gameMap.setCustomLevel(customLevel);
+        }
     }
 
     // Constructor for network game
@@ -855,8 +863,8 @@ public class Game {
     }
 
     private void restartCurrentLevel() {
-        // Regenerate the same level (keep level number)
-        gameMap.regenerateCurrentLevel();
+        // Regenerate the same level (keep level number) or reload custom level
+        gameMap.regenerateOrReloadLevel();
 
         // Reset game state
         victory = false;

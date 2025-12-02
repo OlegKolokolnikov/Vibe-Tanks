@@ -8,6 +8,7 @@ import java.util.*;
  * Manages saving and loading of custom levels in JSON format.
  * Levels are stored in a 'levels' folder next to the game.
  */
+
 public class LevelManager {
     private static final String LEVELS_FOLDER = "levels";
 

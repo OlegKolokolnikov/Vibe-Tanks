@@ -58,7 +58,11 @@ public class LevelEditor {
         HBox toolbar = createToolbar();
         root.setTop(toolbar);
 
-        // Canvas for level editing
+        // Bottom panel with action buttons (create first to calculate available height)
+        HBox bottomPanel = createBottomPanel();
+        root.setBottom(bottomPanel);
+
+        // Canvas for level editing - use ScrollPane to fit within available space
         canvas = new Canvas(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
         gc = canvas.getGraphicsContext2D();
 
@@ -67,14 +71,16 @@ public class LevelEditor {
         canvas.setOnMouseDragged(this::handleMouseDragged);
         canvas.setOnMouseReleased(this::handleMouseReleased);
 
-        // Center the canvas
+        // Put canvas in a ScrollPane so it can scroll if needed
+        ScrollPane scrollPane = new ScrollPane();
         StackPane canvasContainer = new StackPane(canvas);
         canvasContainer.setStyle("-fx-background-color: black;");
-        root.setCenter(canvasContainer);
-
-        // Bottom panel with action buttons
-        HBox bottomPanel = createBottomPanel();
-        root.setBottom(bottomPanel);
+        scrollPane.setContent(canvasContainer);
+        scrollPane.setStyle("-fx-background: black; -fx-background-color: black;");
+        scrollPane.setFitToWidth(false);
+        scrollPane.setFitToHeight(false);
+        scrollPane.setPannable(true);
+        root.setCenter(scrollPane);
 
         scene = new Scene(root, windowWidth, windowHeight);
     }

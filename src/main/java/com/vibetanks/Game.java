@@ -1489,10 +1489,13 @@ public class Game {
                             playerFreezeDuration = FREEZE_TIME;
                             System.out.println("FREEZE: Players frozen for 10 seconds! (can still shoot)");
                         } else if (powerUp.getType() == PowerUp.Type.BOMB) {
-                            // Enemy takes BOMB - explode all players on screen
+                            // Enemy takes BOMB - explode all players on screen (bypasses shields!)
                             System.out.println("BOMB collected by enemy - damaging all players!");
                             for (Tank player : playerTanks) {
-                                if (player.isAlive() && !player.hasShield() && !player.hasPauseShield()) {
+                                if (player.isAlive()) {
+                                    // BOMB bypasses all shields - remove shields first then damage
+                                    player.setShield(false);
+                                    player.setPauseShield(false);
                                     player.damage();
                                     soundManager.playExplosion();
                                     System.out.println("  Player hit by BOMB! Still alive=" + player.isAlive());

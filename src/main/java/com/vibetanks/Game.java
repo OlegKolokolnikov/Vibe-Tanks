@@ -100,6 +100,11 @@ public class Game {
     private List<DancingGirl> victoryDancingGirls = new ArrayList<>();
     private boolean victoryDancingInitialized = false;
 
+    // Victory delay (10 seconds before showing victory screen)
+    private boolean victoryConditionMet = false;
+    private int victoryDelayTimer = 0;
+    private static final int VICTORY_DELAY = 600; // 10 seconds at 60 FPS
+
     // Player nicknames (index 0-3 for players 1-4)
     private String[] playerNicknames = new String[4];
 
@@ -800,6 +805,8 @@ public class Game {
 
         // Reset game state
         victory = false;
+        victoryConditionMet = false;
+        victoryDelayTimer = 0;
         gameOver = false;
         gameOverSoundPlayed = false;
         dancingInitialized = false;
@@ -872,6 +879,8 @@ public class Game {
 
         // Reset game state
         victory = false;
+        victoryConditionMet = false;
+        victoryDelayTimer = 0;
         gameOver = false;
         gameOverSoundPlayed = false;
         dancingInitialized = false;
@@ -1585,9 +1594,17 @@ public class Game {
         // Remove dead enemy tanks
         enemyTanks.removeIf(tank -> !tank.isAlive());
 
-        // Check victory condition
+        // Check victory condition with 10 second delay
         if (enemySpawner.allEnemiesSpawned() && enemyTanks.isEmpty()) {
-            victory = true;
+            if (!victoryConditionMet) {
+                victoryConditionMet = true;
+                victoryDelayTimer = 0;
+                System.out.println("All enemies defeated! Victory in 10 seconds...");
+            }
+            victoryDelayTimer++;
+            if (victoryDelayTimer >= VICTORY_DELAY) {
+                victory = true;
+            }
         }
 
         // Check game over condition (all players dead with no lives OR base destroyed)

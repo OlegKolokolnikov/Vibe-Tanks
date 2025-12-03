@@ -59,6 +59,7 @@ public class Game {
     // For client sound effects (track previous state to detect changes)
     private int prevEnemyCount = 0;
     private Set<Long> seenBulletIds = new HashSet<>(); // Track bullet IDs we've already played sounds for
+    private boolean firstStateReceived = false; // Skip sounds on first state to avoid burst
 
     // SHOVEL power-up - base protection with steel
     private int baseProtectionDuration = 0;
@@ -2767,7 +2768,8 @@ public class Game {
         for (GameState.BulletData bData : state.bullets) {
             currentBulletIds.add(bData.id);
             // Play shoot sound for bullets we haven't seen before
-            if (!seenBulletIds.contains(bData.id)) {
+            // Skip on first state to avoid sound burst when joining mid-game
+            if (firstStateReceived && !seenBulletIds.contains(bData.id)) {
                 soundManager.playShoot();
             }
             Bullet bullet = new Bullet(
@@ -2784,6 +2786,11 @@ public class Game {
         }
         // Update seen bullets - keep only current bullets to prevent memory leak
         seenBulletIds = currentBulletIds;
+
+        // Mark first state as received
+        if (!firstStateReceived) {
+            firstStateReceived = true;
+        }
 
         // Update power-ups (recreate from state)
         powerUps.clear();

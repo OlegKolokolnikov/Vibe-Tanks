@@ -4,30 +4,47 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 public class InputHandler {
     private Set<KeyCode> pressedKeys;
+    private LinkedList<KeyCode> directionKeyOrder; // Track order of direction key presses
     private List<Tank> playerTanks;
     private Direction lastDirection;
     private boolean wasMoving;
     private GameMap gameMap;
+
+    // Direction keys for priority tracking
+    private static final Set<KeyCode> DIRECTION_KEYS = Set.of(
+        KeyCode.UP, KeyCode.DOWN, KeyCode.LEFT, KeyCode.RIGHT,
+        KeyCode.W, KeyCode.S, KeyCode.A, KeyCode.D
+    );
 
     // All players use: Arrow keys + Space
 
     public InputHandler(Pane pane, List<Tank> playerTanks) {
         this.playerTanks = playerTanks;
         this.pressedKeys = new HashSet<>();
+        this.directionKeyOrder = new LinkedList<>();
         this.wasMoving = false;
 
         pane.setOnKeyPressed(event -> {
-            pressedKeys.add(event.getCode());
+            KeyCode code = event.getCode();
+            pressedKeys.add(code);
+            // Track direction key order - add to end (most recent)
+            if (DIRECTION_KEYS.contains(code)) {
+                directionKeyOrder.remove(code); // Remove if already present
+                directionKeyOrder.addLast(code); // Add as most recent
+            }
             event.consume();
         });
 
         pane.setOnKeyReleased(event -> {
-            pressedKeys.remove(event.getCode());
+            KeyCode code = event.getCode();
+            pressedKeys.remove(code);
+            directionKeyOrder.remove(code);
             event.consume();
         });
 
@@ -53,22 +70,12 @@ public class InputHandler {
         boolean isMoving = false;
 
         // Movement with arrow keys or WASD (skip if frozen)
+        // Use most recently pressed direction key for priority
         if (!movementFrozen) {
-            if (pressedKeys.contains(KeyCode.UP) || pressedKeys.contains(KeyCode.W)) {
-                player.move(Direction.UP, map, allTanks, base);
-                lastDirection = Direction.UP;
-                isMoving = true;
-            } else if (pressedKeys.contains(KeyCode.DOWN) || pressedKeys.contains(KeyCode.S)) {
-                player.move(Direction.DOWN, map, allTanks, base);
-                lastDirection = Direction.DOWN;
-                isMoving = true;
-            } else if (pressedKeys.contains(KeyCode.LEFT) || pressedKeys.contains(KeyCode.A)) {
-                player.move(Direction.LEFT, map, allTanks, base);
-                lastDirection = Direction.LEFT;
-                isMoving = true;
-            } else if (pressedKeys.contains(KeyCode.RIGHT) || pressedKeys.contains(KeyCode.D)) {
-                player.move(Direction.RIGHT, map, allTanks, base);
-                lastDirection = Direction.RIGHT;
+            Direction moveDirection = getMostRecentDirection();
+            if (moveDirection != null) {
+                player.move(moveDirection, map, allTanks, base);
+                lastDirection = moveDirection;
                 isMoving = true;
             }
 
@@ -85,13 +92,34 @@ public class InputHandler {
         }
     }
 
-    // Capture input state (for network) - arrow keys/WASD + space + enter
+    // Get the most recently pressed direction (last in the order list)
+    private Direction getMostRecentDirection() {
+        if (directionKeyOrder.isEmpty()) {
+            return null;
+        }
+        // Get the most recent direction key (last in list)
+        KeyCode mostRecent = directionKeyOrder.getLast();
+        return keyCodeToDirection(mostRecent);
+    }
+
+    private Direction keyCodeToDirection(KeyCode code) {
+        return switch (code) {
+            case UP, W -> Direction.UP;
+            case DOWN, S -> Direction.DOWN;
+            case LEFT, A -> Direction.LEFT;
+            case RIGHT, D -> Direction.RIGHT;
+            default -> null;
+        };
+    }
+
+    // Capture input state (for network) - use most recent direction + space + enter
     public PlayerInput capturePlayerInput() {
+        Direction mostRecent = getMostRecentDirection();
         return new PlayerInput(
-            pressedKeys.contains(KeyCode.UP) || pressedKeys.contains(KeyCode.W),
-            pressedKeys.contains(KeyCode.DOWN) || pressedKeys.contains(KeyCode.S),
-            pressedKeys.contains(KeyCode.LEFT) || pressedKeys.contains(KeyCode.A),
-            pressedKeys.contains(KeyCode.RIGHT) || pressedKeys.contains(KeyCode.D),
+            mostRecent == Direction.UP,
+            mostRecent == Direction.DOWN,
+            mostRecent == Direction.LEFT,
+            mostRecent == Direction.RIGHT,
             pressedKeys.contains(KeyCode.SPACE),
             pressedKeys.contains(KeyCode.ENTER)
         );

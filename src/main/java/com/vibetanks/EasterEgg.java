@@ -6,8 +6,10 @@ import javafx.scene.paint.Color;
 /**
  * Easter egg collectible that spawns when UFO is killed.
  * When collected by a player:
- * - All enemy tanks (except BOSS) turn into rainbow tanks
+ * - All enemy tanks (except BOSS) turn into rainbow/POWER tanks
  * - The collecting player gets 3 extra lives
+ * When collected by an enemy:
+ * - All enemy tanks (except BOSS) turn into HEAVY (black) tanks
  */
 public class EasterEgg {
     private static final int SIZE = 32;

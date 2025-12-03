@@ -1525,12 +1525,14 @@ public class Game {
             }
         }
 
-        // Update easter egg (only players can collect it)
+        // Update easter egg (players and enemies can collect it)
         if (easterEgg != null) {
             easterEgg.update();
 
+            boolean eggCollected = false;
+
             // Check if collected by any player
-            for (int i = 0; i < playerTanks.size(); i++) {
+            for (int i = 0; i < playerTanks.size() && !eggCollected; i++) {
                 Tank player = playerTanks.get(i);
                 if (player.isAlive() && easterEgg.collidesWith(player)) {
                     // Give collecting player 3 extra lives
@@ -1549,6 +1551,26 @@ public class Game {
 
                     easterEgg.collect();
                     easterEgg = null;
+                    eggCollected = true;
+                }
+            }
+
+            // Check if collected by any enemy
+            for (Tank enemy : enemyTanks) {
+                if (!eggCollected && easterEgg != null && enemy.isAlive() && easterEgg.collidesWith(enemy)) {
+                    System.out.println("Easter egg collected by enemy! All enemies become HEAVY tanks!");
+
+                    // Turn all enemies (except BOSS) into HEAVY (black) tanks
+                    for (Tank e : enemyTanks) {
+                        if (e.isAlive() && e.getEnemyType() != Tank.EnemyType.BOSS) {
+                            e.setEnemyType(Tank.EnemyType.HEAVY);
+                            System.out.println("Enemy turned into HEAVY (black) tank!");
+                        }
+                    }
+
+                    easterEgg.collect();
+                    easterEgg = null;
+                    eggCollected = true;
                     break;
                 }
             }

@@ -185,6 +185,10 @@ public class SoundManager {
         soundExecutor.submit(() -> {
             try {
                 if (!shutdown && line.isOpen()) {
+                    // Stop and flush any previous sound to prevent queue buildup
+                    line.stop();
+                    line.flush();
+                    line.start();
                     line.write(soundData, 0, soundData.length);
                 }
             } catch (Exception e) {

@@ -781,6 +781,23 @@ public class Game {
 
                 // If overlapping or too close in both dimensions
                 if (overlapX > 0 && overlapY > 0) {
+                    boolean tank1IsBoss = tank1.getEnemyType() == Tank.EnemyType.BOSS;
+                    boolean tank2IsBoss = tank2.getEnemyType() == Tank.EnemyType.BOSS;
+
+                    // BOSS tank kills any tank it touches (except other BOSS)
+                    if (tank1IsBoss && !tank2IsBoss) {
+                        tank2.instantKill();
+                        soundManager.playExplosion();
+                        System.out.println("BOSS killed tank by contact!");
+                        continue; // Don't push, tank is dead
+                    }
+                    if (tank2IsBoss && !tank1IsBoss) {
+                        tank1.instantKill();
+                        soundManager.playExplosion();
+                        System.out.println("BOSS killed tank by contact!");
+                        continue; // Don't push, tank is dead
+                    }
+
                     // Push along the axis with LESS overlap (faster separation)
                     double pushX = 0;
                     double pushY = 0;
@@ -798,10 +815,6 @@ public class Game {
                         pushX = (Math.random() > 0.5 ? 1 : -1) * PUSH_FORCE;
                         pushY = (Math.random() > 0.5 ? 1 : -1) * PUSH_FORCE;
                     }
-
-                    // Push both tanks apart (unless one is a BOSS which is heavier)
-                    boolean tank1IsBoss = tank1.getEnemyType() == Tank.EnemyType.BOSS;
-                    boolean tank2IsBoss = tank2.getEnemyType() == Tank.EnemyType.BOSS;
 
                     double tank1Push = tank2IsBoss ? 1.0 : 0.5;
                     double tank2Push = tank1IsBoss ? 1.0 : 0.5;

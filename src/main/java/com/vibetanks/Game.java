@@ -2378,65 +2378,83 @@ public class Game {
         return "Unknown tank";
     }
 
-    // Draw a mini tank icon for statistics table headers
+    // Draw a mini tank icon for statistics table headers (looks like actual game tanks)
     private void drawMiniTank(GraphicsContext gc, double x, double y, Tank.EnemyType type) {
-        double size = 18; // Mini tank size
+        double s = 18; // Mini tank size
 
         // Get tank color based on type
-        Color tankColor, darkColor;
+        Color bodyColor, turretColor, trackColor;
         switch (type) {
-            case REGULAR -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
-            case ARMORED -> { tankColor = Color.DARKRED; darkColor = Color.rgb(80, 0, 0); }
-            case FAST -> { tankColor = Color.rgb(255, 100, 100); darkColor = Color.rgb(200, 60, 60); }
-            case POWER -> {
-                // Rainbow - use magenta for static display
-                tankColor = Color.MAGENTA; darkColor = Color.PURPLE;
-            }
-            case HEAVY -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
-            case BOSS -> { tankColor = Color.rgb(200, 50, 50); darkColor = Color.DARKRED; }
-            default -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
+            case REGULAR -> { bodyColor = Color.DARKRED; turretColor = Color.RED; trackColor = Color.rgb(80, 40, 40); }
+            case ARMORED -> { bodyColor = Color.rgb(100, 30, 30); turretColor = Color.rgb(140, 50, 50); trackColor = Color.rgb(60, 30, 30); }
+            case FAST -> { bodyColor = Color.rgb(200, 80, 80); turretColor = Color.rgb(255, 120, 120); trackColor = Color.rgb(150, 60, 60); }
+            case POWER -> { bodyColor = Color.PURPLE; turretColor = Color.MAGENTA; trackColor = Color.DARKMAGENTA; }
+            case HEAVY -> { bodyColor = Color.rgb(50, 50, 50); turretColor = Color.DARKGRAY; trackColor = Color.BLACK; }
+            case BOSS -> { bodyColor = Color.rgb(150, 30, 30); turretColor = Color.rgb(220, 50, 50); trackColor = Color.rgb(100, 20, 20); }
+            default -> { bodyColor = Color.DARKRED; turretColor = Color.RED; trackColor = Color.rgb(80, 40, 40); }
         }
 
-        // Draw tank body (simplified)
-        gc.setFill(darkColor);
-        gc.fillRect(x, y, size, size);
+        // Draw tracks (left and right) with track pattern
+        gc.setFill(trackColor);
+        gc.fillRoundRect(x, y + 2, 4, s - 4, 2, 2);
+        gc.fillRoundRect(x + s - 4, y + 2, 4, s - 4, 2, 2);
 
-        // Draw tracks
-        gc.setFill(Color.rgb(60, 60, 60));
-        gc.fillRect(x, y, 4, size);
-        gc.fillRect(x + size - 4, y, 4, size);
+        // Track details (horizontal lines)
+        gc.setStroke(Color.rgb(40, 40, 40));
+        gc.setLineWidth(1);
+        for (int i = 0; i < 3; i++) {
+            double ty = y + 4 + i * 5;
+            gc.strokeLine(x, ty, x + 4, ty);
+            gc.strokeLine(x + s - 4, ty, x + s, ty);
+        }
 
-        // Draw turret
-        gc.setFill(tankColor);
-        gc.fillRect(x + 4, y + 4, size - 8, size - 8);
+        // Draw tank body (between tracks)
+        gc.setFill(bodyColor);
+        gc.fillRect(x + 3, y + 3, s - 6, s - 6);
+
+        // Draw turret (circular, centered)
+        gc.setFill(turretColor);
+        double turretSize = s * 0.5;
+        gc.fillOval(x + s/2 - turretSize/2, y + s/2 - turretSize/2 + 1, turretSize, turretSize);
 
         // Draw barrel (pointing up)
-        gc.fillRect(x + size/2 - 2, y - 4, 4, 8);
+        gc.setFill(turretColor);
+        gc.fillRoundRect(x + s/2 - 2, y - 2, 4, s/2 + 2, 1, 1);
+
+        // Barrel tip (darker)
+        gc.setFill(bodyColor);
+        gc.fillRect(x + s/2 - 2, y - 2, 4, 2);
 
         // Type-specific decorations
         switch (type) {
             case ARMORED -> {
-                // Armor plate
+                // Extra armor plate on turret
                 gc.setFill(Color.GRAY);
-                gc.fillRect(x + 4, y + 6, size - 8, 2);
+                gc.fillRect(x + 5, y + s/2 - 1, s - 10, 3);
             }
             case HEAVY -> {
-                // White dot
+                // White dot indicator
                 gc.setFill(Color.WHITE);
-                gc.fillOval(x + size/2 - 2, y + size/2 - 2, 4, 4);
+                gc.fillOval(x + s/2 - 2, y + s/2 - 1, 4, 4);
             }
             case FAST -> {
-                // Speed stripe
+                // Speed lines behind
                 gc.setStroke(Color.WHITE);
                 gc.setLineWidth(1);
-                gc.strokeLine(x + 5, y + size - 3, x + size - 5, y + size - 3);
+                gc.strokeLine(x + 2, y + s - 2, x + s - 2, y + s - 2);
             }
             case BOSS -> {
-                // Skull indicator (simplified X)
+                // Skull mark (X)
                 gc.setStroke(Color.WHITE);
                 gc.setLineWidth(1.5);
-                gc.strokeLine(x + 6, y + 6, x + size - 6, y + size - 6);
-                gc.strokeLine(x + size - 6, y + 6, x + 6, y + size - 6);
+                double cx = x + s/2, cy = y + s/2;
+                gc.strokeLine(cx - 3, cy - 2, cx + 3, cy + 4);
+                gc.strokeLine(cx + 3, cy - 2, cx - 3, cy + 4);
+            }
+            case POWER -> {
+                // Star sparkle
+                gc.setFill(Color.YELLOW);
+                gc.fillOval(x + s/2 - 1.5, y + s/2 - 0.5, 3, 3);
             }
             default -> {}
         }
@@ -2696,22 +2714,22 @@ public class Game {
 
         double xPos = tableX;
         // First column is text "PLAYER"
-        gc.fillText("PLAYER", xPos, tableY + 18);
+        gc.fillText("PLAYER", xPos + 5, tableY + 18);
         xPos += colWidths[0];
 
-        // Draw mini tank icons for each enemy type column
+        // Draw mini tank icons for each enemy type column (centered)
         Tank.EnemyType[] enemyTypes = {Tank.EnemyType.REGULAR, Tank.EnemyType.ARMORED, Tank.EnemyType.FAST,
                                         Tank.EnemyType.POWER, Tank.EnemyType.HEAVY, Tank.EnemyType.BOSS};
         for (int t = 0; t < 6; t++) {
-            drawMiniTank(gc, xPos + 8, tableY + 3, enemyTypes[t]);
+            drawMiniTank(gc, xPos + (colWidths[t + 1] - 18) / 2, tableY + 2, enemyTypes[t]);
             xPos += colWidths[t + 1];
         }
 
-        // Text headers for kills and points columns
+        // Text headers for kills and points columns (centered)
         String[] textHeaders = {"KILLS", "LEVEL", "TOTAL"};
         for (int c = 0; c < textHeaders.length; c++) {
             gc.setFill(Color.GOLD);
-            gc.fillText(textHeaders[c], xPos, tableY + 18);
+            gc.fillText(textHeaders[c], xPos + 2, tableY + 18);
             xPos += colWidths[7 + c];
         }
 
@@ -2742,39 +2760,43 @@ public class Game {
             if (victory && activePlayers > 1 && !isTie && i == winnerIndex) {
                 name = "\uD83E\uDD47 " + name; // Gold medal emoji
             }
-            gc.fillText(name, xPos, rowY);
+            gc.fillText(name, xPos + 5, rowY);
             xPos += colWidths[0];
 
-            // Kills by type columns (colors for each type)
+            // Kills by type columns (colors for each type, centered)
             Color[] typeColors = {Color.LIGHTGRAY, Color.SILVER, Color.LIGHTBLUE, Color.MAGENTA, Color.DARKGRAY, Color.RED};
             for (int t = 0; t < 6; t++) {
                 int killCount = playerKillsByType[i][t];
                 totalByType[t] += killCount;
                 gc.setFill(killCount > 0 ? typeColors[t] : Color.GRAY);
-                gc.fillText(String.valueOf(killCount), xPos, rowY);
+                String numStr = String.valueOf(killCount);
+                gc.fillText(numStr, xPos + (colWidths[t + 1] - numStr.length() * 8) / 2, rowY);
                 xPos += colWidths[t + 1];
             }
 
-            // Total kills
+            // Total kills (centered)
             int kills = playerKills[i];
             totalKills += kills;
             gc.setFill(Color.WHITE);
-            gc.fillText(String.valueOf(kills), xPos, rowY);
+            String killsStr = String.valueOf(kills);
+            gc.fillText(killsStr, xPos + (colWidths[7] - killsStr.length() * 8) / 2, rowY);
             xPos += colWidths[7];
 
-            // Level Points (current level score)
+            // Level Points (centered)
             int levelScore = playerLevelScores[i];
             totalLevelPoints += levelScore;
             gc.setFill(Color.LIME);
-            gc.fillText(String.valueOf(levelScore), xPos, rowY);
+            String lvlStr = String.valueOf(levelScore);
+            gc.fillText(lvlStr, xPos + (colWidths[8] - lvlStr.length() * 8) / 2, rowY);
             xPos += colWidths[8];
 
-            // Total Points
+            // Total Points (centered, larger font)
             int score = playerScores[i];
             totalPoints += score;
             gc.setFill(Color.YELLOW);
             gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 16));
-            gc.fillText(String.valueOf(score), xPos, rowY);
+            String scoreStr = String.valueOf(score);
+            gc.fillText(scoreStr, xPos + (colWidths[9] - scoreStr.length() * 10) / 2, rowY);
             gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 14));
         }
 
@@ -2787,21 +2809,32 @@ public class Game {
         gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 14));
         gc.setFill(Color.GOLD);
         xPos = tableX;
-        gc.fillText("TOTAL", xPos, totalsY);
+        gc.fillText("TOTAL", xPos + 5, totalsY);
         xPos += colWidths[0];
 
+        // Total by type (centered)
         for (int t = 0; t < 6; t++) {
-            gc.fillText(String.valueOf(totalByType[t]), xPos, totalsY);
+            String numStr = String.valueOf(totalByType[t]);
+            gc.fillText(numStr, xPos + (colWidths[t + 1] - numStr.length() * 8) / 2, totalsY);
             xPos += colWidths[t + 1];
         }
-        gc.fillText(String.valueOf(totalKills), xPos, totalsY);
+
+        // Total kills (centered)
+        String totalKillsStr = String.valueOf(totalKills);
+        gc.fillText(totalKillsStr, xPos + (colWidths[7] - totalKillsStr.length() * 8) / 2, totalsY);
         xPos += colWidths[7];
+
+        // Total level points (centered)
         gc.setFill(Color.LIME);
-        gc.fillText(String.valueOf(totalLevelPoints), xPos, totalsY);
+        String totalLvlStr = String.valueOf(totalLevelPoints);
+        gc.fillText(totalLvlStr, xPos + (colWidths[8] - totalLvlStr.length() * 8) / 2, totalsY);
         xPos += colWidths[8];
+
+        // Grand total points (centered)
         gc.setFill(Color.YELLOW);
         gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 16));
-        gc.fillText(String.valueOf(totalPoints), xPos, totalsY);
+        String totalPtsStr = String.valueOf(totalPoints);
+        gc.fillText(totalPtsStr, xPos + (colWidths[9] - totalPtsStr.length() * 10) / 2, totalsY);
 
         // Display boss kill info on victory screen - positioned at top of screen
         if (victory && bossKillerPlayerIndex >= 0 && bossKillPowerUpReward != null) {

@@ -2711,6 +2711,14 @@ public class Game {
             }
             System.out.println("Adding Player " + playerNum + " tank (new player connected)");
             playerTanks.add(new Tank(x, y, Direction.UP, true, playerNum));
+
+            // Update playerStartPositions array for respawn
+            double[][] newStartPositions = new double[playerTanks.size()][2];
+            for (int j = 0; j < playerStartPositions.length; j++) {
+                newStartPositions[j] = playerStartPositions[j];
+            }
+            newStartPositions[playerNum - 1] = new double[]{x, y};
+            playerStartPositions = newStartPositions;
         }
 
         // Get local player index - skip position updates for local player (they control their own position)

@@ -2171,9 +2171,8 @@ public class Game {
 
         Random random = new Random();
 
-        // Get number of connected players
-        int connectedCount = isNetworkGame && network != null ? network.getConnectedPlayerCount() : playerTanks.size();
-        int activePlayers = Math.min(playerTanks.size(), connectedCount);
+        // Get number of active players - use playerTanks.size() directly
+        int activePlayers = playerTanks.size();
 
         // Spawn dancing girls based on player count (1-2 girls per player)
         int girlCount = activePlayers + random.nextInt(activePlayers + 1); // Players to 2x players
@@ -2224,9 +2223,8 @@ public class Game {
         gc.setFill(Color.WHITE);
         gc.fillText("Level: " + gameMap.getLevelNumber() + "  Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
 
-        // Display player info and power-ups
-        int connectedCount = isNetworkGame && network != null ? network.getConnectedPlayerCount() : playerTanks.size();
-        for (int i = 0; i < Math.min(playerTanks.size(), connectedCount); i++) {
+        // Display player info and power-ups - use playerTanks.size() directly
+        for (int i = 0; i < playerTanks.size(); i++) {
             Tank player = playerTanks.get(i);
             String playerName = getPlayerDisplayName(i);
             double yOffset = 40 + i * 60;
@@ -2431,8 +2429,8 @@ public class Game {
         gc.fillText("=== STATISTICS ===", width / 2 - 80, startY);
 
         int totalKills = 0;
-        int connectedCount = isNetworkGame && network != null ? network.getConnectedPlayerCount() : playerTanks.size();
-        int activePlayers = Math.min(playerTanks.size(), connectedCount);
+        // Use playerTanks.size() directly - tanks are added when players connect
+        int activePlayers = playerTanks.size();
 
         // Find winner (highest kills) - only if victory and more than 1 player
         int winnerIndex = -1;

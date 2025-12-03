@@ -17,7 +17,8 @@ public class PlayerData implements Serializable {
     public int lives;
     public boolean alive;
     public int kills;
-    public int score;
+    public int score; // Total score
+    public int levelScore; // Score for current level
 
     // Kills per enemy type: [REGULAR, ARMORED, FAST, POWER, HEAVY, BOSS]
     public int[] killsByType = new int[6];
@@ -51,7 +52,7 @@ public class PlayerData implements Serializable {
     /**
      * Copy data from a Tank object
      */
-    public void copyFromTank(Tank tank, int kills, int score, String nickname, int[] killsByType) {
+    public void copyFromTank(Tank tank, int kills, int score, int levelScore, String nickname, int[] killsByType) {
         this.x = tank.getX();
         this.y = tank.getY();
         this.direction = tank.getDirection().ordinal();
@@ -68,6 +69,7 @@ public class PlayerData implements Serializable {
         this.machinegunCount = tank.getMachinegunCount();
         this.kills = kills;
         this.score = score;
+        this.levelScore = levelScore;
         this.nickname = nickname;
         if (killsByType != null) {
             System.arraycopy(killsByType, 0, this.killsByType, 0, Math.min(6, killsByType.length));

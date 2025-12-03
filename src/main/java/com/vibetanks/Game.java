@@ -53,7 +53,8 @@ public class Game {
 
     // Player kills and score tracking
     private int[] playerKills = new int[4];
-    private int[] playerScores = new int[4];
+    private int[] playerScores = new int[4]; // Total score across all levels
+    private int[] playerLevelScores = new int[4]; // Score for current level only
     private boolean winnerBonusAwarded = false;
 
     // Kills per enemy type per player: [playerIndex][enemyTypeOrdinal]
@@ -898,9 +899,10 @@ public class Game {
         bossKillerPlayerIndex = -1;
         bossKillPowerUpReward = null;
 
-        // Reset kills for new round (scores persist)
+        // Reset kills and level scores for new round (total scores persist)
         for (int i = 0; i < playerKills.length; i++) {
             playerKills[i] = 0;
+            playerLevelScores[i] = 0;
             for (int j = 0; j < 6; j++) {
                 playerKillsByType[i][j] = 0;
             }
@@ -979,6 +981,7 @@ public class Game {
         for (int i = 0; i < playerKills.length; i++) {
             playerKills[i] = 0;
             playerScores[i] = 0;
+            playerLevelScores[i] = 0;
             for (int j = 0; j < 6; j++) {
                 playerKillsByType[i][j] = 0;
             }
@@ -1102,6 +1105,7 @@ public class Game {
         int oldScore = playerScores[playerIndex];
         int newScore = oldScore + points;
         playerScores[playerIndex] = newScore;
+        playerLevelScores[playerIndex] += points; // Also track level score
         System.out.println("SCORE: Player " + (playerIndex + 1) + " score: " + oldScore + " -> " + newScore + " (+" + points + ")");
 
         // Check if crossed a 100-point threshold (e.g., 0->100, 95->105, 199->201)
@@ -2560,41 +2564,47 @@ public class Game {
             }
         }
 
-        // Table dimensions and position
-        double tableX = width / 2 - 280;
+        // Table dimensions and position - wider columns for better visibility
+        double tableX = width / 2 - 320;
         double tableY = startY;
-        double rowHeight = 22;
-        double colWidths[] = {100, 30, 30, 30, 30, 30, 30, 50, 60}; // Name, REG, ARM, FST, PWR, HVY, BSS, Total, Points
+        double rowHeight = 28;
+        // Name, REG, ARM, FST, PWR, HVY, BSS, Total, LvlPts, TotalPts
+        double colWidths[] = {110, 35, 35, 35, 35, 35, 35, 55, 60, 70};
         double totalWidth = 0;
         for (double w : colWidths) totalWidth += w;
 
-        // Draw table background
-        gc.setFill(Color.rgb(0, 0, 0, 0.7));
-        gc.fillRoundRect(tableX - 5, tableY - 5, totalWidth + 10, (activePlayers + 2) * rowHeight + 15, 10, 10);
+        // Draw table background with border
+        gc.setFill(Color.rgb(0, 0, 0, 0.85));
+        gc.fillRoundRect(tableX - 10, tableY - 10, totalWidth + 20, (activePlayers + 2) * rowHeight + 25, 15, 15);
+        gc.setStroke(Color.GOLD);
+        gc.setLineWidth(2);
+        gc.strokeRoundRect(tableX - 10, tableY - 10, totalWidth + 20, (activePlayers + 2) * rowHeight + 25, 15, 15);
 
-        // Draw header
-        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 12));
+        // Draw header with larger font
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 14));
         gc.setFill(Color.GOLD);
 
         double xPos = tableX;
-        String[] headers = {"NICKNAME", "REG", "ARM", "FST", "PWR", "HVY", "BSS", "TOTAL", "POINTS"};
+        String[] headers = {"PLAYER", "REG", "ARM", "FST", "PWR", "HVY", "BSS", "KILLS", "LEVEL", "TOTAL"};
         for (int c = 0; c < headers.length; c++) {
-            gc.fillText(headers[c], xPos, tableY + 15);
+            gc.fillText(headers[c], xPos, tableY + 18);
             xPos += colWidths[c];
         }
 
         // Draw header line
         gc.setStroke(Color.GOLD);
-        gc.setLineWidth(1);
-        gc.strokeLine(tableX, tableY + 20, tableX + totalWidth, tableY + 20);
+        gc.setLineWidth(2);
+        gc.strokeLine(tableX - 5, tableY + 24, tableX + totalWidth + 5, tableY + 24);
 
-        // Draw player rows
-        gc.setFont(javafx.scene.text.Font.font("Arial", 12));
+        // Draw player rows with larger font
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 14));
         int totalKills = 0;
         int[] totalByType = new int[6];
+        int totalLevelPoints = 0;
+        int totalPoints = 0;
 
         for (int i = 0; i < activePlayers; i++) {
-            double rowY = tableY + 35 + i * rowHeight;
+            double rowY = tableY + 45 + i * rowHeight;
             xPos = tableX;
 
             // Player name color (cyan for all, winner gets gold medal)
@@ -2602,7 +2612,7 @@ public class Game {
 
             // Get player nickname (truncate if too long)
             String name = getPlayerDisplayName(i);
-            if (name.length() > 12) name = name.substring(0, 11) + "..";
+            if (name.length() > 10) name = name.substring(0, 9) + "..";
 
             // Add gold medal for winner (only if not a tie)
             if (victory && activePlayers > 1 && !isTie && i == winnerIndex) {
@@ -2628,19 +2638,30 @@ public class Game {
             gc.fillText(String.valueOf(kills), xPos, rowY);
             xPos += colWidths[7];
 
-            // Points
+            // Level Points (current level score)
+            int levelScore = playerLevelScores[i];
+            totalLevelPoints += levelScore;
+            gc.setFill(Color.LIME);
+            gc.fillText(String.valueOf(levelScore), xPos, rowY);
+            xPos += colWidths[8];
+
+            // Total Points
             int score = playerScores[i];
+            totalPoints += score;
             gc.setFill(Color.YELLOW);
+            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 16));
             gc.fillText(String.valueOf(score), xPos, rowY);
+            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 14));
         }
 
         // Draw totals row
-        double totalsY = tableY + 35 + activePlayers * rowHeight + 5;
+        double totalsY = tableY + 45 + activePlayers * rowHeight + 8;
         gc.setStroke(Color.GOLD);
-        gc.strokeLine(tableX, totalsY - 15, tableX + totalWidth, totalsY - 15);
+        gc.setLineWidth(2);
+        gc.strokeLine(tableX - 5, totalsY - 20, tableX + totalWidth + 5, totalsY - 20);
 
-        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 12));
-        gc.setFill(Color.YELLOW);
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 14));
+        gc.setFill(Color.GOLD);
         xPos = tableX;
         gc.fillText("TOTAL", xPos, totalsY);
         xPos += colWidths[0];
@@ -2650,6 +2671,13 @@ public class Game {
             xPos += colWidths[t + 1];
         }
         gc.fillText(String.valueOf(totalKills), xPos, totalsY);
+        xPos += colWidths[7];
+        gc.setFill(Color.LIME);
+        gc.fillText(String.valueOf(totalLevelPoints), xPos, totalsY);
+        xPos += colWidths[8];
+        gc.setFill(Color.YELLOW);
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 16));
+        gc.fillText(String.valueOf(totalPoints), xPos, totalsY);
 
         // Display boss kill info on victory screen - positioned at top of screen
         if (victory && bossKillerPlayerIndex >= 0 && bossKillPowerUpReward != null) {
@@ -2722,7 +2750,7 @@ public class Game {
         // Build player data using centralized PlayerData entity
         for (int i = 0; i < playerTanks.size() && i < 4; i++) {
             Tank tank = playerTanks.get(i);
-            state.players[i].copyFromTank(tank, playerKills[i], playerScores[i], playerNicknames[i], playerKillsByType[i]);
+            state.players[i].copyFromTank(tank, playerKills[i], playerScores[i], playerLevelScores[i], playerNicknames[i], playerKillsByType[i]);
         }
         // Debug: Log scores being sent
         if (playerScores[0] > 0 || playerScores[1] > 0) {
@@ -2912,6 +2940,7 @@ public class Game {
             playerKills[i] = pData.kills;
             int oldScore = playerScores[i];
             playerScores[i] = pData.score;
+            playerLevelScores[i] = pData.levelScore;
             if (pData.score != oldScore) {
                 System.out.println("APPLY_STATE: Player " + (i + 1) + " score updated: " + oldScore + " -> " + pData.score);
             }
@@ -3080,9 +3109,10 @@ public class Game {
                     playerScores[i] = 0;
                 }
             }
-            // Reset kills for new level/restart
+            // Reset kills and level scores for new level/restart
             for (int i = 0; i < playerKills.length; i++) {
                 playerKills[i] = 0;
+                playerLevelScores[i] = 0;
                 for (int j = 0; j < 6; j++) {
                     playerKillsByType[i][j] = 0;
                 }

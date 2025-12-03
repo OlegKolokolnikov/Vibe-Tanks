@@ -17,20 +17,53 @@ public class GameSettings {
     private static final double DEFAULT_ENEMY_SHOOT_SPEED = 1.0;
     private static final int DEFAULT_ENEMY_COUNT = 25;
 
-    // Current settings
+    // Current settings (saved to file)
     private static double playerSpeedMultiplier = DEFAULT_PLAYER_SPEED;
     private static double enemySpeedMultiplier = DEFAULT_ENEMY_SPEED;
     private static double playerShootSpeedMultiplier = DEFAULT_PLAYER_SHOOT_SPEED;
     private static double enemyShootSpeedMultiplier = DEFAULT_ENEMY_SHOOT_SPEED;
     private static int enemyCount = DEFAULT_ENEMY_COUNT;
 
+    // Runtime overrides for network games (from host)
+    private static boolean useHostSettings = false;
+    private static double hostPlayerSpeed = DEFAULT_PLAYER_SPEED;
+    private static double hostEnemySpeed = DEFAULT_ENEMY_SPEED;
+    private static double hostPlayerShootSpeed = DEFAULT_PLAYER_SHOOT_SPEED;
+    private static double hostEnemyShootSpeed = DEFAULT_ENEMY_SHOOT_SPEED;
+
     // Load settings on class initialization
     static {
         loadSettings();
     }
 
+    /**
+     * Set host settings override (called by client when receiving game state)
+     */
+    public static void setHostSettings(double playerSpeed, double enemySpeed,
+                                       double playerShootSpeed, double enemyShootSpeed) {
+        useHostSettings = true;
+        hostPlayerSpeed = playerSpeed;
+        hostEnemySpeed = enemySpeed;
+        hostPlayerShootSpeed = playerShootSpeed;
+        hostEnemyShootSpeed = enemyShootSpeed;
+    }
+
+    /**
+     * Clear host settings override (called when returning to menu or starting single player)
+     */
+    public static void clearHostSettings() {
+        useHostSettings = false;
+    }
+
+    /**
+     * Check if using host settings
+     */
+    public static boolean isUsingHostSettings() {
+        return useHostSettings;
+    }
+
     public static double getPlayerSpeedMultiplier() {
-        return playerSpeedMultiplier;
+        return useHostSettings ? hostPlayerSpeed : playerSpeedMultiplier;
     }
 
     public static void setPlayerSpeedMultiplier(double multiplier) {
@@ -39,7 +72,7 @@ public class GameSettings {
     }
 
     public static double getEnemySpeedMultiplier() {
-        return enemySpeedMultiplier;
+        return useHostSettings ? hostEnemySpeed : enemySpeedMultiplier;
     }
 
     public static void setEnemySpeedMultiplier(double multiplier) {
@@ -57,7 +90,7 @@ public class GameSettings {
     }
 
     public static double getPlayerShootSpeedMultiplier() {
-        return playerShootSpeedMultiplier;
+        return useHostSettings ? hostPlayerShootSpeed : playerShootSpeedMultiplier;
     }
 
     public static void setPlayerShootSpeedMultiplier(double multiplier) {
@@ -66,7 +99,7 @@ public class GameSettings {
     }
 
     public static double getEnemyShootSpeedMultiplier() {
-        return enemyShootSpeedMultiplier;
+        return useHostSettings ? hostEnemyShootSpeed : enemyShootSpeedMultiplier;
     }
 
     public static void setEnemyShootSpeedMultiplier(double multiplier) {

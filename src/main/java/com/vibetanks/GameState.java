@@ -73,6 +73,12 @@ public class GameState implements Serializable {
     // Easter egg collectible
     public EasterEggData easterEggData;
 
+    // Host game settings (synced to clients)
+    public double hostPlayerSpeed = 1.0;
+    public double hostEnemySpeed = 1.0;
+    public double hostPlayerShootSpeed = 1.0;
+    public double hostEnemyShootSpeed = 1.0;
+
     public static class EasterEggData implements Serializable {
         public double x, y;
         public int lifetime;

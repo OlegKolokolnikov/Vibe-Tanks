@@ -740,6 +740,8 @@ public class Game {
 
     private void returnToMenu() {
         stop();
+        // Clear host settings override when returning to menu
+        GameSettings.clearHostSettings();
         MenuScene menuScene = new MenuScene(stage, width, height);
         stage.setScene(menuScene.getScene());
     }
@@ -2695,10 +2697,24 @@ public class Game {
             state.easterEggData = null;
         }
 
+        // Send host's game settings to clients
+        state.hostPlayerSpeed = GameSettings.getPlayerSpeedMultiplier();
+        state.hostEnemySpeed = GameSettings.getEnemySpeedMultiplier();
+        state.hostPlayerShootSpeed = GameSettings.getPlayerShootSpeedMultiplier();
+        state.hostEnemyShootSpeed = GameSettings.getEnemyShootSpeedMultiplier();
+
         return state;
     }
 
     private void applyGameState(GameState state) {
+        // Apply host's game settings (client uses host's settings in multiplayer)
+        GameSettings.setHostSettings(
+            state.hostPlayerSpeed,
+            state.hostEnemySpeed,
+            state.hostPlayerShootSpeed,
+            state.hostEnemyShootSpeed
+        );
+
         // Dynamically add tanks if more players connected
         while (playerTanks.size() < state.connectedPlayers && playerTanks.size() < 4) {
             int playerNum = playerTanks.size() + 1;

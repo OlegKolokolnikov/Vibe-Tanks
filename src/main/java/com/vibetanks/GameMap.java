@@ -202,33 +202,45 @@ public class GameMap {
             tiles[i][width - 1] = TileType.STEEL;
         }
 
-        // Define reserved areas (keep empty for tank movement)
-        // Player spawn area (bottom, rows 23-25, cols 7-17)
-        // Enemy spawn areas (top, row 1-2, cols around 1, 12, 24)
-        // Base area (bottom center, rows 23-25, cols 11-14)
-
-        // Generate random structures
-        int numStructures = 8 + random.nextInt(6); // 8-13 structures
-        for (int s = 0; s < numStructures; s++) {
-            generateRandomStructure();
+        // Generate 2-4 main geometric structures
+        int numMainStructures = 2 + random.nextInt(3);
+        for (int i = 0; i < numMainStructures; i++) {
+            generateGeometricShape();
         }
 
-        // Add some water pools (2-4)
-        int numWater = 2 + random.nextInt(3);
+        // Add 1-2 symmetric patterns
+        if (random.nextDouble() < 0.7) {
+            generateSymmetricPattern();
+        }
+
+        // Add some corridors/walls
+        int numCorridors = 1 + random.nextInt(3);
+        for (int i = 0; i < numCorridors; i++) {
+            generateCorridor();
+        }
+
+        // Add some water features (1-3)
+        int numWater = 1 + random.nextInt(3);
         for (int w = 0; w < numWater; w++) {
-            generateWaterPool();
+            generateWaterFeature();
         }
 
-        // Add some tree patches (2-4)
-        int numTrees = 2 + random.nextInt(3);
+        // Add some tree patches (1-3)
+        int numTrees = 1 + random.nextInt(3);
         for (int t = 0; t < numTrees; t++) {
             generateTreePatch();
         }
 
-        // Add some ice patches (1-3)
-        int numIce = 1 + random.nextInt(3);
+        // Add some ice patches (1-2)
+        int numIce = 1 + random.nextInt(2);
         for (int i = 0; i < numIce; i++) {
             generateIcePatch();
+        }
+
+        // Add random scattered blocks for variety
+        int numScattered = 5 + random.nextInt(10);
+        for (int i = 0; i < numScattered; i++) {
+            generateScatteredBlocks();
         }
 
         // Ensure base is surrounded by bricks
@@ -238,40 +250,270 @@ public class GameMap {
         clearSpawnAreas();
     }
 
-    private void generateRandomStructure() {
-        // Random structure size
-        int structWidth = 2 + random.nextInt(4); // 2-5 tiles wide
-        int structHeight = 2 + random.nextInt(3); // 2-4 tiles high
+    // Generate various geometric shapes
+    private void generateGeometricShape() {
+        int shapeType = random.nextInt(8);
+        int centerCol = 4 + random.nextInt(width - 8);
+        int centerRow = 5 + random.nextInt(height - 14);
+        TileType type = random.nextDouble() < 0.75 ? TileType.BRICK : TileType.STEEL;
 
-        // Random position (avoid borders and reserved areas)
-        int startCol = 2 + random.nextInt(width - 4 - structWidth);
-        int startRow = 3 + random.nextInt(height - 10 - structHeight); // Avoid bottom area
-
-        // Choose tile type (mostly brick, some steel)
-        TileType type = random.nextDouble() < 0.8 ? TileType.BRICK : TileType.STEEL;
-
-        // Create structure
-        for (int row = startRow; row < startRow + structHeight; row++) {
-            for (int col = startCol; col < startCol + structWidth; col++) {
-                if (isValidForObstacle(row, col)) {
-                    tiles[row][col] = type;
-                }
-            }
+        switch (shapeType) {
+            case 0 -> generateHollowRectangle(centerRow, centerCol, type);
+            case 1 -> generateCross(centerRow, centerCol, type);
+            case 2 -> generateDiamond(centerRow, centerCol, type);
+            case 3 -> generateLShape(centerRow, centerCol, type);
+            case 4 -> generateTShape(centerRow, centerCol, type);
+            case 5 -> generateUShape(centerRow, centerCol, type);
+            case 6 -> generateZigzag(centerRow, centerCol, type);
+            case 7 -> generateSpiral(centerRow, centerCol, type);
         }
+    }
 
-        // Sometimes add a gap in the middle for variety
-        if (random.nextDouble() < 0.3 && structWidth >= 3 && structHeight >= 2) {
-            int gapCol = startCol + structWidth / 2;
-            int gapRow = startRow + structHeight / 2;
-            if (isValidForObstacle(gapRow, gapCol)) {
-                tiles[gapRow][gapCol] = TileType.EMPTY;
+    // Hollow rectangle (room-like)
+    private void generateHollowRectangle(int startRow, int startCol, TileType type) {
+        int w = 4 + random.nextInt(4); // 4-7 wide
+        int h = 3 + random.nextInt(3); // 3-5 tall
+
+        // Top and bottom walls
+        for (int col = startCol; col < startCol + w; col++) {
+            placeTile(startRow, col, type);
+            placeTile(startRow + h - 1, col, type);
+        }
+        // Left and right walls
+        for (int row = startRow; row < startRow + h; row++) {
+            placeTile(row, startCol, type);
+            placeTile(row, startCol + w - 1, type);
+        }
+        // Add opening on random side
+        int opening = random.nextInt(4);
+        switch (opening) {
+            case 0 -> placeTile(startRow, startCol + w / 2, TileType.EMPTY); // top
+            case 1 -> placeTile(startRow + h - 1, startCol + w / 2, TileType.EMPTY); // bottom
+            case 2 -> placeTile(startRow + h / 2, startCol, TileType.EMPTY); // left
+            case 3 -> placeTile(startRow + h / 2, startCol + w - 1, TileType.EMPTY); // right
+        }
+    }
+
+    // Plus/Cross shape
+    private void generateCross(int centerRow, int centerCol, TileType type) {
+        int armLength = 2 + random.nextInt(3); // 2-4
+        // Vertical arm
+        for (int i = -armLength; i <= armLength; i++) {
+            placeTile(centerRow + i, centerCol, type);
+        }
+        // Horizontal arm
+        for (int i = -armLength; i <= armLength; i++) {
+            placeTile(centerRow, centerCol + i, type);
+        }
+    }
+
+    // Diamond shape
+    private void generateDiamond(int centerRow, int centerCol, TileType type) {
+        int size = 2 + random.nextInt(2); // 2-3
+        for (int i = 0; i <= size; i++) {
+            placeTile(centerRow - i, centerCol - (size - i), type);
+            placeTile(centerRow - i, centerCol + (size - i), type);
+            placeTile(centerRow + i, centerCol - (size - i), type);
+            placeTile(centerRow + i, centerCol + (size - i), type);
+        }
+    }
+
+    // L-shape
+    private void generateLShape(int startRow, int startCol, TileType type) {
+        int vertLen = 3 + random.nextInt(3); // 3-5
+        int horizLen = 3 + random.nextInt(3); // 3-5
+        boolean flipped = random.nextBoolean();
+        boolean rotated = random.nextBoolean();
+
+        // Vertical part
+        for (int i = 0; i < vertLen; i++) {
+            int col = flipped ? startCol + horizLen - 1 : startCol;
+            placeTile(startRow + i, col, type);
+        }
+        // Horizontal part
+        int horizRow = rotated ? startRow : startRow + vertLen - 1;
+        for (int i = 0; i < horizLen; i++) {
+            placeTile(horizRow, startCol + i, type);
+        }
+    }
+
+    // T-shape
+    private void generateTShape(int startRow, int startCol, TileType type) {
+        int topWidth = 4 + random.nextInt(3); // 4-6
+        int stemHeight = 2 + random.nextInt(3); // 2-4
+
+        // Top bar
+        for (int i = 0; i < topWidth; i++) {
+            placeTile(startRow, startCol + i, type);
+        }
+        // Stem
+        int stemCol = startCol + topWidth / 2;
+        for (int i = 1; i <= stemHeight; i++) {
+            placeTile(startRow + i, stemCol, type);
+        }
+    }
+
+    // U-shape
+    private void generateUShape(int startRow, int startCol, TileType type) {
+        int w = 3 + random.nextInt(3); // 3-5
+        int h = 3 + random.nextInt(2); // 3-4
+
+        // Left wall
+        for (int i = 0; i < h; i++) {
+            placeTile(startRow + i, startCol, type);
+        }
+        // Right wall
+        for (int i = 0; i < h; i++) {
+            placeTile(startRow + i, startCol + w - 1, type);
+        }
+        // Bottom
+        for (int i = 0; i < w; i++) {
+            placeTile(startRow + h - 1, startCol + i, type);
+        }
+    }
+
+    // Zigzag pattern
+    private void generateZigzag(int startRow, int startCol, TileType type) {
+        int segments = 2 + random.nextInt(2); // 2-3 zigzags
+        int segLen = 2 + random.nextInt(2); // 2-3 length each
+        boolean goingRight = random.nextBoolean();
+
+        int row = startRow;
+        int col = startCol;
+        for (int s = 0; s < segments; s++) {
+            // Horizontal segment
+            for (int i = 0; i < segLen; i++) {
+                placeTile(row, col + (goingRight ? i : -i), type);
+            }
+            col += goingRight ? segLen - 1 : -(segLen - 1);
+            // Vertical segment
+            for (int i = 1; i < segLen; i++) {
+                placeTile(row + i, col, type);
+            }
+            row += segLen - 1;
+            goingRight = !goingRight;
+        }
+    }
+
+    // Small spiral
+    private void generateSpiral(int centerRow, int centerCol, TileType type) {
+        int[][] spiral = {
+            {0, 0}, {0, 1}, {0, 2}, {0, 3},
+            {1, 3}, {2, 3}, {2, 2}, {2, 1},
+            {2, 0}, {1, 0}
+        };
+        for (int[] offset : spiral) {
+            placeTile(centerRow + offset[0], centerCol + offset[1], type);
+        }
+    }
+
+    // Generate symmetric pattern (mirrored left-right)
+    private void generateSymmetricPattern() {
+        int patternType = random.nextInt(3);
+        int centerCol = width / 2;
+        TileType type = random.nextDouble() < 0.7 ? TileType.BRICK : TileType.STEEL;
+
+        switch (patternType) {
+            case 0 -> generateSymmetricWalls(centerCol, type);
+            case 1 -> generateSymmetricPillars(centerCol, type);
+            case 2 -> generateSymmetricMaze(centerCol, type);
+        }
+    }
+
+    private void generateSymmetricWalls(int centerCol, TileType type) {
+        int wallRow = 8 + random.nextInt(6);
+        int wallLength = 3 + random.nextInt(4);
+        int offset = 3 + random.nextInt(4);
+
+        // Left wall
+        for (int i = 0; i < wallLength; i++) {
+            placeTile(wallRow + i, centerCol - offset, type);
+        }
+        // Right wall (mirrored)
+        for (int i = 0; i < wallLength; i++) {
+            placeTile(wallRow + i, centerCol + offset - 1, type);
+        }
+    }
+
+    private void generateSymmetricPillars(int centerCol, TileType type) {
+        int numPillars = 2 + random.nextInt(2);
+        int spacing = 4 + random.nextInt(3);
+
+        for (int p = 0; p < numPillars; p++) {
+            int row = 6 + p * spacing;
+            int offset = 4 + random.nextInt(4);
+
+            // Pillar (2x2)
+            placeTile(row, centerCol - offset, type);
+            placeTile(row + 1, centerCol - offset, type);
+            placeTile(row, centerCol - offset + 1, type);
+            placeTile(row + 1, centerCol - offset + 1, type);
+
+            // Mirrored pillar
+            placeTile(row, centerCol + offset - 2, type);
+            placeTile(row + 1, centerCol + offset - 2, type);
+            placeTile(row, centerCol + offset - 1, type);
+            placeTile(row + 1, centerCol + offset - 1, type);
+        }
+    }
+
+    private void generateSymmetricMaze(int centerCol, TileType type) {
+        // Create small symmetric maze segments
+        int[][] pattern = {
+            {6, -6}, {6, -5}, {7, -5},
+            {10, -8}, {10, -7}, {11, -7}, {11, -6},
+            {14, -5}, {14, -4}, {14, -3}, {15, -3}
+        };
+
+        for (int[] pos : pattern) {
+            placeTile(pos[0], centerCol + pos[1], type);
+            placeTile(pos[0], centerCol - pos[1] - 1, type); // Mirror
+        }
+    }
+
+    // Generate corridors/long walls
+    private void generateCorridor() {
+        boolean horizontal = random.nextBoolean();
+        TileType type = random.nextDouble() < 0.6 ? TileType.BRICK : TileType.STEEL;
+
+        if (horizontal) {
+            int row = 5 + random.nextInt(height - 12);
+            int startCol = 2 + random.nextInt(5);
+            int length = 4 + random.nextInt(8);
+            for (int i = 0; i < length; i++) {
+                placeTile(row, startCol + i, type);
+            }
+            // Add gap
+            if (length > 4) {
+                placeTile(row, startCol + length / 2, TileType.EMPTY);
+            }
+        } else {
+            int col = 3 + random.nextInt(width - 6);
+            int startRow = 4 + random.nextInt(5);
+            int length = 3 + random.nextInt(6);
+            for (int i = 0; i < length; i++) {
+                placeTile(startRow + i, col, type);
+            }
+            // Add gap
+            if (length > 3) {
+                placeTile(startRow + length / 2, col, TileType.EMPTY);
             }
         }
     }
 
+    // Generate water features (pools, rivers)
+    private void generateWaterFeature() {
+        int featureType = random.nextInt(3);
+        switch (featureType) {
+            case 0 -> generateWaterPool();
+            case 1 -> generateWaterRiver();
+            case 2 -> generateWaterLake();
+        }
+    }
+
     private void generateWaterPool() {
-        int poolWidth = 2 + random.nextInt(4);
-        int poolHeight = 2 + random.nextInt(3);
+        int poolWidth = 2 + random.nextInt(3);
+        int poolHeight = 2 + random.nextInt(2);
         int startCol = 2 + random.nextInt(width - 4 - poolWidth);
         int startRow = 5 + random.nextInt(height - 12 - poolHeight);
 
@@ -284,33 +526,192 @@ public class GameMap {
         }
     }
 
-    private void generateTreePatch() {
-        int patchWidth = 2 + random.nextInt(4);
-        int patchHeight = 2 + random.nextInt(3);
-        int startCol = 2 + random.nextInt(width - 4 - patchWidth);
-        int startRow = 4 + random.nextInt(height - 10 - patchHeight);
+    private void generateWaterRiver() {
+        boolean horizontal = random.nextBoolean();
+        if (horizontal) {
+            int row = 8 + random.nextInt(height - 16);
+            int startCol = 2 + random.nextInt(3);
+            int length = 6 + random.nextInt(8);
+            for (int i = 0; i < length; i++) {
+                if (isValidForObstacle(row, startCol + i) && tiles[row][startCol + i] == TileType.EMPTY) {
+                    tiles[row][startCol + i] = TileType.WATER;
+                }
+                // Add some width variation
+                if (random.nextDouble() < 0.4 && isValidForObstacle(row + 1, startCol + i)) {
+                    tiles[row + 1][startCol + i] = TileType.WATER;
+                }
+            }
+        } else {
+            int col = 4 + random.nextInt(width - 8);
+            int startRow = 5 + random.nextInt(4);
+            int length = 5 + random.nextInt(6);
+            for (int i = 0; i < length; i++) {
+                if (isValidForObstacle(startRow + i, col) && tiles[startRow + i][col] == TileType.EMPTY) {
+                    tiles[startRow + i][col] = TileType.WATER;
+                }
+            }
+        }
+    }
 
-        for (int row = startRow; row < startRow + patchHeight; row++) {
-            for (int col = startCol; col < startCol + patchWidth; col++) {
-                if (isValidForObstacle(row, col) && tiles[row][col] == TileType.EMPTY) {
-                    tiles[row][col] = TileType.TREES;
+    private void generateWaterLake() {
+        int centerRow = 8 + random.nextInt(height - 16);
+        int centerCol = 5 + random.nextInt(width - 10);
+        int radius = 2 + random.nextInt(2);
+
+        // Irregular lake shape
+        for (int dr = -radius; dr <= radius; dr++) {
+            for (int dc = -radius; dc <= radius; dc++) {
+                if (dr * dr + dc * dc <= radius * radius + random.nextInt(2)) {
+                    int r = centerRow + dr;
+                    int c = centerCol + dc;
+                    if (isValidForObstacle(r, c) && tiles[r][c] == TileType.EMPTY) {
+                        tiles[r][c] = TileType.WATER;
+                    }
+                }
+            }
+        }
+    }
+
+    private void generateTreePatch() {
+        int shapeType = random.nextInt(3);
+        switch (shapeType) {
+            case 0 -> generateTreeCluster();
+            case 1 -> generateTreeLine();
+            case 2 -> generateTreeForest();
+        }
+    }
+
+    private void generateTreeCluster() {
+        int centerRow = 6 + random.nextInt(height - 14);
+        int centerCol = 4 + random.nextInt(width - 8);
+        int size = 2 + random.nextInt(2);
+
+        for (int dr = -size; dr <= size; dr++) {
+            for (int dc = -size; dc <= size; dc++) {
+                if (random.nextDouble() < 0.7) {
+                    int r = centerRow + dr;
+                    int c = centerCol + dc;
+                    if (isValidForObstacle(r, c) && tiles[r][c] == TileType.EMPTY) {
+                        tiles[r][c] = TileType.TREES;
+                    }
+                }
+            }
+        }
+    }
+
+    private void generateTreeLine() {
+        boolean horizontal = random.nextBoolean();
+        int length = 3 + random.nextInt(5);
+
+        if (horizontal) {
+            int row = 5 + random.nextInt(height - 12);
+            int startCol = 2 + random.nextInt(width - 4 - length);
+            for (int i = 0; i < length; i++) {
+                if (isValidForObstacle(row, startCol + i) && tiles[row][startCol + i] == TileType.EMPTY) {
+                    tiles[row][startCol + i] = TileType.TREES;
+                }
+            }
+        } else {
+            int col = 3 + random.nextInt(width - 6);
+            int startRow = 5 + random.nextInt(height - 12 - length);
+            for (int i = 0; i < length; i++) {
+                if (isValidForObstacle(startRow + i, col) && tiles[startRow + i][col] == TileType.EMPTY) {
+                    tiles[startRow + i][col] = TileType.TREES;
+                }
+            }
+        }
+    }
+
+    private void generateTreeForest() {
+        int startRow = 5 + random.nextInt(height - 14);
+        int startCol = 3 + random.nextInt(width - 8);
+        int w = 3 + random.nextInt(3);
+        int h = 2 + random.nextInt(3);
+
+        for (int dr = 0; dr < h; dr++) {
+            for (int dc = 0; dc < w; dc++) {
+                int r = startRow + dr;
+                int c = startCol + dc;
+                if (isValidForObstacle(r, c) && tiles[r][c] == TileType.EMPTY) {
+                    tiles[r][c] = TileType.TREES;
                 }
             }
         }
     }
 
     private void generateIcePatch() {
-        int patchWidth = 2 + random.nextInt(4);
-        int patchHeight = 2 + random.nextInt(3);
-        int startCol = 2 + random.nextInt(width - 4 - patchWidth);
-        int startRow = 5 + random.nextInt(height - 12 - patchHeight);
+        int shapeType = random.nextInt(2);
+        switch (shapeType) {
+            case 0 -> generateIceRink();
+            case 1 -> generateIcePath();
+        }
+    }
 
-        for (int row = startRow; row < startRow + patchHeight; row++) {
-            for (int col = startCol; col < startCol + patchWidth; col++) {
-                if (isValidForObstacle(row, col) && tiles[row][col] == TileType.EMPTY) {
-                    tiles[row][col] = TileType.ICE;
+    private void generateIceRink() {
+        int startRow = 8 + random.nextInt(height - 16);
+        int startCol = 4 + random.nextInt(width - 10);
+        int w = 3 + random.nextInt(4);
+        int h = 2 + random.nextInt(3);
+
+        for (int dr = 0; dr < h; dr++) {
+            for (int dc = 0; dc < w; dc++) {
+                int r = startRow + dr;
+                int c = startCol + dc;
+                if (isValidForObstacle(r, c) && tiles[r][c] == TileType.EMPTY) {
+                    tiles[r][c] = TileType.ICE;
                 }
             }
+        }
+    }
+
+    private void generateIcePath() {
+        boolean horizontal = random.nextBoolean();
+        int length = 4 + random.nextInt(6);
+
+        if (horizontal) {
+            int row = 10 + random.nextInt(height - 18);
+            int startCol = 3 + random.nextInt(width - 6 - length);
+            for (int i = 0; i < length; i++) {
+                if (isValidForObstacle(row, startCol + i) && tiles[row][startCol + i] == TileType.EMPTY) {
+                    tiles[row][startCol + i] = TileType.ICE;
+                }
+            }
+        } else {
+            int col = 4 + random.nextInt(width - 8);
+            int startRow = 6 + random.nextInt(height - 14 - length);
+            for (int i = 0; i < length; i++) {
+                if (isValidForObstacle(startRow + i, col) && tiles[startRow + i][col] == TileType.EMPTY) {
+                    tiles[startRow + i][col] = TileType.ICE;
+                }
+            }
+        }
+    }
+
+    // Generate scattered random blocks
+    private void generateScatteredBlocks() {
+        int row = 3 + random.nextInt(height - 8);
+        int col = 2 + random.nextInt(width - 4);
+        TileType type = random.nextDouble() < 0.8 ? TileType.BRICK : TileType.STEEL;
+
+        // Place 1-3 connected blocks
+        int numBlocks = 1 + random.nextInt(3);
+        for (int i = 0; i < numBlocks; i++) {
+            if (isValidForObstacle(row, col) && tiles[row][col] == TileType.EMPTY) {
+                tiles[row][col] = type;
+            }
+            // Move to adjacent cell
+            if (random.nextBoolean()) {
+                row += random.nextBoolean() ? 1 : -1;
+            } else {
+                col += random.nextBoolean() ? 1 : -1;
+            }
+        }
+    }
+
+    // Helper to place tile only if valid
+    private void placeTile(int row, int col, TileType type) {
+        if (isValidForObstacle(row, col)) {
+            tiles[row][col] = type;
         }
     }
 

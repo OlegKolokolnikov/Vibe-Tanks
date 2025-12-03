@@ -101,10 +101,10 @@ public class Game {
     private List<DancingGirl> victoryDancingGirls = new ArrayList<>();
     private boolean victoryDancingInitialized = false;
 
-    // Victory delay (10 seconds before showing victory screen)
+    // Victory delay (5 seconds before showing victory screen)
     private boolean victoryConditionMet = false;
     private int victoryDelayTimer = 0;
-    private static final int VICTORY_DELAY = 600; // 10 seconds at 60 FPS
+    private static final int VICTORY_DELAY = 300; // 5 seconds at 60 FPS
 
     // Player nicknames (index 0-3 for players 1-4)
     private String[] playerNicknames = new String[4];

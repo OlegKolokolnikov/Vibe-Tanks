@@ -801,6 +801,15 @@ public class Tank {
         }
     }
 
+    public void setShieldWithDuration(boolean shield, int duration) {
+        this.hasShield = shield;
+        this.shieldDuration = shield ? duration : 0;
+    }
+
+    public int getShieldDuration() {
+        return shieldDuration;
+    }
+
     public void setShip(boolean ship) {
         this.canSwim = ship;
     }

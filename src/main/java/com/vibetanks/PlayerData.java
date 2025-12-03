@@ -21,6 +21,7 @@ public class PlayerData implements Serializable {
 
     // Power-ups
     public boolean hasShield;
+    public int shieldDuration; // Shield duration in frames
     public boolean hasPauseShield;
     public boolean hasShip;
     public boolean hasGun;
@@ -54,6 +55,7 @@ public class PlayerData implements Serializable {
         this.lives = tank.getLives();
         this.alive = tank.isAlive();
         this.hasShield = tank.hasShield();
+        this.shieldDuration = tank.getShieldDuration();
         this.hasPauseShield = tank.hasPauseShield();
         this.hasShip = tank.hasShip();
         this.hasGun = tank.hasGun();
@@ -76,7 +78,7 @@ public class PlayerData implements Serializable {
             tank.setPosition(this.x, this.y);
             tank.setDirection(Direction.values()[this.direction]);
         }
-        tank.setShield(this.hasShield);
+        tank.setShieldWithDuration(this.hasShield, this.shieldDuration);
         tank.setPauseShield(this.hasPauseShield);
         tank.setShip(this.hasShip);
         tank.setGun(this.hasGun);

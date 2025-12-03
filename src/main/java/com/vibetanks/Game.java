@@ -1277,8 +1277,8 @@ public class Game {
             checkAndSpawnUFO();
         }
 
-        // Update UFO if exists
-        if (ufo != null && ufo.isAlive()) {
+        // Update UFO if exists (but not during victory delay - stop shooting)
+        if (ufo != null && ufo.isAlive() && !victoryConditionMet) {
             ufo.update(bullets, width, height, soundManager);
             if (!ufo.isAlive()) {
                 // UFO escaped (wasn't killed by player)

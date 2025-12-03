@@ -2421,11 +2421,11 @@ public class Game {
 
             gc.setFill(Color.YELLOW);
             gc.setFont(javafx.scene.text.Font.font(22));
-            gc.fillText("Press ENTER to restart", width / 2 - 110, height / 2 + 200);
+            gc.fillText("Press ENTER to restart", width / 2 - 110, height / 2 + 310);
 
             gc.setFill(Color.WHITE);
             gc.setFont(javafx.scene.text.Font.font(18));
-            gc.fillText("Press ESC to return to menu", width / 2 - 115, height / 2 + 230);
+            gc.fillText("Press ESC to return to menu", width / 2 - 115, height / 2 + 340);
         } else if (victory) {
             // Initialize victory celebration (Soviet flag + dancing girls)
             if (!victoryDancingInitialized) {
@@ -2453,11 +2453,11 @@ public class Game {
 
             gc.setFill(Color.LIME);
             gc.setFont(javafx.scene.text.Font.font(22));
-            gc.fillText("Press ENTER for next level", width / 2 - 130, height / 2 + 200);
+            gc.fillText("Press ENTER for next level", width / 2 - 130, height / 2 + 310);
 
             gc.setFill(Color.WHITE);
             gc.setFont(javafx.scene.text.Font.font(18));
-            gc.fillText("Press ESC to return to menu", width / 2 - 115, height / 2 + 230);
+            gc.fillText("Press ESC to return to menu", width / 2 - 115, height / 2 + 340);
         } else if (paused) {
             // Draw pause menu overlay
             gc.setFill(Color.rgb(0, 0, 0, 0.7));

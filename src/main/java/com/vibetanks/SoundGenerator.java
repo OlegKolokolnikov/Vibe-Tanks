@@ -31,6 +31,12 @@ public class SoundGenerator {
             // Generate sad sound - descending sad melody for game over
             generateSadSound("src/main/resources/sounds/sad.wav");
 
+            // Generate player death sound - classic 8-bit death
+            generatePlayerDeathSound("src/main/resources/sounds/player_death.wav");
+
+            // Generate base destroyed sound - dramatic explosion
+            generateBaseDestroyedSound("src/main/resources/sounds/base_destroyed.wav");
+
             System.out.println("Sound files generated successfully!");
         } catch (Exception e) {
             System.err.println("Error generating sounds: " + e.getMessage());
@@ -38,66 +44,40 @@ public class SoundGenerator {
     }
 
     private static void generateShootSound(String filename) throws Exception {
-        // Realistic cannon/tank shot sound
-        // Components: initial blast, pressure wave, mechanical click, echo tail
-
-        double duration = 0.25;
+        // Retro 8-bit blip sound - classic arcade style
+        double duration = 0.08; // Very short
         int numSamples = (int) (duration * SAMPLE_RATE);
         byte[] buffer = new byte[numSamples * 2];
-        java.util.Random random = new java.util.Random(42);
 
         for (int i = 0; i < numSamples; i++) {
-            double t = (double) i / SAMPLE_RATE; // Time in seconds
-            double tNorm = (double) i / numSamples; // Normalized 0-1
+            double t = (double) i / SAMPLE_RATE;
+            double tNorm = (double) i / numSamples;
 
-            double sample = 0;
+            // Frequency sweep from high to low (classic 8-bit pew)
+            double startFreq = 1200;
+            double endFreq = 400;
+            double freq = startFreq - (startFreq - endFreq) * tNorm;
 
-            // 1. Initial BLAST - very loud white noise burst (first 10ms)
-            if (t < 0.01) {
-                double blastEnv = 1.0 - (t / 0.01);
-                sample += (random.nextDouble() * 2 - 1) * blastEnv * 1.2;
+            // Square wave for that classic 8-bit sound
+            double phase = 2.0 * Math.PI * t * freq;
+            double sample = Math.sin(phase) > 0 ? 1.0 : -1.0;
+
+            // Add a bit of the fundamental sine for smoothness
+            sample = sample * 0.7 + Math.sin(phase) * 0.3;
+
+            // Quick attack, fast decay envelope
+            double envelope;
+            if (tNorm < 0.05) {
+                envelope = tNorm / 0.05; // Quick attack
+            } else {
+                envelope = 1.0 - ((tNorm - 0.05) / 0.95); // Decay
+                envelope = envelope * envelope; // Exponential decay
             }
 
-            // 2. Pressure wave - low frequency boom (20-60 Hz)
-            double pressureFreq = 40 - t * 100; // Frequency drops
-            if (pressureFreq > 20) {
-                double pressureEnv = Math.exp(-t * 8);
-                sample += Math.sin(2.0 * Math.PI * t * pressureFreq) * pressureEnv * 0.8;
-            }
-
-            // 3. Main body - filtered noise with resonance
-            double bodyEnv = Math.exp(-t * 12);
-            double filteredNoise = 0;
-            // Simulate low-pass filtered noise
-            for (int h = 1; h <= 5; h++) {
-                double freq = 100 + random.nextDouble() * 200;
-                filteredNoise += Math.sin(2.0 * Math.PI * t * freq * h) / h;
-            }
-            sample += filteredNoise * bodyEnv * 0.3;
-
-            // 4. Mechanical "clack" - sharp transient at 1-2kHz
-            if (t < 0.02) {
-                double clackEnv = Math.exp(-t * 150);
-                sample += Math.sin(2.0 * Math.PI * t * 1500) * clackEnv * 0.4;
-                sample += Math.sin(2.0 * Math.PI * t * 2200) * clackEnv * 0.2;
-            }
-
-            // 5. Sub-bass thump (felt more than heard)
-            double subEnv = Math.exp(-t * 6);
-            sample += Math.sin(2.0 * Math.PI * t * 30) * subEnv * 0.5;
-
-            // 6. Echo/reverb tail - quieter delayed noise
-            if (t > 0.05) {
-                double echoT = t - 0.05;
-                double echoEnv = Math.exp(-echoT * 5) * 0.15;
-                sample += (random.nextDouble() * 2 - 1) * echoEnv;
-            }
-
-            // Soft clipping for natural distortion
-            sample = Math.tanh(sample * 0.8);
+            sample *= envelope * 0.6;
 
             // Convert to short
-            short shortSample = (short) (sample * 0.85 * Short.MAX_VALUE);
+            short shortSample = (short) (sample * Short.MAX_VALUE);
 
             buffer[i * 2] = (byte) (shortSample & 0xFF);
             buffer[i * 2 + 1] = (byte) ((shortSample >> 8) & 0xFF);
@@ -189,6 +169,112 @@ public class SoundGenerator {
                 buffer[bufferIndex++] = (byte) (sample & 0xFF);
                 buffer[bufferIndex++] = (byte) ((sample >> 8) & 0xFF);
             }
+        }
+
+        saveWav(filename, buffer);
+    }
+
+    private static void generatePlayerDeathSound(String filename) throws Exception {
+        // Classic 8-bit death sound - descending pitch with wobble
+        double duration = 0.5;
+        int numSamples = (int) (duration * SAMPLE_RATE);
+        byte[] buffer = new byte[numSamples * 2];
+
+        for (int i = 0; i < numSamples; i++) {
+            double t = (double) i / SAMPLE_RATE;
+            double tNorm = (double) i / numSamples;
+
+            // Descending frequency (high to low - classic death sound)
+            double startFreq = 800;
+            double endFreq = 100;
+            double freq = startFreq - (startFreq - endFreq) * tNorm;
+
+            // Add wobble for dramatic effect
+            double wobble = 1.0 + 0.1 * Math.sin(2.0 * Math.PI * t * 15);
+            freq *= wobble;
+
+            // Square wave for 8-bit feel
+            double phase = 2.0 * Math.PI * t * freq;
+            double sample = Math.sin(phase) > 0 ? 1.0 : -1.0;
+
+            // Mix with triangle wave for fuller sound
+            double triangle = 2.0 * Math.abs(2.0 * ((t * freq) % 1.0) - 1.0) - 1.0;
+            sample = sample * 0.6 + triangle * 0.4;
+
+            // Envelope - sustain then quick fade
+            double envelope;
+            if (tNorm < 0.1) {
+                envelope = tNorm / 0.1;
+            } else if (tNorm > 0.8) {
+                envelope = (1.0 - tNorm) / 0.2;
+            } else {
+                envelope = 1.0;
+            }
+
+            sample *= envelope * 0.5;
+
+            short shortSample = (short) (sample * Short.MAX_VALUE);
+            buffer[i * 2] = (byte) (shortSample & 0xFF);
+            buffer[i * 2 + 1] = (byte) ((shortSample >> 8) & 0xFF);
+        }
+
+        saveWav(filename, buffer);
+    }
+
+    private static void generateBaseDestroyedSound(String filename) throws Exception {
+        // Dramatic base explosion - big boom with alarm-like elements
+        double duration = 1.0;
+        int numSamples = (int) (duration * SAMPLE_RATE);
+        byte[] buffer = new byte[numSamples * 2];
+        java.util.Random random = new java.util.Random(123);
+
+        for (int i = 0; i < numSamples; i++) {
+            double t = (double) i / SAMPLE_RATE;
+            double tNorm = (double) i / numSamples;
+
+            double sample = 0;
+
+            // Low rumbling explosion base
+            double explosionFreq = 60 - t * 30;
+            if (explosionFreq > 20) {
+                double explosionEnv = Math.exp(-t * 2);
+                sample += Math.sin(2.0 * Math.PI * t * explosionFreq) * explosionEnv * 0.6;
+            }
+
+            // Alarm-like descending tone (like classic game over)
+            double alarmFreq = 400 - tNorm * 300;
+            double alarmPhase = 2.0 * Math.PI * t * alarmFreq;
+            double alarm = Math.sin(alarmPhase) > 0 ? 1.0 : -1.0; // Square wave
+            double alarmEnv = Math.exp(-t * 1.5);
+            sample += alarm * alarmEnv * 0.3;
+
+            // Noise burst at start
+            if (t < 0.15) {
+                double noiseEnv = Math.exp(-t * 10);
+                sample += (random.nextDouble() * 2 - 1) * noiseEnv * 0.5;
+            }
+
+            // Secondary explosion hit
+            if (t > 0.2 && t < 0.5) {
+                double t2 = t - 0.2;
+                double secondaryEnv = Math.exp(-t2 * 5);
+                sample += Math.sin(2.0 * Math.PI * t2 * 80) * secondaryEnv * 0.4;
+            }
+
+            // Overall envelope
+            double envelope = 1.0;
+            if (tNorm > 0.7) {
+                envelope = (1.0 - tNorm) / 0.3;
+            }
+
+            sample *= envelope * 0.7;
+
+            // Soft clip
+            sample = Math.tanh(sample);
+
+            short shortSample = (short) (sample * Short.MAX_VALUE);
+            buffer[i * 2] = (byte) (shortSample & 0xFF);
+            buffer[i * 2 + 1] = (byte) ((shortSample >> 8) & 0xFF);
         }
 
         saveWav(filename, buffer);

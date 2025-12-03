@@ -1394,7 +1394,7 @@ public class Game {
                                 System.out.println("BOSS bullet hit player! Damaged: " + damaged + ", Player alive: " + player.isAlive());
                             }
                             if (!player.isAlive()) {
-                                soundManager.playExplosion();
+                                soundManager.playPlayerDeath();
                             }
                         } else if (bullet.getSize() > 8) {
                             System.out.println("BOSS bullet hit player but player has shield!");
@@ -1410,7 +1410,7 @@ public class Game {
             // Check collision with base (all bullets can hit base)
             if (!bulletRemoved && bullet.collidesWith(base)) {
                 base.destroy();
-                soundManager.playExplosion();
+                soundManager.playBaseDestroyed();
                 notifyBulletDestroyed(bullet);
                 bulletIterator.remove();
                 bulletRemoved = true;
@@ -1501,7 +1501,11 @@ public class Game {
                                     player.setShield(false);
                                     player.setPauseShield(false);
                                     player.damage();
-                                    soundManager.playExplosion();
+                                    if (!player.isAlive()) {
+                                        soundManager.playPlayerDeath();
+                                    } else {
+                                        soundManager.playExplosion();
+                                    }
                                     System.out.println("  Player hit by BOMB! Still alive=" + player.isAlive());
                                 }
                             }
@@ -2876,7 +2880,7 @@ public class Game {
             base = new Base(12 * 32, 24 * 32);
         } else if (!state.baseAlive && base.isAlive()) {
             base.destroy();
-            soundManager.playExplosion();
+            soundManager.playBaseDestroyed();
         }
 
         // Update level number after base check

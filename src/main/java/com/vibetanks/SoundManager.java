@@ -12,6 +12,8 @@ public class SoundManager {
     private byte[] explosionSoundData;
     private byte[] introSoundData;
     private byte[] sadSoundData;
+    private byte[] playerDeathSoundData;
+    private byte[] baseDestroyedSoundData;
 
     private AudioFormat audioFormat;
     private ExecutorService soundExecutor;
@@ -44,9 +46,12 @@ public class SoundManager {
             explosionSoundData = loadSoundData("/sounds/explosion.wav");
             introSoundData = loadSoundData("/sounds/intro.wav");
             sadSoundData = loadSoundData("/sounds/sad.wav");
+            playerDeathSoundData = loadSoundData("/sounds/player_death.wav");
+            baseDestroyedSoundData = loadSoundData("/sounds/base_destroyed.wav");
 
             if (shootSoundData == null || explosionSoundData == null ||
-                introSoundData == null || sadSoundData == null) {
+                introSoundData == null || sadSoundData == null ||
+                playerDeathSoundData == null || baseDestroyedSoundData == null) {
                 System.out.println("Some sounds could not be loaded. Game will run without sound effects.");
             } else {
                 System.out.println("All sounds loaded successfully!");
@@ -130,8 +135,11 @@ public class SoundManager {
         File explosionFile = new File("src/main/resources/sounds/explosion.wav");
         File introFile = new File("src/main/resources/sounds/intro.wav");
         File sadFile = new File("src/main/resources/sounds/sad.wav");
+        File playerDeathFile = new File("src/main/resources/sounds/player_death.wav");
+        File baseDestroyedFile = new File("src/main/resources/sounds/base_destroyed.wav");
 
-        if (!shootFile.exists() || !explosionFile.exists() || !introFile.exists() || !sadFile.exists()) {
+        if (!shootFile.exists() || !explosionFile.exists() || !introFile.exists() || !sadFile.exists() ||
+            !playerDeathFile.exists() || !baseDestroyedFile.exists()) {
             System.out.println("Generating sound files...");
             SoundGenerator.generateAllSounds();
         }
@@ -220,6 +228,14 @@ public class SoundManager {
 
     public void playSad() {
         playSoundNew(sadSoundData);
+    }
+
+    public void playPlayerDeath() {
+        playSoundNew(playerDeathSoundData);
+    }
+
+    public void playBaseDestroyed() {
+        playSoundNew(baseDestroyedSoundData);
     }
 
     public void shutdown() {

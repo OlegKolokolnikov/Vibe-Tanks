@@ -1442,6 +1442,12 @@ public class Game {
                             }
                             if (!player.isAlive()) {
                                 soundManager.playPlayerDeath();
+                                // Spawn power-up when player dies if more than 2 players
+                                if (playerTanks.size() > 2) {
+                                    double[] spawnPos = getRandomPowerUpSpawnPosition();
+                                    powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                                    System.out.println("Power-up spawned for killed player (3+ players mode)");
+                                }
                             }
                         } else if (bullet.getSize() > 8) {
                             System.out.println("BOSS bullet hit player but player has shield!");

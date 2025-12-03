@@ -34,6 +34,14 @@ public class Game {
     private Base base;
     private double[][] playerStartPositions; // For respawning
 
+    // Fixed start positions for each player (indexed by playerNumber - 1)
+    private static final double[][] FIXED_START_POSITIONS = {
+        {8 * 32, 24 * 32},   // Player 1
+        {16 * 32, 24 * 32},  // Player 2
+        {9 * 32, 24 * 32},   // Player 3
+        {15 * 32, 24 * 32}   // Player 4
+    };
+
     private AnimationTimer gameLoop;
     private long lastUpdate = 0;
     private static final long FRAME_TIME = 16_666_667; // ~60 FPS in nanoseconds
@@ -889,7 +897,7 @@ public class Game {
                 // Transfer one life
                 teammate.setLives(teammate.getLives() - 1);
                 myTank.setLives(1);
-                myTank.respawn(playerStartPositions[requestingPlayerIndex][0], playerStartPositions[requestingPlayerIndex][1]);
+                myTank.respawn(FIXED_START_POSITIONS[requestingPlayerIndex][0], FIXED_START_POSITIONS[requestingPlayerIndex][1]);
                 System.out.println("Player " + (requestingPlayerIndex + 1) + " took a life from Player " + (i + 1));
                 return;
             }
@@ -933,7 +941,7 @@ public class Game {
         // Reset player tanks (keep power-ups but reset position and give shield)
         for (int i = 0; i < playerTanks.size(); i++) {
             Tank player = playerTanks.get(i);
-            player.setPosition(playerStartPositions[i][0], playerStartPositions[i][1]);
+            player.setPosition(FIXED_START_POSITIONS[i][0], FIXED_START_POSITIONS[i][1]);
             player.setDirection(Direction.UP);
             player.giveTemporaryShield(); // Brief spawn protection
         }
@@ -1013,7 +1021,7 @@ public class Game {
         for (int i = 0; i < playerTanks.size(); i++) {
             Tank player = playerTanks.get(i);
             player.setLives(3);
-            player.respawn(playerStartPositions[i][0], playerStartPositions[i][1]);
+            player.respawn(FIXED_START_POSITIONS[i][0], FIXED_START_POSITIONS[i][1]);
         }
 
         // Clear enemy tanks and reset spawner
@@ -1412,13 +1420,12 @@ public class Game {
             if (player.isAlive()) {
                 player.update(gameMap, bullets, soundManager, allTanks, base);
             } else if (player.getLives() > 0) {
-                // Player died but has lives left - respawn at start position
+                // Player died but has lives left - respawn at FIXED start position
                 soundManager.playExplosion();
-                // Debug: log respawn position
-                System.out.println("Player " + (i + 1) + " respawning at: " +
-                    playerStartPositions[i][0] + ", " + playerStartPositions[i][1] +
-                    " (array size: " + playerStartPositions.length + ")");
-                player.respawn(playerStartPositions[i][0], playerStartPositions[i][1]);
+                double respawnX = FIXED_START_POSITIONS[i][0];
+                double respawnY = FIXED_START_POSITIONS[i][1];
+                System.out.println("Player " + (i + 1) + " respawning at FIXED position: " + respawnX + ", " + respawnY);
+                player.respawn(respawnX, respawnY);
             }
         }
 
@@ -3237,11 +3244,11 @@ public class Game {
             // Hide end game images
             if (victoryImageView != null) victoryImageView.setVisible(false);
             if (gameOverImageView != null) gameOverImageView.setVisible(false);
-            // Reset local player tank position to start position
+            // Reset local player tank position to FIXED start position
             int localPlayerIdx = network != null ? network.getPlayerNumber() - 1 : -1;
             if (localPlayerIdx >= 0 && localPlayerIdx < playerTanks.size()) {
                 Tank myTank = playerTanks.get(localPlayerIdx);
-                myTank.setPosition(playerStartPositions[localPlayerIdx][0], playerStartPositions[localPlayerIdx][1]);
+                myTank.setPosition(FIXED_START_POSITIONS[localPlayerIdx][0], FIXED_START_POSITIONS[localPlayerIdx][1]);
                 myTank.setDirection(Direction.UP);
                 myTank.giveTemporaryShield();
             }

@@ -650,7 +650,10 @@ public class Game {
             Tank player = playerTanks.get(i);
             playerStartPositions[i][0] = player.getX();
             playerStartPositions[i][1] = player.getY();
+            System.out.println("INIT: Player " + (i + 1) + " start position: " +
+                playerStartPositions[i][0] + ", " + playerStartPositions[i][1]);
         }
+        System.out.println("INIT: playerStartPositions array size: " + playerStartPositions.length);
 
         // Initialize enemy tanks list
         enemyTanks = new ArrayList<>();
@@ -1195,6 +1198,8 @@ public class Game {
                     }
                     newStartPositions[playerNum - 1] = new double[]{x, y};
                     playerStartPositions = newStartPositions;
+                    System.out.println("HOST: Updated playerStartPositions for Player " + playerNum +
+                        " to: " + x + ", " + y + " (array size: " + playerStartPositions.length + ")");
                 }
 
                 // HOST: Receive client positions and apply them (client-authoritative movement)
@@ -1310,6 +1315,10 @@ public class Game {
             } else if (player.getLives() > 0) {
                 // Player died but has lives left - respawn at start position
                 soundManager.playExplosion();
+                // Debug: log respawn position
+                System.out.println("Player " + (i + 1) + " respawning at: " +
+                    playerStartPositions[i][0] + ", " + playerStartPositions[i][1] +
+                    " (array size: " + playerStartPositions.length + ")");
                 player.respawn(playerStartPositions[i][0], playerStartPositions[i][1]);
             }
         }

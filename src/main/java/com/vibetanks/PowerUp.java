@@ -117,22 +117,32 @@ public class PowerUp {
         gc.setFill(getTypeColor());
         switch (type) {
             case GUN:
-                // Draw bullet breaking through wall - represents breaking steel
+                // Draw a bullet hitting and cracking steel wall
+                // Steel wall on left side
                 gc.setFill(Color.DARKGRAY);
-                gc.fillRect(x + 3, y + 5, 8, 22); // Steel wall
-                gc.setFill(Color.RED);
-                gc.fillPolygon(
-                    new double[]{x + 29, x + 13, x + 13},
-                    new double[]{y + 16, y + 10, y + 22},
-                    3
-                ); // Bullet pointing at wall
-                // Crack in wall
-                gc.setStroke(Color.BLACK);
+                gc.fillRect(x + 2, y + 4, 12, 24);
+                gc.setStroke(Color.LIGHTGRAY);
+                gc.setLineWidth(1);
+                gc.strokeRect(x + 4, y + 6, 8, 8);
+                gc.strokeRect(x + 4, y + 18, 8, 8);
+
+                // Crack/explosion in wall
+                gc.setStroke(Color.YELLOW);
                 gc.setLineWidth(2);
-                gc.strokeLine(x + 7, y + 8, x + 7, y + 24);
+                gc.strokeLine(x + 14, y + 12, x + 18, y + 8);
+                gc.strokeLine(x + 14, y + 12, x + 18, y + 16);
+                gc.strokeLine(x + 14, y + 12, x + 18, y + 12);
+                gc.strokeLine(x + 14, y + 20, x + 17, y + 17);
+                gc.strokeLine(x + 14, y + 20, x + 17, y + 23);
+
+                // Big red bullet coming from right
+                gc.setFill(Color.RED);
+                gc.fillOval(x + 20, y + 12, 10, 8);
+                gc.setFill(Color.ORANGE);
+                gc.fillOval(x + 22, y + 14, 4, 4);
                 break;
             case STAR:
-                // Draw 5-pointed star - classic speed star
+                // Draw 5-pointed star - orange with red border
                 double cx = x + SIZE / 2;
                 double cy = y + SIZE / 2;
                 double outerR = 13;
@@ -145,21 +155,45 @@ public class PowerUp {
                     starX[i] = cx + r * Math.cos(angle);
                     starY[i] = cy - r * Math.sin(angle);
                 }
+                // Red border (draw larger star behind)
+                gc.setFill(Color.DARKRED);
+                double[] starXBorder = new double[10];
+                double[] starYBorder = new double[10];
+                for (int i = 0; i < 10; i++) {
+                    double angle = Math.PI / 2 + (Math.PI * i / 5);
+                    double r = (i % 2 == 0) ? outerR + 2 : innerR + 1;
+                    starXBorder[i] = cx + r * Math.cos(angle);
+                    starYBorder[i] = cy - r * Math.sin(angle);
+                }
+                gc.fillPolygon(starXBorder, starYBorder, 10);
+                // Orange star on top
+                gc.setFill(Color.ORANGE);
                 gc.fillPolygon(starX, starY, 10);
                 break;
             case CAR:
-                // Draw speed lines with arrow - represents speed boost
-                gc.setFill(Color.LIME);
-                // Arrow pointing right
+                // Draw a lightning bolt - universal speed symbol
+                gc.setFill(Color.YELLOW);
+                // Lightning bolt shape
                 gc.fillPolygon(
-                    new double[]{x + 24, x + 10, x + 10},
-                    new double[]{y + 16, y + 8, y + 24},
-                    3
+                    new double[]{x + 18, x + 10, x + 14, x + 8, x + 20, x + 16, x + 24},
+                    new double[]{y + 3, y + 14, y + 14, y + 29, y + 17, y + 17, y + 3},
+                    7
                 );
-                // Speed lines
-                gc.fillRect(x + 4, y + 10, 8, 3);
-                gc.fillRect(x + 5, y + 15, 7, 3);
-                gc.fillRect(x + 4, y + 20, 8, 3);
+                // Inner highlight
+                gc.setFill(Color.WHITE);
+                gc.fillPolygon(
+                    new double[]{x + 17, x + 13, x + 15, x + 12, x + 18, x + 16, x + 20},
+                    new double[]{y + 7, y + 14, y + 14, y + 24, y + 17, y + 17, y + 7},
+                    7
+                );
+                // Green border/glow
+                gc.setStroke(Color.LIME);
+                gc.setLineWidth(2);
+                gc.strokePolygon(
+                    new double[]{x + 18, x + 10, x + 14, x + 8, x + 20, x + 16, x + 24},
+                    new double[]{y + 3, y + 14, y + 14, y + 29, y + 17, y + 17, y + 3},
+                    7
+                );
                 break;
             case SHIP:
                 // Draw boat/ship on water waves

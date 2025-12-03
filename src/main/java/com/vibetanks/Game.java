@@ -679,6 +679,10 @@ public class Game {
                     // Single player: full game pause
                     paused = !paused;
                     pauseMenuSelection = 0;
+                    // Stop sounds when paused
+                    if (paused && soundManager != null) {
+                        soundManager.stopGameplaySounds();
+                    }
                 }
                 return;
             }
@@ -1895,19 +1899,26 @@ public class Game {
         // Draw icon based on type (scaled down versions of PowerUp icons)
         switch (type) {
             case GUN:
-                // Bullet breaking wall
+                // Steel wall with crack and bullet
                 gc.setFill(Color.DARKGRAY);
-                gc.fillRect(x + 1, y + 3, 4, 10); // Wall
+                gc.fillRect(x + 1, y + 2, 6, 12); // Wall
+                gc.setStroke(Color.LIGHTGRAY);
+                gc.setLineWidth(0.5);
+                gc.strokeRect(x + 2, y + 3, 4, 4);
+                gc.strokeRect(x + 2, y + 9, 4, 4);
+                // Crack
+                gc.setStroke(Color.YELLOW);
+                gc.setLineWidth(1);
+                gc.strokeLine(x + 7, y + 6, x + 9, y + 4);
+                gc.strokeLine(x + 7, y + 6, x + 9, y + 8);
+                gc.strokeLine(x + 7, y + 10, x + 9, y + 9);
+                gc.strokeLine(x + 7, y + 10, x + 9, y + 12);
+                // Bullet
                 gc.setFill(Color.RED);
-                gc.fillPolygon(
-                    new double[]{x + 14, x + 7, x + 7},
-                    new double[]{y + 8, y + 5, y + 11},
-                    3
-                ); // Bullet
+                gc.fillOval(x + 10, y + 6, 5, 4);
                 break;
             case STAR:
-                // 5-pointed star
-                gc.setFill(Color.YELLOW);
+                // Orange star with red border
                 double cx = x + size / 2;
                 double cy = y + size / 2;
                 double outerR = 6;
@@ -1920,19 +1931,37 @@ public class Game {
                     starX[i] = cx + r * Math.cos(angle);
                     starY[i] = cy - r * Math.sin(angle);
                 }
+                // Red border
+                gc.setFill(Color.DARKRED);
+                double[] starXB = new double[10];
+                double[] starYB = new double[10];
+                for (int i = 0; i < 10; i++) {
+                    double angle = Math.PI / 2 + (Math.PI * i / 5);
+                    double r = (i % 2 == 0) ? outerR + 1 : innerR + 0.5;
+                    starXB[i] = cx + r * Math.cos(angle);
+                    starYB[i] = cy - r * Math.sin(angle);
+                }
+                gc.fillPolygon(starXB, starYB, 10);
+                // Orange star
+                gc.setFill(Color.ORANGE);
                 gc.fillPolygon(starX, starY, 10);
                 break;
             case CAR:
-                // Speed arrow with lines
-                gc.setFill(Color.LIME);
+                // Lightning bolt - speed symbol
+                gc.setFill(Color.YELLOW);
                 gc.fillPolygon(
-                    new double[]{x + 12, x + 6, x + 6},
-                    new double[]{y + 8, y + 4, y + 12},
-                    3
+                    new double[]{x + 9, x + 5, x + 7, x + 4, x + 10, x + 8, x + 12},
+                    new double[]{y + 1, y + 7, y + 7, y + 15, y + 8, y + 8, y + 1},
+                    7
                 );
-                gc.fillRect(x + 2, y + 5, 4, 1);
-                gc.fillRect(x + 2, y + 8, 4, 1);
-                gc.fillRect(x + 2, y + 11, 4, 1);
+                // Green border
+                gc.setStroke(Color.LIME);
+                gc.setLineWidth(1);
+                gc.strokePolygon(
+                    new double[]{x + 9, x + 5, x + 7, x + 4, x + 10, x + 8, x + 12},
+                    new double[]{y + 1, y + 7, y + 7, y + 15, y + 8, y + 8, y + 1},
+                    7
+                );
                 break;
             case SHIP:
                 // Boat on water
@@ -2445,6 +2474,10 @@ public class Game {
     public void stop() {
         if (gameLoop != null) {
             gameLoop.stop();
+        }
+        // Stop all sounds
+        if (soundManager != null) {
+            soundManager.stopGameplaySounds();
         }
         // Close network connection if it exists
         if (network != null) {

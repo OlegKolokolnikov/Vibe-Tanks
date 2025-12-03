@@ -749,6 +749,65 @@ public class Game {
         stage.setScene(menuScene.getScene());
     }
 
+    // Push apart tanks that are overlapping to prevent them from getting stuck
+    private void pushApartOverlappingTanks(List<Tank> allTanks) {
+        final double PUSH_FORCE = 2.0; // Pixels to push per frame
+        final double MIN_SEPARATION = 2.0; // Minimum gap between tanks
+
+        for (int i = 0; i < allTanks.size(); i++) {
+            Tank tank1 = allTanks.get(i);
+            if (!tank1.isAlive()) continue;
+
+            for (int j = i + 1; j < allTanks.size(); j++) {
+                Tank tank2 = allTanks.get(j);
+                if (!tank2.isAlive()) continue;
+
+                // Check if tanks overlap
+                double dx = tank2.getX() - tank1.getX();
+                double dy = tank2.getY() - tank1.getY();
+                double overlapX = (tank1.getSize() + tank2.getSize()) / 2.0 - Math.abs(dx);
+                double overlapY = (tank1.getSize() + tank2.getSize()) / 2.0 - Math.abs(dy);
+
+                // If overlapping in both dimensions
+                if (overlapX > -MIN_SEPARATION && overlapY > -MIN_SEPARATION) {
+                    // Calculate push direction (away from each other)
+                    double dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 1) {
+                        // Tanks are exactly on top of each other, push in random direction
+                        dx = (Math.random() - 0.5) * 2;
+                        dy = (Math.random() - 0.5) * 2;
+                        dist = Math.sqrt(dx * dx + dy * dy);
+                    }
+
+                    // Normalize and apply push
+                    double pushX = (dx / dist) * PUSH_FORCE;
+                    double pushY = (dy / dist) * PUSH_FORCE;
+
+                    // Push both tanks apart (unless one is a BOSS which is heavier)
+                    boolean tank1IsBoss = tank1.getEnemyType() == Tank.EnemyType.BOSS;
+                    boolean tank2IsBoss = tank2.getEnemyType() == Tank.EnemyType.BOSS;
+
+                    double tank1Push = tank2IsBoss ? 1.0 : 0.5;
+                    double tank2Push = tank1IsBoss ? 1.0 : 0.5;
+
+                    // Check if new positions are valid before applying
+                    double newX1 = tank1.getX() - pushX * tank1Push;
+                    double newY1 = tank1.getY() - pushY * tank1Push;
+                    double newX2 = tank2.getX() + pushX * tank2Push;
+                    double newY2 = tank2.getY() + pushY * tank2Push;
+
+                    // Apply push only if the new position doesn't collide with walls
+                    if (!gameMap.checkTankCollision(newX1, newY1, tank1.getSize(), tank1.hasShip())) {
+                        tank1.setPosition(newX1, newY1);
+                    }
+                    if (!gameMap.checkTankCollision(newX2, newY2, tank2.getSize(), tank2.hasShip())) {
+                        tank2.setPosition(newX2, newY2);
+                    }
+                }
+            }
+        }
+    }
+
     // TEST MODE: Spawn a BOSS tank directly above player 1 facing down
     private void spawnTestBoss() {
         if (playerTanks.isEmpty()) return;
@@ -1340,6 +1399,9 @@ public class Game {
                 }
             }
         }
+
+        // Push apart overlapping tanks to prevent getting stuck
+        pushApartOverlappingTanks(allTanks);
 
         // Update bullets
         Iterator<Bullet> bulletIterator = bullets.iterator();

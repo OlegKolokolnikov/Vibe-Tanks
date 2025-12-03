@@ -749,10 +749,10 @@ public class Game {
         stage.setScene(menuScene.getScene());
     }
 
-    // Push apart tanks that are overlapping to prevent them from getting stuck
+    // Push apart tanks that are overlapping or touching to prevent them from getting stuck
     private void pushApartOverlappingTanks(List<Tank> allTanks) {
-        final double PUSH_FORCE = 2.0; // Pixels to push per frame
-        final double MIN_SEPARATION = 2.0; // Minimum gap between tanks
+        final double PUSH_FORCE = 3.0; // Pixels to push per frame
+        final double MIN_GAP = 4.0; // Minimum gap to maintain between tanks
 
         for (int i = 0; i < allTanks.size(); i++) {
             Tank tank1 = allTanks.get(i);
@@ -762,26 +762,37 @@ public class Game {
                 Tank tank2 = allTanks.get(j);
                 if (!tank2.isAlive()) continue;
 
-                // Check if tanks overlap
+                // Calculate distance between tank centers
                 double dx = tank2.getX() - tank1.getX();
                 double dy = tank2.getY() - tank1.getY();
-                double overlapX = (tank1.getSize() + tank2.getSize()) / 2.0 - Math.abs(dx);
-                double overlapY = (tank1.getSize() + tank2.getSize()) / 2.0 - Math.abs(dy);
 
-                // If overlapping in both dimensions
-                if (overlapX > -MIN_SEPARATION && overlapY > -MIN_SEPARATION) {
-                    // Calculate push direction (away from each other)
-                    double dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < 1) {
-                        // Tanks are exactly on top of each other, push in random direction
-                        dx = (Math.random() - 0.5) * 2;
-                        dy = (Math.random() - 0.5) * 2;
-                        dist = Math.sqrt(dx * dx + dy * dy);
+                // Required separation (half sizes + gap)
+                double requiredSepX = (tank1.getSize() + tank2.getSize()) / 2.0 + MIN_GAP;
+                double requiredSepY = (tank1.getSize() + tank2.getSize()) / 2.0 + MIN_GAP;
+
+                // Calculate overlap in each axis
+                double overlapX = requiredSepX - Math.abs(dx);
+                double overlapY = requiredSepY - Math.abs(dy);
+
+                // If overlapping or too close in both dimensions
+                if (overlapX > 0 && overlapY > 0) {
+                    // Push along the axis with LESS overlap (faster separation)
+                    double pushX = 0;
+                    double pushY = 0;
+
+                    if (overlapX < overlapY) {
+                        // Push horizontally
+                        pushX = (dx >= 0 ? 1 : -1) * PUSH_FORCE;
+                    } else {
+                        // Push vertically
+                        pushY = (dy >= 0 ? 1 : -1) * PUSH_FORCE;
                     }
 
-                    // Normalize and apply push
-                    double pushX = (dx / dist) * PUSH_FORCE;
-                    double pushY = (dy / dist) * PUSH_FORCE;
+                    // If tanks are exactly aligned, add small perpendicular push
+                    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
+                        pushX = (Math.random() > 0.5 ? 1 : -1) * PUSH_FORCE;
+                        pushY = (Math.random() > 0.5 ? 1 : -1) * PUSH_FORCE;
+                    }
 
                     // Push both tanks apart (unless one is a BOSS which is heavier)
                     boolean tank1IsBoss = tank1.getEnemyType() == Tank.EnemyType.BOSS;

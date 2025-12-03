@@ -333,6 +333,46 @@ public class MenuScene {
         });
         enemySpeedBox.getChildren().addAll(enemySpeedLabel, enemySpeedSlider);
 
+        // Player Shoot Speed
+        VBox playerShootBox = new VBox(5);
+        playerShootBox.setAlignment(Pos.CENTER);
+        Label playerShootLabel = new Label("Player Shoot Speed: " + String.format("%.0f%%", GameSettings.getPlayerShootSpeedMultiplier() * 100));
+        playerShootLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        playerShootLabel.setTextFill(Color.CYAN);
+
+        Slider playerShootSlider = new Slider(0.5, 3.0, GameSettings.getPlayerShootSpeedMultiplier());
+        playerShootSlider.setShowTickLabels(true);
+        playerShootSlider.setShowTickMarks(true);
+        playerShootSlider.setMajorTickUnit(0.5);
+        playerShootSlider.setMinorTickCount(4);
+        playerShootSlider.setBlockIncrement(0.1);
+        playerShootSlider.setPrefWidth(250);
+        playerShootSlider.setStyle("-fx-control-inner-background: #444;");
+        playerShootSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            playerShootLabel.setText("Player Shoot Speed: " + String.format("%.0f%%", newVal.doubleValue() * 100));
+        });
+        playerShootBox.getChildren().addAll(playerShootLabel, playerShootSlider);
+
+        // Enemy Shoot Speed
+        VBox enemyShootBox = new VBox(5);
+        enemyShootBox.setAlignment(Pos.CENTER);
+        Label enemyShootLabel = new Label("Enemy Shoot Speed: " + String.format("%.0f%%", GameSettings.getEnemyShootSpeedMultiplier() * 100));
+        enemyShootLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        enemyShootLabel.setTextFill(Color.ORANGE);
+
+        Slider enemyShootSlider = new Slider(0.5, 3.0, GameSettings.getEnemyShootSpeedMultiplier());
+        enemyShootSlider.setShowTickLabels(true);
+        enemyShootSlider.setShowTickMarks(true);
+        enemyShootSlider.setMajorTickUnit(0.5);
+        enemyShootSlider.setMinorTickCount(4);
+        enemyShootSlider.setBlockIncrement(0.1);
+        enemyShootSlider.setPrefWidth(250);
+        enemyShootSlider.setStyle("-fx-control-inner-background: #444;");
+        enemyShootSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            enemyShootLabel.setText("Enemy Shoot Speed: " + String.format("%.0f%%", newVal.doubleValue() * 100));
+        });
+        enemyShootBox.getChildren().addAll(enemyShootLabel, enemyShootSlider);
+
         // Enemy Count
         VBox enemyCountBox = new VBox(5);
         enemyCountBox.setAlignment(Pos.CENTER);
@@ -387,6 +427,8 @@ public class MenuScene {
         saveButton.setOnAction(e -> {
             GameSettings.setPlayerSpeedMultiplier(playerSpeedSlider.getValue());
             GameSettings.setEnemySpeedMultiplier(enemySpeedSlider.getValue());
+            GameSettings.setPlayerShootSpeedMultiplier(playerShootSlider.getValue());
+            GameSettings.setEnemyShootSpeedMultiplier(enemyShootSlider.getValue());
             GameSettings.setEnemyCount((int) enemyCountSlider.getValue());
             dialogStage.close();
         });
@@ -395,18 +437,32 @@ public class MenuScene {
         resetButton.setOnAction(e -> {
             playerSpeedSlider.setValue(1.0);
             enemySpeedSlider.setValue(1.0);
+            playerShootSlider.setValue(1.0);
+            enemyShootSlider.setValue(1.0);
             enemyCountSlider.setValue(25);
             playerSpeedLabel.setText("Player Speed: 100%");
             enemySpeedLabel.setText("Enemy Speed: 100%");
+            playerShootLabel.setText("Player Shoot Speed: 100%");
+            enemyShootLabel.setText("Enemy Shoot Speed: 100%");
             enemyCountLabel.setText("Enemy Count: 25");
         });
 
         // Handle cancel
         cancelButton.setOnAction(e -> dialogStage.close());
 
-        dialogRoot.getChildren().addAll(titleLabel, playerSpeedBox, enemySpeedBox, enemyCountBox, buttonBox);
+        // Use ScrollPane for the content to handle smaller screens
+        VBox contentBox = new VBox(15);
+        contentBox.setAlignment(Pos.CENTER);
+        contentBox.getChildren().addAll(playerSpeedBox, enemySpeedBox, playerShootBox, enemyShootBox, enemyCountBox);
 
-        Scene dialogScene = new Scene(dialogRoot, 320, 350);
+        ScrollPane scrollPane = new ScrollPane(contentBox);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background: #2a2a2a; -fx-background-color: #2a2a2a;");
+        scrollPane.setPrefHeight(300);
+
+        dialogRoot.getChildren().addAll(titleLabel, scrollPane, buttonBox);
+
+        Scene dialogScene = new Scene(dialogRoot, 320, 450);
         dialogStage.setScene(dialogScene);
         dialogStage.setResizable(false);
         dialogStage.showAndWait();

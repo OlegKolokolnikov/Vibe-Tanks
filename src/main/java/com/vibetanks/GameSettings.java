@@ -13,11 +13,15 @@ public class GameSettings {
     // Default values
     private static final double DEFAULT_PLAYER_SPEED = 1.0;
     private static final double DEFAULT_ENEMY_SPEED = 1.0;
+    private static final double DEFAULT_PLAYER_SHOOT_SPEED = 1.0;
+    private static final double DEFAULT_ENEMY_SHOOT_SPEED = 1.0;
     private static final int DEFAULT_ENEMY_COUNT = 25;
 
     // Current settings
     private static double playerSpeedMultiplier = DEFAULT_PLAYER_SPEED;
     private static double enemySpeedMultiplier = DEFAULT_ENEMY_SPEED;
+    private static double playerShootSpeedMultiplier = DEFAULT_PLAYER_SHOOT_SPEED;
+    private static double enemyShootSpeedMultiplier = DEFAULT_ENEMY_SHOOT_SPEED;
     private static int enemyCount = DEFAULT_ENEMY_COUNT;
 
     // Load settings on class initialization
@@ -52,9 +56,29 @@ public class GameSettings {
         saveSettings();
     }
 
+    public static double getPlayerShootSpeedMultiplier() {
+        return playerShootSpeedMultiplier;
+    }
+
+    public static void setPlayerShootSpeedMultiplier(double multiplier) {
+        playerShootSpeedMultiplier = Math.max(0.5, Math.min(3.0, multiplier));
+        saveSettings();
+    }
+
+    public static double getEnemyShootSpeedMultiplier() {
+        return enemyShootSpeedMultiplier;
+    }
+
+    public static void setEnemyShootSpeedMultiplier(double multiplier) {
+        enemyShootSpeedMultiplier = Math.max(0.5, Math.min(3.0, multiplier));
+        saveSettings();
+    }
+
     public static void resetToDefaults() {
         playerSpeedMultiplier = DEFAULT_PLAYER_SPEED;
         enemySpeedMultiplier = DEFAULT_ENEMY_SPEED;
+        playerShootSpeedMultiplier = DEFAULT_PLAYER_SHOOT_SPEED;
+        enemyShootSpeedMultiplier = DEFAULT_ENEMY_SHOOT_SPEED;
         enemyCount = DEFAULT_ENEMY_COUNT;
         saveSettings();
     }
@@ -69,9 +93,14 @@ public class GameSettings {
                 }
                 playerSpeedMultiplier = Double.parseDouble(props.getProperty("playerSpeed", String.valueOf(DEFAULT_PLAYER_SPEED)));
                 enemySpeedMultiplier = Double.parseDouble(props.getProperty("enemySpeed", String.valueOf(DEFAULT_ENEMY_SPEED)));
+                playerShootSpeedMultiplier = Double.parseDouble(props.getProperty("playerShootSpeed", String.valueOf(DEFAULT_PLAYER_SHOOT_SPEED)));
+                enemyShootSpeedMultiplier = Double.parseDouble(props.getProperty("enemyShootSpeed", String.valueOf(DEFAULT_ENEMY_SHOOT_SPEED)));
                 enemyCount = Integer.parseInt(props.getProperty("enemyCount", String.valueOf(DEFAULT_ENEMY_COUNT)));
                 System.out.println("Loaded game settings: playerSpeed=" + playerSpeedMultiplier +
-                                   ", enemySpeed=" + enemySpeedMultiplier + ", enemyCount=" + enemyCount);
+                                   ", enemySpeed=" + enemySpeedMultiplier +
+                                   ", playerShootSpeed=" + playerShootSpeedMultiplier +
+                                   ", enemyShootSpeed=" + enemyShootSpeedMultiplier +
+                                   ", enemyCount=" + enemyCount);
             }
         } catch (Exception e) {
             System.out.println("Could not load settings, using defaults: " + e.getMessage());
@@ -83,6 +112,8 @@ public class GameSettings {
             Properties props = new Properties();
             props.setProperty("playerSpeed", String.valueOf(playerSpeedMultiplier));
             props.setProperty("enemySpeed", String.valueOf(enemySpeedMultiplier));
+            props.setProperty("playerShootSpeed", String.valueOf(playerShootSpeedMultiplier));
+            props.setProperty("enemyShootSpeed", String.valueOf(enemyShootSpeedMultiplier));
             props.setProperty("enemyCount", String.valueOf(enemyCount));
 
             try (FileOutputStream fos = new FileOutputStream(SETTINGS_FILE)) {

@@ -451,7 +451,10 @@ public class Tank {
         }
 
         // Apply shoot cooldown reduction from STAR power-ups (min cooldown is 5 frames)
-        shootCooldown = Math.max(5, SHOOT_COOLDOWN - (shootCooldownReduction * 5));
+        int baseCooldown = Math.max(5, SHOOT_COOLDOWN - (shootCooldownReduction * 5));
+        // Apply global shoot speed setting (higher speed = lower cooldown)
+        double shootSpeedMult = isPlayer ? GameSettings.getPlayerShootSpeedMultiplier() : GameSettings.getEnemyShootSpeedMultiplier();
+        shootCooldown = Math.max(3, (int)(baseCooldown / shootSpeedMult));
         soundManager.playShoot();
     }
 

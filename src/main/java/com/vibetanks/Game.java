@@ -1882,6 +1882,9 @@ public class Game {
     }
 
     private void renderUfoLostMessage() {
+        // Save current graphics state
+        gc.save();
+
         // Calculate fade effect (fade out in last second)
         double alpha = 1.0;
         if (ufoLostMessageTimer < 60) { // Last second
@@ -1910,6 +1913,9 @@ public class Game {
         gc.fillOval(iconX - 25, iconY, 50, 20);
         gc.setFill(Color.rgb(150, 200, 255, alpha * 0.7));
         gc.fillOval(iconX - 12, iconY - 15, 24, 20);
+
+        // Restore graphics state
+        gc.restore();
     }
 
     private void renderUfoKilledMessage() {

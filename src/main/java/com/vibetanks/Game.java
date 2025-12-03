@@ -625,10 +625,11 @@ public class Game {
         base = new Base(12 * 32, 24 * 32);
 
         // Initialize player tanks based on player count
-        // For network games, start with 2 tanks (host + first client)
-        // Additional tanks will be added when more players connect
+        // For network games, start with enough tanks for this player's number
+        // Additional tanks will be added/synced when game state is received
         playerTanks = new ArrayList<>();
-        int initialPlayers = isNetworkGame ? 2 : playerCount; // Network games start with 2
+        int myPlayerNum = isNetworkGame && network != null ? network.getPlayerNumber() : 1;
+        int initialPlayers = isNetworkGame ? Math.max(2, myPlayerNum) : playerCount;
         if (initialPlayers >= 1) {
             playerTanks.add(new Tank(8 * 32, 24 * 32, Direction.UP, true, 1)); // Player 1
         }

@@ -788,13 +788,15 @@ public class Game {
                     if (tank1IsBoss && !tank2IsBoss) {
                         tank2.instantKill();
                         soundManager.playExplosion();
-                        System.out.println("BOSS killed tank by contact!");
+                        String victimName = getPlayerNameForTank(tank2);
+                        System.out.println("KILL LOG: " + victimName + " was killed by BOSS (contact)");
                         continue; // Don't push, tank is dead
                     }
                     if (tank2IsBoss && !tank1IsBoss) {
                         tank1.instantKill();
                         soundManager.playExplosion();
-                        System.out.println("BOSS killed tank by contact!");
+                        String victimName = getPlayerNameForTank(tank1);
+                        System.out.println("KILL LOG: " + victimName + " was killed by BOSS (contact)");
                         continue; // Don't push, tank is dead
                     }
 
@@ -1559,6 +1561,9 @@ public class Game {
                             }
                             if (!player.isAlive()) {
                                 soundManager.playPlayerDeath();
+                                String victimName = getPlayerNameForTank(player);
+                                String killerType = bullet.getSize() > 8 ? "BOSS (bullet)" : "Enemy tank (bullet)";
+                                System.out.println("KILL LOG: " + victimName + " was killed by " + killerType);
                                 // Spawn power-up when player dies if more than 2 players
                                 if (playerTanks.size() > 2) {
                                     double[] spawnPos = getRandomPowerUpSpawnPosition();
@@ -1673,10 +1678,11 @@ public class Game {
                                     player.damage();
                                     if (!player.isAlive()) {
                                         soundManager.playPlayerDeath();
+                                        String victimName = getPlayerNameForTank(player);
+                                        System.out.println("KILL LOG: " + victimName + " was killed by BOMB (collected by enemy)");
                                     } else {
                                         soundManager.playExplosion();
                                     }
-                                    System.out.println("  Player hit by BOMB! Still alive=" + player.isAlive());
                                 }
                             }
                         } else {
@@ -2343,6 +2349,20 @@ public class Game {
             }
         }
         return "P" + (playerIndex + 1);
+    }
+
+    // Get player name for a tank (used for kill logging)
+    private String getPlayerNameForTank(Tank tank) {
+        for (int i = 0; i < playerTanks.size(); i++) {
+            if (playerTanks.get(i) == tank) {
+                return getPlayerDisplayName(i);
+            }
+        }
+        // Not a player tank (must be enemy)
+        if (tank.getEnemyType() != null) {
+            return "Enemy " + tank.getEnemyType().name();
+        }
+        return "Unknown tank";
     }
 
     private void renderUI() {

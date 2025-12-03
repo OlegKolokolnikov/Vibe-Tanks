@@ -2365,6 +2365,70 @@ public class Game {
         return "Unknown tank";
     }
 
+    // Draw a mini tank icon for statistics table headers
+    private void drawMiniTank(GraphicsContext gc, double x, double y, Tank.EnemyType type) {
+        double size = 18; // Mini tank size
+
+        // Get tank color based on type
+        Color tankColor, darkColor;
+        switch (type) {
+            case REGULAR -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
+            case ARMORED -> { tankColor = Color.DARKRED; darkColor = Color.rgb(80, 0, 0); }
+            case FAST -> { tankColor = Color.rgb(255, 100, 100); darkColor = Color.rgb(200, 60, 60); }
+            case POWER -> {
+                // Rainbow - use magenta for static display
+                tankColor = Color.MAGENTA; darkColor = Color.PURPLE;
+            }
+            case HEAVY -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
+            case BOSS -> { tankColor = Color.rgb(200, 50, 50); darkColor = Color.DARKRED; }
+            default -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
+        }
+
+        // Draw tank body (simplified)
+        gc.setFill(darkColor);
+        gc.fillRect(x, y, size, size);
+
+        // Draw tracks
+        gc.setFill(Color.rgb(60, 60, 60));
+        gc.fillRect(x, y, 4, size);
+        gc.fillRect(x + size - 4, y, 4, size);
+
+        // Draw turret
+        gc.setFill(tankColor);
+        gc.fillRect(x + 4, y + 4, size - 8, size - 8);
+
+        // Draw barrel (pointing up)
+        gc.fillRect(x + size/2 - 2, y - 4, 4, 8);
+
+        // Type-specific decorations
+        switch (type) {
+            case ARMORED -> {
+                // Armor plate
+                gc.setFill(Color.GRAY);
+                gc.fillRect(x + 4, y + 6, size - 8, 2);
+            }
+            case HEAVY -> {
+                // White dot
+                gc.setFill(Color.WHITE);
+                gc.fillOval(x + size/2 - 2, y + size/2 - 2, 4, 4);
+            }
+            case FAST -> {
+                // Speed stripe
+                gc.setStroke(Color.WHITE);
+                gc.setLineWidth(1);
+                gc.strokeLine(x + 5, y + size - 3, x + size - 5, y + size - 3);
+            }
+            case BOSS -> {
+                // Skull indicator (simplified X)
+                gc.setStroke(Color.WHITE);
+                gc.setLineWidth(1.5);
+                gc.strokeLine(x + 6, y + 6, x + size - 6, y + size - 6);
+                gc.strokeLine(x + size - 6, y + 6, x + 6, y + size - 6);
+            }
+            default -> {}
+        }
+    }
+
     private void renderUI() {
         gc.setFill(Color.WHITE);
         gc.fillText("Level: " + gameMap.getLevelNumber() + "  Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
@@ -2618,10 +2682,24 @@ public class Game {
         gc.setFill(Color.GOLD);
 
         double xPos = tableX;
-        String[] headers = {"PLAYER", "REG", "ARM", "FST", "PWR", "HVY", "BSS", "KILLS", "LEVEL", "TOTAL"};
-        for (int c = 0; c < headers.length; c++) {
-            gc.fillText(headers[c], xPos, tableY + 18);
-            xPos += colWidths[c];
+        // First column is text "PLAYER"
+        gc.fillText("PLAYER", xPos, tableY + 18);
+        xPos += colWidths[0];
+
+        // Draw mini tank icons for each enemy type column
+        Tank.EnemyType[] enemyTypes = {Tank.EnemyType.REGULAR, Tank.EnemyType.ARMORED, Tank.EnemyType.FAST,
+                                        Tank.EnemyType.POWER, Tank.EnemyType.HEAVY, Tank.EnemyType.BOSS};
+        for (int t = 0; t < 6; t++) {
+            drawMiniTank(gc, xPos + 8, tableY + 3, enemyTypes[t]);
+            xPos += colWidths[t + 1];
+        }
+
+        // Text headers for kills and points columns
+        String[] textHeaders = {"KILLS", "LEVEL", "TOTAL"};
+        for (int c = 0; c < textHeaders.length; c++) {
+            gc.setFill(Color.GOLD);
+            gc.fillText(textHeaders[c], xPos, tableY + 18);
+            xPos += colWidths[7 + c];
         }
 
         // Draw header line

@@ -1157,6 +1157,31 @@ public class Game {
             }
 
             if (network.isHost()) {
+                // HOST: Add new player tanks if more players connected
+                int connectedCount = network.getConnectedPlayerCount();
+                while (playerTanks.size() < connectedCount && playerTanks.size() < 4) {
+                    int playerNum = playerTanks.size() + 1;
+                    double x, y;
+                    switch (playerNum) {
+                        case 2 -> { x = 16 * 32; y = 24 * 32; }
+                        case 3 -> { x = 9 * 32; y = 24 * 32; }
+                        case 4 -> { x = 15 * 32; y = 24 * 32; }
+                        default -> { x = 8 * 32; y = 24 * 32; }
+                    }
+                    System.out.println("HOST: Adding Player " + playerNum + " tank (new player connected)");
+                    Tank newPlayer = new Tank(x, y, Direction.UP, true, playerNum);
+                    newPlayer.giveTemporaryShield(); // Give spawn protection
+                    playerTanks.add(newPlayer);
+
+                    // Update playerStartPositions array
+                    double[][] newStartPositions = new double[playerTanks.size()][2];
+                    for (int j = 0; j < playerStartPositions.length; j++) {
+                        newStartPositions[j] = playerStartPositions[j];
+                    }
+                    newStartPositions[playerNum - 1] = new double[]{x, y};
+                    playerStartPositions = newStartPositions;
+                }
+
                 // HOST: Receive client positions and apply them (client-authoritative movement)
                 for (int i = 2; i <= playerTanks.size(); i++) {
                     PlayerInput clientInput = network.getPlayerInput(i);

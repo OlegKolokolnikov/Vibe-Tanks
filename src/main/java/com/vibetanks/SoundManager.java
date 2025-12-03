@@ -14,6 +14,7 @@ public class SoundManager {
     private byte[] sadSoundData;
     private byte[] playerDeathSoundData;
     private byte[] baseDestroyedSoundData;
+    private byte[] explanationMusicData;
 
     private AudioFormat audioFormat;
     private ExecutorService soundExecutor;
@@ -22,6 +23,11 @@ public class SoundManager {
     private SourceDataLine shootLine;
     private SourceDataLine explosionLine;
     private volatile boolean shutdown = false;
+
+    // Music playback
+    private volatile boolean musicPlaying = false;
+    private volatile boolean stopMusicRequested = false;
+    private Thread musicThread;
 
     public SoundManager() {
         try {
@@ -48,10 +54,12 @@ public class SoundManager {
             sadSoundData = loadSoundData("/sounds/sad.wav");
             playerDeathSoundData = loadSoundData("/sounds/player_death.wav");
             baseDestroyedSoundData = loadSoundData("/sounds/base_destroyed.wav");
+            explanationMusicData = loadSoundData("/sounds/explanation_music.wav");
 
             if (shootSoundData == null || explosionSoundData == null ||
                 introSoundData == null || sadSoundData == null ||
-                playerDeathSoundData == null || baseDestroyedSoundData == null) {
+                playerDeathSoundData == null || baseDestroyedSoundData == null ||
+                explanationMusicData == null) {
                 System.out.println("Some sounds could not be loaded. Game will run without sound effects.");
             } else {
                 System.out.println("All sounds loaded successfully!");
@@ -137,9 +145,10 @@ public class SoundManager {
         File sadFile = new File("src/main/resources/sounds/sad.wav");
         File playerDeathFile = new File("src/main/resources/sounds/player_death.wav");
         File baseDestroyedFile = new File("src/main/resources/sounds/base_destroyed.wav");
+        File explanationMusicFile = new File("src/main/resources/sounds/explanation_music.wav");
 
         if (!shootFile.exists() || !explosionFile.exists() || !introFile.exists() || !sadFile.exists() ||
-            !playerDeathFile.exists() || !baseDestroyedFile.exists()) {
+            !playerDeathFile.exists() || !baseDestroyedFile.exists() || !explanationMusicFile.exists()) {
             System.out.println("Generating sound files...");
             SoundGenerator.generateAllSounds();
         }
@@ -238,8 +247,62 @@ public class SoundManager {
         playSoundNew(baseDestroyedSoundData);
     }
 
+    public void playExplanationMusic() {
+        if (musicPlaying || explanationMusicData == null || audioFormat == null) return;
+
+        stopMusicRequested = false;
+        musicPlaying = true;
+
+        musicThread = new Thread(() -> {
+            SourceDataLine line = null;
+            try {
+                DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+                line = (SourceDataLine) AudioSystem.getLine(info);
+                line.open(audioFormat, 8192);
+                line.start();
+
+                // Loop the music until stopped
+                while (!stopMusicRequested && !shutdown) {
+                    // Write in chunks to allow for stopping
+                    int chunkSize = 4096;
+                    int offset = 0;
+                    while (offset < explanationMusicData.length && !stopMusicRequested && !shutdown) {
+                        int bytesToWrite = Math.min(chunkSize, explanationMusicData.length - offset);
+                        line.write(explanationMusicData, offset, bytesToWrite);
+                        offset += bytesToWrite;
+                    }
+                }
+
+                line.drain();
+            } catch (Exception e) {
+                // Ignore playback errors
+            } finally {
+                if (line != null) {
+                    line.stop();
+                    line.close();
+                }
+                musicPlaying = false;
+            }
+        });
+        musicThread.setDaemon(true);
+        musicThread.start();
+    }
+
+    public void stopExplanationMusic() {
+        stopMusicRequested = true;
+        if (musicThread != null) {
+            try {
+                musicThread.join(500); // Wait up to 500ms for thread to stop
+            } catch (InterruptedException e) {
+                // Ignore
+            }
+        }
+        musicPlaying = false;
+    }
+
     public void shutdown() {
         shutdown = true;
+        stopExplanationMusic();
         closeAudioLines();
     }
 }

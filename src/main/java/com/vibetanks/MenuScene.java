@@ -20,6 +20,7 @@ public class MenuScene {
     private Stage stage;
     private int windowWidth;
     private int windowHeight;
+    private SoundManager soundManager;
 
     // Static reference to ensure only one NetworkManager exists at a time
     private static NetworkManager currentNetworkManager = null;
@@ -28,6 +29,7 @@ public class MenuScene {
         this.stage = stage;
         this.windowWidth = windowWidth;
         this.windowHeight = windowHeight;
+        this.soundManager = new SoundManager();
         createMenu();
     }
 
@@ -238,7 +240,8 @@ public class MenuScene {
     }
 
     private void showExplanation() {
-        ExplanationScene explanationScene = new ExplanationScene(stage, scene, windowWidth, windowHeight);
+        ExplanationScene explanationScene = new ExplanationScene(stage, scene, windowWidth, windowHeight, soundManager);
+        explanationScene.startMusic();
         stage.setScene(explanationScene.getScene());
     }
 

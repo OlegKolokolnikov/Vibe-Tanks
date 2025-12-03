@@ -37,6 +37,9 @@ public class SoundGenerator {
             // Generate base destroyed sound - dramatic explosion
             generateBaseDestroyedSound("src/main/resources/sounds/base_destroyed.wav");
 
+            // Generate explanation screen music - 8-bit style loop
+            generateExplanationMusic("src/main/resources/sounds/explanation_music.wav");
+
             System.out.println("Sound files generated successfully!");
         } catch (Exception e) {
             System.err.println("Error generating sounds: " + e.getMessage());
@@ -271,6 +274,150 @@ public class SoundGenerator {
 
             // Soft clip
             sample = Math.tanh(sample);
+
+            short shortSample = (short) (sample * Short.MAX_VALUE);
+            buffer[i * 2] = (byte) (shortSample & 0xFF);
+            buffer[i * 2 + 1] = (byte) ((shortSample >> 8) & 0xFF);
+        }
+
+        saveWav(filename, buffer);
+    }
+
+    private static void generateExplanationMusic(String filename) throws Exception {
+        // 8-bit style background music - upbeat chiptune loop (~15 seconds)
+        double duration = 15.0;
+        int numSamples = (int) (duration * SAMPLE_RATE);
+        byte[] buffer = new byte[numSamples * 2];
+
+        // Musical parameters
+        double bpm = 120;
+        double beatDuration = 60.0 / bpm;
+        double sixteenthNote = beatDuration / 4;
+
+        // C major scale frequencies
+        double C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
+        double C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 784.00;
+        double C3 = 130.81, E3 = 164.81, G3 = 196.00, A3 = 220.00;
+
+        // Melody pattern (notes with durations in sixteenth notes)
+        double[][] melody = {
+            {C5, 2}, {E5, 2}, {G5, 2}, {E5, 2},  // Bar 1
+            {D5, 2}, {G4, 2}, {A4, 2}, {B4, 2},  // Bar 2
+            {C5, 4}, {G4, 4},                     // Bar 3
+            {E4, 2}, {F4, 2}, {G4, 2}, {A4, 2},  // Bar 4
+            {G4, 2}, {E4, 2}, {C4, 2}, {E4, 2},  // Bar 5
+            {D4, 2}, {F4, 2}, {A4, 2}, {G4, 2},  // Bar 6
+            {E4, 4}, {C5, 4},                     // Bar 7
+            {G4, 2}, {A4, 2}, {B4, 2}, {C5, 2},  // Bar 8
+        };
+
+        // Bass pattern (root notes)
+        double[][] bass = {
+            {C3, 8}, {G3, 8},   // Bar 1-2
+            {A3, 8}, {E3, 8},   // Bar 3-4
+            {C3, 8}, {G3, 8},   // Bar 5-6
+            {A3, 8}, {G3, 8},   // Bar 7-8
+        };
+
+        // Arpeggio pattern for texture
+        double[] arpNotes = {C4, E4, G4, E4};
+
+        for (int i = 0; i < numSamples; i++) {
+            double t = (double) i / SAMPLE_RATE;
+            double sample = 0;
+
+            // Calculate current beat position (loops every 8 bars = 16 beats)
+            double loopDuration = 16 * beatDuration;
+            double loopT = t % loopDuration;
+            double beatPos = loopT / sixteenthNote; // Position in sixteenth notes
+
+            // --- Melody (square wave, main voice) ---
+            double melodyFreq = 0;
+            double melodyNoteStart = 0;
+            double melodyNoteDur = 0;
+            double notePos = 0;
+            for (double[] note : melody) {
+                if (beatPos >= notePos && beatPos < notePos + note[1]) {
+                    melodyFreq = note[0];
+                    melodyNoteStart = notePos * sixteenthNote;
+                    melodyNoteDur = note[1] * sixteenthNote;
+                    break;
+                }
+                notePos += note[1];
+            }
+
+            if (melodyFreq > 0) {
+                double noteT = loopT - melodyNoteStart;
+                double phase = 2.0 * Math.PI * noteT * melodyFreq;
+                // Pulse wave (25% duty cycle for chiptune sound)
+                double pulse = (Math.sin(phase) > 0.5) ? 1.0 : -1.0;
+                // Envelope
+                double env = 1.0;
+                if (noteT < 0.02) env = noteT / 0.02;
+                else if (noteT > melodyNoteDur - 0.05) env = (melodyNoteDur - noteT) / 0.05;
+                env = Math.max(0, Math.min(1, env));
+                sample += pulse * env * 0.25;
+            }
+
+            // --- Bass (triangle wave) ---
+            double bassFreq = 0;
+            double bassNoteStart = 0;
+            double bassNoteDur = 0;
+            notePos = 0;
+            for (double[] note : bass) {
+                if (beatPos >= notePos && beatPos < notePos + note[1]) {
+                    bassFreq = note[0];
+                    bassNoteStart = notePos * sixteenthNote;
+                    bassNoteDur = note[1] * sixteenthNote;
+                    break;
+                }
+                notePos += note[1];
+            }
+
+            if (bassFreq > 0) {
+                double noteT = loopT - bassNoteStart;
+                // Triangle wave
+                double period = 1.0 / bassFreq;
+                double triPhase = (noteT % period) / period;
+                double triangle = 4.0 * Math.abs(triPhase - 0.5) - 1.0;
+                // Envelope
+                double env = 1.0;
+                if (noteT < 0.01) env = noteT / 0.01;
+                else if (noteT > bassNoteDur - 0.1) env = (bassNoteDur - noteT) / 0.1;
+                env = Math.max(0, Math.min(1, env));
+                sample += triangle * env * 0.2;
+            }
+
+            // --- Arpeggio (background texture, quiet) ---
+            double arpSpeed = sixteenthNote / 2; // Fast arpeggios
+            int arpIndex = (int) ((loopT / arpSpeed) % arpNotes.length);
+            double arpFreq = arpNotes[arpIndex];
+            double arpPhase = 2.0 * Math.PI * t * arpFreq;
+            double arp = Math.sin(arpPhase);
+            sample += arp * 0.08;
+
+            // --- Simple drum pattern (noise hits on beat) ---
+            double beatInLoop = loopT / beatDuration;
+            double beatFrac = beatInLoop % 1.0;
+            if (beatFrac < 0.05) {
+                // Kick-like thump on every beat
+                double kickEnv = 1.0 - (beatFrac / 0.05);
+                double kickFreq = 80 - beatFrac * 400;
+                sample += Math.sin(2.0 * Math.PI * t * kickFreq) * kickEnv * 0.15;
+            }
+            // Hi-hat on off-beats
+            double halfBeatFrac = (beatInLoop + 0.5) % 1.0;
+            if (halfBeatFrac < 0.03) {
+                double hatEnv = 1.0 - (halfBeatFrac / 0.03);
+                // Noise for hi-hat
+                sample += (Math.random() * 2 - 1) * hatEnv * 0.06;
+            }
+
+            // Soft clip to prevent distortion
+            sample = Math.tanh(sample * 1.2);
+
+            // Overall volume
+            sample *= 0.7;
 
             short shortSample = (short) (sample * Short.MAX_VALUE);
             buffer[i * 2] = (byte) (shortSample & 0xFF);

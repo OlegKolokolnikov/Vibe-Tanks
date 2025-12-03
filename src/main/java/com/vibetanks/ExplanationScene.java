@@ -19,10 +19,12 @@ public class ExplanationScene {
     private Scene scene;
     private Stage stage;
     private Scene menuScene;
+    private SoundManager soundManager;
 
-    public ExplanationScene(Stage stage, Scene menuScene, int width, int height) {
+    public ExplanationScene(Stage stage, Scene menuScene, int width, int height, SoundManager soundManager) {
         this.stage = stage;
         this.menuScene = menuScene;
+        this.soundManager = soundManager;
 
         VBox root = new VBox(20);
         root.setAlignment(Pos.TOP_CENTER);
@@ -106,7 +108,10 @@ public class ExplanationScene {
         backButton.setStyle("-fx-font-size: 20px; -fx-background-color: #444; -fx-text-fill: white;");
         backButton.setOnMouseEntered(e -> backButton.setStyle("-fx-font-size: 20px; -fx-background-color: #666; -fx-text-fill: white;"));
         backButton.setOnMouseExited(e -> backButton.setStyle("-fx-font-size: 20px; -fx-background-color: #444; -fx-text-fill: white;"));
-        backButton.setOnAction(e -> stage.setScene(menuScene));
+        backButton.setOnAction(e -> {
+            stopMusic();
+            stage.setScene(menuScene);
+        });
 
         root.getChildren().addAll(title, scrollPane, backButton);
 
@@ -161,5 +166,17 @@ public class ExplanationScene {
 
     public Scene getScene() {
         return scene;
+    }
+
+    public void startMusic() {
+        if (soundManager != null) {
+            soundManager.playExplanationMusic();
+        }
+    }
+
+    public void stopMusic() {
+        if (soundManager != null) {
+            soundManager.stopExplanationMusic();
+        }
     }
 }

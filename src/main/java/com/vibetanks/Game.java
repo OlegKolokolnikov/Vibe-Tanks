@@ -1143,6 +1143,17 @@ public class Game {
             return;
         }
 
+        // HOST: Send game state to clients (do this BEFORE early return for gameOver/victory/paused)
+        // This ensures clients receive end-game state (dancing characters, victory girls, etc.)
+        if (isNetworkGame && network != null && network.isHost()) {
+            long now = System.nanoTime();
+            if (now - lastNetworkUpdate >= NETWORK_UPDATE_INTERVAL) {
+                GameState state = buildGameState();
+                network.sendGameState(state);
+                lastNetworkUpdate = now;
+            }
+        }
+
         if (gameOver || victory || paused) {
             return;
         }
@@ -1636,16 +1647,6 @@ public class Game {
         boolean allPlayersDead = playerTanks.stream().allMatch(p -> !p.isAlive() && p.getLives() <= 0);
         if (allPlayersDead || !base.isAlive()) {
             gameOver = true;
-        }
-
-        // HOST: Send game state to client periodically
-        if (isNetworkGame && network != null && network.isHost()) {
-            long now = System.nanoTime();
-            if (now - lastNetworkUpdate >= NETWORK_UPDATE_INTERVAL) {
-                GameState state = buildGameState();
-                network.sendGameState(state);
-                lastNetworkUpdate = now;
-            }
         }
     }
 

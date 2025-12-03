@@ -51,7 +51,7 @@ public class MenuScene {
         // Play button
         Button playButton = new Button("PLAY");
         styleButton(playButton);
-        playButton.setOnAction(e -> startGame(1, 25));
+        playButton.setOnAction(e -> startGame(1, GameSettings.getEnemyCount()));
 
         // Host Game button (Online Multiplayer)
         Button hostButton = new Button("HOST GAME (ONLINE)");
@@ -131,6 +131,32 @@ public class MenuScene {
         ));
         editorButton.setOnAction(e -> showLevelEditor());
 
+        // Options button
+        Button optionsButton = new Button("OPTIONS");
+        styleButton(optionsButton);
+        optionsButton.setStyle(
+            "-fx-background-color: #4a3a2a;" +
+            "-fx-text-fill: #ffcc66;" +
+            "-fx-border-color: #ffcc66;" +
+            "-fx-border-width: 2px;" +
+            "-fx-cursor: hand;"
+        );
+        optionsButton.setOnMouseEntered(e -> optionsButton.setStyle(
+            "-fx-background-color: #6a5a3a;" +
+            "-fx-text-fill: #ffcc66;" +
+            "-fx-border-color: #ffcc66;" +
+            "-fx-border-width: 3px;" +
+            "-fx-cursor: hand;"
+        ));
+        optionsButton.setOnMouseExited(e -> optionsButton.setStyle(
+            "-fx-background-color: #4a3a2a;" +
+            "-fx-text-fill: #ffcc66;" +
+            "-fx-border-color: #ffcc66;" +
+            "-fx-border-width: 2px;" +
+            "-fx-cursor: hand;"
+        ));
+        optionsButton.setOnAction(e -> showOptions());
+
         // Explanation button
         Button explanationButton = new Button("EXPLANATION");
         styleButton(explanationButton);
@@ -189,6 +215,7 @@ public class MenuScene {
             hostButton,
             joinButton,
             editorButton,
+            optionsButton,
             explanationButton,
             instructions,
             controls,
@@ -248,6 +275,141 @@ public class MenuScene {
     private void showLevelEditor() {
         LevelEditor levelEditor = new LevelEditor(stage, scene, windowWidth, windowHeight);
         stage.setScene(levelEditor.getScene());
+    }
+
+    private void showOptions() {
+        Stage dialogStage = new Stage();
+        dialogStage.initModality(Modality.APPLICATION_MODAL);
+        dialogStage.initOwner(stage);
+        dialogStage.setTitle("Game Options");
+
+        VBox dialogRoot = new VBox(20);
+        dialogRoot.setPadding(new Insets(25));
+        dialogRoot.setAlignment(Pos.CENTER);
+        dialogRoot.setStyle("-fx-background-color: #2a2a2a;");
+
+        // Title
+        Label titleLabel = new Label("GAME OPTIONS");
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        titleLabel.setTextFill(Color.web("#ffcc66"));
+
+        // Player Speed
+        VBox playerSpeedBox = new VBox(5);
+        playerSpeedBox.setAlignment(Pos.CENTER);
+        Label playerSpeedLabel = new Label("Player Speed: " + String.format("%.0f%%", GameSettings.getPlayerSpeedMultiplier() * 100));
+        playerSpeedLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        playerSpeedLabel.setTextFill(Color.LIGHTGREEN);
+
+        Slider playerSpeedSlider = new Slider(0.5, 2.0, GameSettings.getPlayerSpeedMultiplier());
+        playerSpeedSlider.setShowTickLabels(true);
+        playerSpeedSlider.setShowTickMarks(true);
+        playerSpeedSlider.setMajorTickUnit(0.5);
+        playerSpeedSlider.setMinorTickCount(4);
+        playerSpeedSlider.setBlockIncrement(0.1);
+        playerSpeedSlider.setPrefWidth(250);
+        playerSpeedSlider.setStyle("-fx-control-inner-background: #444;");
+        playerSpeedSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            playerSpeedLabel.setText("Player Speed: " + String.format("%.0f%%", newVal.doubleValue() * 100));
+        });
+        playerSpeedBox.getChildren().addAll(playerSpeedLabel, playerSpeedSlider);
+
+        // Enemy Speed
+        VBox enemySpeedBox = new VBox(5);
+        enemySpeedBox.setAlignment(Pos.CENTER);
+        Label enemySpeedLabel = new Label("Enemy Speed: " + String.format("%.0f%%", GameSettings.getEnemySpeedMultiplier() * 100));
+        enemySpeedLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        enemySpeedLabel.setTextFill(Color.LIGHTCORAL);
+
+        Slider enemySpeedSlider = new Slider(0.5, 2.0, GameSettings.getEnemySpeedMultiplier());
+        enemySpeedSlider.setShowTickLabels(true);
+        enemySpeedSlider.setShowTickMarks(true);
+        enemySpeedSlider.setMajorTickUnit(0.5);
+        enemySpeedSlider.setMinorTickCount(4);
+        enemySpeedSlider.setBlockIncrement(0.1);
+        enemySpeedSlider.setPrefWidth(250);
+        enemySpeedSlider.setStyle("-fx-control-inner-background: #444;");
+        enemySpeedSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            enemySpeedLabel.setText("Enemy Speed: " + String.format("%.0f%%", newVal.doubleValue() * 100));
+        });
+        enemySpeedBox.getChildren().addAll(enemySpeedLabel, enemySpeedSlider);
+
+        // Enemy Count
+        VBox enemyCountBox = new VBox(5);
+        enemyCountBox.setAlignment(Pos.CENTER);
+        Label enemyCountLabel = new Label("Enemy Count: " + GameSettings.getEnemyCount());
+        enemyCountLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        enemyCountLabel.setTextFill(Color.LIGHTYELLOW);
+
+        Slider enemyCountSlider = new Slider(5, 100, GameSettings.getEnemyCount());
+        enemyCountSlider.setShowTickLabels(true);
+        enemyCountSlider.setShowTickMarks(true);
+        enemyCountSlider.setMajorTickUnit(25);
+        enemyCountSlider.setMinorTickCount(4);
+        enemyCountSlider.setBlockIncrement(5);
+        enemyCountSlider.setPrefWidth(250);
+        enemyCountSlider.setStyle("-fx-control-inner-background: #444;");
+        enemyCountSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            enemyCountLabel.setText("Enemy Count: " + newVal.intValue());
+        });
+        enemyCountBox.getChildren().addAll(enemyCountLabel, enemyCountSlider);
+
+        // Buttons
+        HBox buttonBox = new HBox(15);
+        buttonBox.setAlignment(Pos.CENTER);
+
+        Button saveButton = new Button("Save");
+        saveButton.setStyle(
+            "-fx-background-color: #2a5a2a; -fx-text-fill: lightgreen; " +
+            "-fx-border-color: lightgreen; -fx-border-width: 2; -fx-cursor: hand;"
+        );
+        saveButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        saveButton.setPrefWidth(80);
+
+        Button resetButton = new Button("Reset");
+        resetButton.setStyle(
+            "-fx-background-color: #5a5a2a; -fx-text-fill: #ffff99; " +
+            "-fx-border-color: #ffff99; -fx-border-width: 2; -fx-cursor: hand;"
+        );
+        resetButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        resetButton.setPrefWidth(80);
+
+        Button cancelButton = new Button("Cancel");
+        cancelButton.setStyle(
+            "-fx-background-color: #5a2a2a; -fx-text-fill: #ff9999; " +
+            "-fx-border-color: #ff9999; -fx-border-width: 2; -fx-cursor: hand;"
+        );
+        cancelButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        cancelButton.setPrefWidth(80);
+
+        buttonBox.getChildren().addAll(saveButton, resetButton, cancelButton);
+
+        // Handle save
+        saveButton.setOnAction(e -> {
+            GameSettings.setPlayerSpeedMultiplier(playerSpeedSlider.getValue());
+            GameSettings.setEnemySpeedMultiplier(enemySpeedSlider.getValue());
+            GameSettings.setEnemyCount((int) enemyCountSlider.getValue());
+            dialogStage.close();
+        });
+
+        // Handle reset
+        resetButton.setOnAction(e -> {
+            playerSpeedSlider.setValue(1.0);
+            enemySpeedSlider.setValue(1.0);
+            enemyCountSlider.setValue(25);
+            playerSpeedLabel.setText("Player Speed: 100%");
+            enemySpeedLabel.setText("Enemy Speed: 100%");
+            enemyCountLabel.setText("Enemy Count: 25");
+        });
+
+        // Handle cancel
+        cancelButton.setOnAction(e -> dialogStage.close());
+
+        dialogRoot.getChildren().addAll(titleLabel, playerSpeedBox, enemySpeedBox, enemyCountBox, buttonBox);
+
+        Scene dialogScene = new Scene(dialogRoot, 320, 350);
+        dialogStage.setScene(dialogScene);
+        dialogStage.setResizable(false);
+        dialogStage.showAndWait();
     }
 
     private void hostGame() {
@@ -519,7 +681,7 @@ public class MenuScene {
         // Network game supports up to 4 players
         // Both host and client need all 4 tanks so GameState can update them all
         int playerCount = 4;
-        Game game = new Game(gameRoot, windowWidth, windowHeight, playerCount, 25, stage, network);
+        Game game = new Game(gameRoot, windowWidth, windowHeight, playerCount, GameSettings.getEnemyCount(), stage, network);
         game.start();
 
         stage.setScene(gameScene);

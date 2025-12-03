@@ -140,7 +140,8 @@ public class Tank {
 
         // Handle ice sliding
         if (isSliding && slideDistance > 0) {
-            double slideSpeed = SPEED * speedMultiplier * 2.0; // Same speed as moving on ice
+            double globalSpeedMult = isPlayer ? GameSettings.getPlayerSpeedMultiplier() : GameSettings.getEnemySpeedMultiplier();
+            double slideSpeed = SPEED * speedMultiplier * globalSpeedMult * 2.0; // Same speed as moving on ice
             double slideStep = Math.min(slideSpeed, slideDistance);
 
             double newX = x + slidingDirection.getDx() * slideStep;
@@ -236,6 +237,13 @@ public class Tank {
 
         this.direction = newDirection;
         double speed = SPEED * speedMultiplier;
+
+        // Apply global speed settings
+        if (isPlayer) {
+            speed *= GameSettings.getPlayerSpeedMultiplier();
+        } else {
+            speed *= GameSettings.getEnemySpeedMultiplier();
+        }
 
         // Apply 2x speed when on ice
         if (isOnIce(map)) {

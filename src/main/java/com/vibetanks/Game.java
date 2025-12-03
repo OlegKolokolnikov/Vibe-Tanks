@@ -2597,26 +2597,16 @@ public class Game {
             double rowY = tableY + 35 + i * rowHeight;
             xPos = tableX;
 
-            // Player name color based on win/lose
-            if (i == winnerIndex && !isTie) {
-                gc.setFill(Color.LIME);
-            } else if (victory && activePlayers > 1 && !isTie) {
-                gc.setFill(Color.ORANGERED);
-            } else {
-                gc.setFill(Color.CYAN);
-            }
+            // Player name color (cyan for all, winner gets gold medal)
+            gc.setFill(Color.CYAN);
 
             // Get player nickname (truncate if too long)
             String name = getPlayerDisplayName(i);
             if (name.length() > 12) name = name.substring(0, 11) + "..";
 
-            // Add status indicator
-            if (victory && activePlayers > 1) {
-                if (isTie) {
-                    name += " TIE";
-                } else if (i == winnerIndex) {
-                    name += " WIN";
-                }
+            // Add gold medal for winner (only if not a tie)
+            if (victory && activePlayers > 1 && !isTie && i == winnerIndex) {
+                name = "\uD83E\uDD47 " + name; // Gold medal emoji
             }
             gc.fillText(name, xPos, rowY);
             xPos += colWidths[0];

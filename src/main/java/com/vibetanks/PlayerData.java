@@ -19,6 +19,9 @@ public class PlayerData implements Serializable {
     public int kills;
     public int score;
 
+    // Kills per enemy type: [REGULAR, ARMORED, FAST, POWER, HEAVY, BOSS]
+    public int[] killsByType = new int[6];
+
     // Power-ups
     public boolean hasShield;
     public int shieldDuration; // Shield duration in frames
@@ -48,7 +51,7 @@ public class PlayerData implements Serializable {
     /**
      * Copy data from a Tank object
      */
-    public void copyFromTank(Tank tank, int kills, int score, String nickname) {
+    public void copyFromTank(Tank tank, int kills, int score, String nickname, int[] killsByType) {
         this.x = tank.getX();
         this.y = tank.getY();
         this.direction = tank.getDirection().ordinal();
@@ -66,6 +69,9 @@ public class PlayerData implements Serializable {
         this.kills = kills;
         this.score = score;
         this.nickname = nickname;
+        if (killsByType != null) {
+            System.arraycopy(killsByType, 0, this.killsByType, 0, Math.min(6, killsByType.length));
+        }
     }
 
     /**

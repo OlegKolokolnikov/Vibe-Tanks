@@ -56,6 +56,10 @@ public class Game {
     private int[] playerScores = new int[4];
     private boolean winnerBonusAwarded = false;
 
+    // Kills per enemy type per player: [playerIndex][enemyTypeOrdinal]
+    // Enemy types: REGULAR=0, ARMORED=1, FAST=2, POWER=3, HEAVY=4, BOSS=5
+    private int[][] playerKillsByType = new int[4][6];
+
     // For client sound effects (track previous state to detect changes)
     private int prevEnemyCount = 0;
     private Set<Long> seenBulletIds = new HashSet<>(); // Track bullet IDs we've already played sounds for
@@ -897,6 +901,9 @@ public class Game {
         // Reset kills for new round (scores persist)
         for (int i = 0; i < playerKills.length; i++) {
             playerKills[i] = 0;
+            for (int j = 0; j < 6; j++) {
+                playerKillsByType[i][j] = 0;
+            }
         }
 
         // Reset base
@@ -972,6 +979,9 @@ public class Game {
         for (int i = 0; i < playerKills.length; i++) {
             playerKills[i] = 0;
             playerScores[i] = 0;
+            for (int j = 0; j < 6; j++) {
+                playerKillsByType[i][j] = 0;
+            }
         }
 
         // Reset base
@@ -1485,6 +1495,12 @@ public class Game {
                             int killerPlayer = bullet.getOwnerPlayerNumber();
                             if (killerPlayer >= 1 && killerPlayer <= 4) {
                                 playerKills[killerPlayer - 1]++;
+
+                                // Track kill by enemy type
+                                int enemyTypeOrdinal = enemy.getEnemyType().ordinal();
+                                if (enemyTypeOrdinal < 6) {
+                                    playerKillsByType[killerPlayer - 1][enemyTypeOrdinal]++;
+                                }
 
                                 // Track machinegun kills for UFO spawn condition
                                 Tank killer = playerTanks.get(killerPlayer - 1);
@@ -2517,13 +2533,8 @@ public class Game {
     }
 
     private void renderEndGameStats(double startY) {
-        gc.setFont(javafx.scene.text.Font.font(18));
-        gc.setFill(Color.WHITE);
-        gc.fillText("=== STATISTICS ===", width / 2 - 80, startY);
-
-        int totalKills = 0;
-        // Use playerTanks.size() directly - tanks are added when players connect
         int activePlayers = playerTanks.size();
+        if (activePlayers == 0) return;
 
         // Find winner (highest kills) - only if victory and more than 1 player
         int winnerIndex = -1;
@@ -2549,24 +2560,44 @@ public class Game {
             }
         }
 
+        // Table dimensions and position
+        double tableX = width / 2 - 280;
+        double tableY = startY;
+        double rowHeight = 22;
+        double colWidths[] = {100, 30, 30, 30, 30, 30, 30, 50, 60}; // Name, REG, ARM, FST, PWR, HVY, BSS, Total, Points
+        double totalWidth = 0;
+        for (double w : colWidths) totalWidth += w;
+
+        // Draw table background
+        gc.setFill(Color.rgb(0, 0, 0, 0.7));
+        gc.fillRoundRect(tableX - 5, tableY - 5, totalWidth + 10, (activePlayers + 2) * rowHeight + 15, 10, 10);
+
+        // Draw header
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 12));
+        gc.setFill(Color.GOLD);
+
+        double xPos = tableX;
+        String[] headers = {"NICKNAME", "REG", "ARM", "FST", "PWR", "HVY", "BSS", "TOTAL", "POINTS"};
+        for (int c = 0; c < headers.length; c++) {
+            gc.fillText(headers[c], xPos, tableY + 15);
+            xPos += colWidths[c];
+        }
+
+        // Draw header line
+        gc.setStroke(Color.GOLD);
+        gc.setLineWidth(1);
+        gc.strokeLine(tableX, tableY + 20, tableX + totalWidth, tableY + 20);
+
+        // Draw player rows
+        gc.setFont(javafx.scene.text.Font.font("Arial", 12));
+        int totalKills = 0;
+        int[] totalByType = new int[6];
+
         for (int i = 0; i < activePlayers; i++) {
-            int kills = playerKills[i];
-            int score = playerScores[i];
-            totalKills += kills;
+            double rowY = tableY + 35 + i * rowHeight;
+            xPos = tableX;
 
-            // Determine status text
-            String status = "";
-            if (victory && activePlayers > 1) {
-                if (isTie) {
-                    status = " - TIE";
-                } else if (i == winnerIndex) {
-                    status = " - WINNER! (+10 bonus)";
-                } else {
-                    status = " - LOSER";
-                }
-            }
-
-            // Color based on status
+            // Player name color based on win/lose
             if (i == winnerIndex && !isTie) {
                 gc.setFill(Color.LIME);
             } else if (victory && activePlayers > 1 && !isTie) {
@@ -2575,12 +2606,60 @@ public class Game {
                 gc.setFill(Color.CYAN);
             }
 
-            gc.fillText(getPlayerDisplayName(i) + ": " + kills + " kills, " + score + " pts" + status,
-                        width / 2 - 120, startY + 25 + i * 22);
+            // Get player nickname (truncate if too long)
+            String name = getPlayerDisplayName(i);
+            if (name.length() > 12) name = name.substring(0, 11) + "..";
+
+            // Add status indicator
+            if (victory && activePlayers > 1) {
+                if (isTie) {
+                    name += " TIE";
+                } else if (i == winnerIndex) {
+                    name += " WIN";
+                }
+            }
+            gc.fillText(name, xPos, rowY);
+            xPos += colWidths[0];
+
+            // Kills by type columns (colors for each type)
+            Color[] typeColors = {Color.LIGHTGRAY, Color.SILVER, Color.LIGHTBLUE, Color.MAGENTA, Color.DARKGRAY, Color.RED};
+            for (int t = 0; t < 6; t++) {
+                int killCount = playerKillsByType[i][t];
+                totalByType[t] += killCount;
+                gc.setFill(killCount > 0 ? typeColors[t] : Color.GRAY);
+                gc.fillText(String.valueOf(killCount), xPos, rowY);
+                xPos += colWidths[t + 1];
+            }
+
+            // Total kills
+            int kills = playerKills[i];
+            totalKills += kills;
+            gc.setFill(Color.WHITE);
+            gc.fillText(String.valueOf(kills), xPos, rowY);
+            xPos += colWidths[7];
+
+            // Points
+            int score = playerScores[i];
+            gc.setFill(Color.YELLOW);
+            gc.fillText(String.valueOf(score), xPos, rowY);
         }
 
+        // Draw totals row
+        double totalsY = tableY + 35 + activePlayers * rowHeight + 5;
+        gc.setStroke(Color.GOLD);
+        gc.strokeLine(tableX, totalsY - 15, tableX + totalWidth, totalsY - 15);
+
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 12));
         gc.setFill(Color.YELLOW);
-        gc.fillText("Total: " + totalKills + " kills", width / 2 - 60, startY + 25 + activePlayers * 22 + 10);
+        xPos = tableX;
+        gc.fillText("TOTAL", xPos, totalsY);
+        xPos += colWidths[0];
+
+        for (int t = 0; t < 6; t++) {
+            gc.fillText(String.valueOf(totalByType[t]), xPos, totalsY);
+            xPos += colWidths[t + 1];
+        }
+        gc.fillText(String.valueOf(totalKills), xPos, totalsY);
 
         // Display boss kill info on victory screen - positioned at top of screen
         if (victory && bossKillerPlayerIndex >= 0 && bossKillPowerUpReward != null) {
@@ -2653,7 +2732,7 @@ public class Game {
         // Build player data using centralized PlayerData entity
         for (int i = 0; i < playerTanks.size() && i < 4; i++) {
             Tank tank = playerTanks.get(i);
-            state.players[i].copyFromTank(tank, playerKills[i], playerScores[i], playerNicknames[i]);
+            state.players[i].copyFromTank(tank, playerKills[i], playerScores[i], playerNicknames[i], playerKillsByType[i]);
         }
         // Debug: Log scores being sent
         if (playerScores[0] > 0 || playerScores[1] > 0) {
@@ -2846,6 +2925,10 @@ public class Game {
             if (pData.score != oldScore) {
                 System.out.println("APPLY_STATE: Player " + (i + 1) + " score updated: " + oldScore + " -> " + pData.score);
             }
+            // Update kills by type
+            if (pData.killsByType != null) {
+                System.arraycopy(pData.killsByType, 0, playerKillsByType[i], 0, Math.min(6, pData.killsByType.length));
+            }
             // Don't overwrite local player's nickname
             if (i != myPlayerIndex && pData.nickname != null) {
                 playerNicknames[i] = pData.nickname;
@@ -3010,6 +3093,9 @@ public class Game {
             // Reset kills for new level/restart
             for (int i = 0; i < playerKills.length; i++) {
                 playerKills[i] = 0;
+                for (int j = 0; j < 6; j++) {
+                    playerKillsByType[i][j] = 0;
+                }
             }
             // Clear visual state
             dancingInitialized = false;

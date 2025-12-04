@@ -77,7 +77,7 @@ public class Base {
                 easterEggAnimFrame++;
                 renderEasterEgg(gc);
             } else {
-                // Draw base as classic Battle City eagle
+                // Draw base as classic eagle symbol
                 // Background
                 gc.setFill(Color.rgb(252, 216, 168)); // Tan background
                 gc.fillRect(x, y, SIZE, SIZE);

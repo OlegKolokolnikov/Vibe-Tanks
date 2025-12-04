@@ -18,8 +18,8 @@ import javafx.stage.Stage;
 import java.util.List;
 
 /**
- * Level Editor for creating custom tank battle levels.
- * Similar to the original Battle City construction mode.
+ * Level Editor for creating custom Vibe Tanks levels.
+ * Allows placing tiles to design custom maps.
  */
 public class LevelEditor {
     private static final int TILE_SIZE = 32;

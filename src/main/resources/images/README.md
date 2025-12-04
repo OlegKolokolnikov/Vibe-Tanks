@@ -1,4 +1,4 @@
-# Battle City - Image Resources
+# Vibe Tanks - Image Resources
 
 ## How to Add Custom GIFs
 

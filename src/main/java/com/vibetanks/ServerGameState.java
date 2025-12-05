@@ -43,6 +43,12 @@ public class ServerGameState {
     private int enemyFreezeDuration = 0;
     private int playerFreezeDuration = 0;
 
+    // Enemy team speed boost (when enemy picks up CAR)
+    private int enemyTeamSpeedBoostDuration = 0;
+    private Tank enemyWithPermanentSpeedBoost = null;
+    private static final int ENEMY_SPEED_BOOST_TIME = 1800; // 30 seconds at 60 FPS
+    private static final double ENEMY_TEAM_SPEED_BOOST = 0.3; // 30% speed boost
+
     // Base protection
     private int baseProtectionDuration = 0;
 
@@ -195,9 +201,33 @@ public class ServerGameState {
             }
         }
 
-        // Spawn enemies using the update method
+        // Update enemy team speed boost duration
+        if (enemyTeamSpeedBoostDuration > 0) {
+            enemyTeamSpeedBoostDuration--;
+            if (enemyTeamSpeedBoostDuration == 0) {
+                // Remove temporary speed boost from all enemies except the one who picked it up
+                for (Tank enemy : enemyTanks) {
+                    if (enemy != enemyWithPermanentSpeedBoost) {
+                        enemy.removeTempSpeedBoost();
+                    }
+                }
+                System.out.println("[*] Enemy team speed boost expired");
+            }
+        }
+
+        // Spawn enemies if needed
+        int enemyCountBefore = enemyTanks.size();
         if (enemyFreezeDuration <= 0) {
             enemySpawner.update(enemyTanks);
+        }
+        // Apply temporary speed boost to newly spawned enemies if boost is active
+        if (enemyTeamSpeedBoostDuration > 0 && enemyTanks.size() > enemyCountBefore) {
+            for (int i = enemyCountBefore; i < enemyTanks.size(); i++) {
+                Tank newEnemy = enemyTanks.get(i);
+                if (newEnemy != enemyWithPermanentSpeedBoost) {
+                    newEnemy.applyTempSpeedBoost(ENEMY_TEAM_SPEED_BOOST);
+                }
+            }
         }
 
         // Update all tanks
@@ -389,13 +419,68 @@ public class ServerGameState {
                 continue;
             }
 
+            boolean collected = false;
+
+            // Check player collection
             for (Tank player : playerTanks) {
                 if (player.isAlive() && powerUp.collidesWith(player)) {
                     applyPowerUp(powerUp, player);
                     iter.remove();
+                    collected = true;
                     break;
                 }
             }
+
+            // Check enemy collection
+            if (!collected) {
+                for (Tank enemy : enemyTanks) {
+                    if (enemy.isAlive() && powerUp.collidesWith(enemy)) {
+                        applyEnemyPowerUp(powerUp, enemy);
+                        iter.remove();
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void applyEnemyPowerUp(PowerUp powerUp, Tank enemy) {
+        switch (powerUp.getType()) {
+            case SHOVEL -> {
+                // Enemy removes base protection
+                gameMap.setBaseProtection(GameMap.TileType.EMPTY);
+                baseProtectionDuration = 0;
+            }
+            case FREEZE -> {
+                // Freeze players for 10 seconds
+                playerFreezeDuration = 600;
+                System.out.println("[*] FREEZE: Players frozen for 10 seconds!");
+            }
+            case BOMB -> {
+                // Damage all players
+                System.out.println("[*] BOMB collected by enemy - damaging all players!");
+                for (Tank player : playerTanks) {
+                    if (player.isAlive()) {
+                        player.setShield(false);
+                        player.setPauseShield(false);
+                        player.damage();
+                    }
+                }
+            }
+            case CAR -> {
+                // All enemies get temporary speed boost for 30 seconds
+                powerUp.applyEffect(enemy); // Give permanent boost to this enemy
+                enemyWithPermanentSpeedBoost = enemy;
+                enemyTeamSpeedBoostDuration = ENEMY_SPEED_BOOST_TIME;
+                // Give temporary boost to all other enemies
+                for (Tank otherEnemy : enemyTanks) {
+                    if (otherEnemy != enemy && otherEnemy.isAlive()) {
+                        otherEnemy.applyTempSpeedBoost(ENEMY_TEAM_SPEED_BOOST);
+                    }
+                }
+                System.out.println("[*] CAR: All enemies get speed boost for 30 seconds!");
+            }
+            default -> powerUp.applyEffect(enemy);
         }
     }
 
@@ -455,7 +540,9 @@ public class ServerGameState {
                 enemy.isAlive(),
                 enemy.getEnemyType().ordinal(),
                 enemy.getHealth(),
-                enemy.getMaxHealth()
+                enemy.getMaxHealth(),
+                enemy.getTempSpeedBoost(),
+                enemy.getSpeedMultiplier()
             ));
         }
 

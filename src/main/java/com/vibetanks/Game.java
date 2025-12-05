@@ -89,6 +89,12 @@ public class Game {
     private int playerFreezeDuration = 0;
     private static final int FREEZE_TIME = 600; // 10 seconds at 60 FPS
 
+    // Enemy team speed boost (when enemy picks up CAR)
+    private int enemyTeamSpeedBoostDuration = 0;
+    private Tank enemyWithPermanentSpeedBoost = null; // The enemy who picked up CAR keeps the boost
+    private static final int ENEMY_SPEED_BOOST_TIME = 1800; // 30 seconds at 60 FPS
+    private static final double ENEMY_TEAM_SPEED_BOOST = 0.3; // 30% speed boost
+
     // Victory dancing anime girl
     private ImageView victoryImageView;
     // Game over dancing death
@@ -971,6 +977,10 @@ public class Game {
         enemyFreezeDuration = 0;
         playerFreezeDuration = 0;
 
+        // Reset enemy team speed boost
+        enemyTeamSpeedBoostDuration = 0;
+        enemyWithPermanentSpeedBoost = null;
+
         // Hide victory image
         if (victoryImageView != null) {
             victoryImageView.setVisible(false);
@@ -1050,6 +1060,10 @@ public class Game {
         // Reset freeze states
         enemyFreezeDuration = 0;
         playerFreezeDuration = 0;
+
+        // Reset enemy team speed boost
+        enemyTeamSpeedBoostDuration = 0;
+        enemyWithPermanentSpeedBoost = null;
 
         // Hide game over image
         if (gameOverImageView != null) {
@@ -1443,7 +1457,17 @@ public class Game {
         gameMap.update();
 
         // Spawn enemies if needed
+        int enemyCountBefore = enemyTanks.size();
         enemySpawner.update(enemyTanks);
+        // Apply temporary speed boost to newly spawned enemies if boost is active
+        if (enemyTeamSpeedBoostDuration > 0 && enemyTanks.size() > enemyCountBefore) {
+            for (int i = enemyCountBefore; i < enemyTanks.size(); i++) {
+                Tank newEnemy = enemyTanks.get(i);
+                if (newEnemy != enemyWithPermanentSpeedBoost) {
+                    newEnemy.applyTempSpeedBoost(ENEMY_TEAM_SPEED_BOOST);
+                }
+            }
+        }
 
         // Check UFO spawn conditions (only host spawns UFO)
         if (!ufoSpawnedThisLevel && ufo == null) {
@@ -1494,6 +1518,20 @@ public class Game {
         }
         if (playerFreezeDuration > 0) {
             playerFreezeDuration--;
+        }
+
+        // Update enemy team speed boost duration
+        if (enemyTeamSpeedBoostDuration > 0) {
+            enemyTeamSpeedBoostDuration--;
+            if (enemyTeamSpeedBoostDuration == 0) {
+                // Remove temporary speed boost from all enemies except the one who picked it up
+                for (Tank enemy : enemyTanks) {
+                    if (enemy != enemyWithPermanentSpeedBoost) {
+                        enemy.removeTempSpeedBoost();
+                    }
+                }
+                System.out.println("Enemy team speed boost expired - only original enemy keeps the speed");
+            }
         }
 
         // Update enemy tanks with AI (skip if frozen, except BOSS is unfreezable)
@@ -1829,6 +1867,19 @@ public class Game {
                                     }
                                 }
                             }
+                        } else if (powerUp.getType() == PowerUp.Type.CAR) {
+                            // Enemy takes CAR - all enemies get temporary speed boost for 30 seconds
+                            // The enemy who picked it up keeps permanent boost
+                            powerUp.applyEffect(enemy); // Give permanent boost to this enemy
+                            enemyWithPermanentSpeedBoost = enemy;
+                            enemyTeamSpeedBoostDuration = ENEMY_SPEED_BOOST_TIME;
+                            // Give temporary boost to all other enemies
+                            for (Tank otherEnemy : enemyTanks) {
+                                if (otherEnemy != enemy && otherEnemy.isAlive()) {
+                                    otherEnemy.applyTempSpeedBoost(ENEMY_TEAM_SPEED_BOOST);
+                                }
+                            }
+                            System.out.println("CAR: All enemies get speed boost for 30 seconds!");
                         } else {
                             powerUp.applyEffect(enemy);
                         }
@@ -3068,7 +3119,9 @@ public class Game {
                     enemy.isAlive(),
                     enemy.getEnemyType().ordinal(),
                     enemy.getHealth(),
-                    enemy.getMaxHealth()
+                    enemy.getMaxHealth(),
+                    enemy.getTempSpeedBoost(),
+                    enemy.getSpeedMultiplier()
                 ));
             }
         }
@@ -3115,6 +3168,7 @@ public class Game {
         state.connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
         state.enemyFreezeDuration = enemyFreezeDuration;
         state.playerFreezeDuration = playerFreezeDuration;
+        state.enemyTeamSpeedBoostDuration = enemyTeamSpeedBoostDuration;
         state.bossKillerPlayerIndex = bossKillerPlayerIndex;
         state.bossKillPowerUpReward = bossKillPowerUpReward != null ? bossKillPowerUpReward.ordinal() : -1;
 
@@ -3282,6 +3336,8 @@ public class Game {
             enemy.setEnemyType(Tank.EnemyType.values()[eData.enemyType]);
             enemy.setHealth(eData.health);
             enemy.setMaxHealth(eData.maxHealth);
+            enemy.applyTempSpeedBoost(eData.tempSpeedBoost);
+            enemy.setSpeedMultiplier(eData.speedMultiplier);
             if (eData.alive) {
                 enemy.setPosition(eData.x, eData.y);
                 enemy.setDirection(Direction.values()[eData.direction]);
@@ -3473,6 +3529,7 @@ public class Game {
         // Update freeze state
         enemyFreezeDuration = state.enemyFreezeDuration;
         playerFreezeDuration = state.playerFreezeDuration;
+        enemyTeamSpeedBoostDuration = state.enemyTeamSpeedBoostDuration;
 
         // Update remaining enemies count
         enemySpawner.setRemainingEnemies(state.remainingEnemies);

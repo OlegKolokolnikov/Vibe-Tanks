@@ -38,6 +38,7 @@ public class Tank {
     private int shieldDuration;
     private boolean hasPauseShield; // Shield while player is paused (multiplayer)
     private double speedMultiplier; // Base is 1.0, each CAR adds 0.3
+    private double tempSpeedBoost; // Temporary speed boost from team CAR pickup
     private int bulletPower; // 1 = normal, 2 = can break steel
     private boolean canSwim; // SHIP power-up
     private boolean canDestroyTrees; // SAW power-up
@@ -147,7 +148,7 @@ public class Tank {
         // Handle ice sliding
         if (isSliding && slideDistance > 0) {
             double globalSpeedMult = isPlayer ? GameSettings.getPlayerSpeedMultiplier() : GameSettings.getEnemySpeedMultiplier();
-            double slideSpeed = SPEED * speedMultiplier * globalSpeedMult * 2.0; // Same speed as moving on ice
+            double slideSpeed = SPEED * (speedMultiplier + tempSpeedBoost) * globalSpeedMult * 2.0; // Same speed as moving on ice
             double slideStep = Math.min(slideSpeed, slideDistance);
 
             double newX = x + slidingDirection.getDx() * slideStep;
@@ -242,7 +243,7 @@ public class Tank {
         if (!alive) return;
 
         this.direction = newDirection;
-        double speed = SPEED * speedMultiplier;
+        double speed = SPEED * (speedMultiplier + tempSpeedBoost);
 
         // Apply global speed settings
         if (isPlayer) {
@@ -915,6 +916,26 @@ public class Tank {
     public void applyCar() {
         speedMultiplier += 0.3; // Each car increases speed by 30%
         speedMultiplier = Math.min(speedMultiplier, 2.5); // Cap at 2.5x speed
+    }
+
+    public void applyTempSpeedBoost(double boost) {
+        tempSpeedBoost = boost;
+    }
+
+    public void removeTempSpeedBoost() {
+        tempSpeedBoost = 0;
+    }
+
+    public double getTempSpeedBoost() {
+        return tempSpeedBoost;
+    }
+
+    public double getSpeedMultiplier() {
+        return speedMultiplier;
+    }
+
+    public void setSpeedMultiplier(double multiplier) {
+        this.speedMultiplier = multiplier;
     }
 
     public void applyShip() {

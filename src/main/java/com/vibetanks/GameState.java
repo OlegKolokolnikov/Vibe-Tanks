@@ -40,6 +40,9 @@ public class GameState implements Serializable {
     public int enemyFreezeDuration;
     public int playerFreezeDuration;
 
+    // Enemy team speed boost (when enemy picks up CAR)
+    public int enemyTeamSpeedBoostDuration;
+
     // Base
     public boolean baseAlive;
     public boolean baseShowFlag;
@@ -162,8 +165,10 @@ public class GameState implements Serializable {
         public int enemyType; // 0=REGULAR, 1=ARMORED, etc.
         public int health;
         public int maxHealth;
+        public double tempSpeedBoost; // Temporary speed boost from team CAR pickup
+        public double speedMultiplier; // Permanent speed (from CAR pickup)
 
-        public EnemyData(double x, double y, int direction, boolean alive, int enemyType, int health, int maxHealth) {
+        public EnemyData(double x, double y, int direction, boolean alive, int enemyType, int health, int maxHealth, double tempSpeedBoost, double speedMultiplier) {
             this.x = x;
             this.y = y;
             this.direction = direction;
@@ -171,6 +176,8 @@ public class GameState implements Serializable {
             this.enemyType = enemyType;
             this.health = health;
             this.maxHealth = maxHealth;
+            this.tempSpeedBoost = tempSpeedBoost;
+            this.speedMultiplier = speedMultiplier;
         }
     }
 

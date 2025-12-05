@@ -8,6 +8,8 @@ public class PlayerInput implements Serializable {
     public boolean up, down, left, right;
     public boolean shoot;
     public boolean requestLife; // Request to take life from teammate
+    public boolean requestNextLevel; // Request to start next level (after victory)
+    public boolean requestRestart; // Request to restart current level (after game over)
 
     // Client sends its position to host (client-authoritative movement)
     public double posX, posY;
@@ -23,6 +25,8 @@ public class PlayerInput implements Serializable {
         this.right = false;
         this.shoot = false;
         this.requestLife = false;
+        this.requestNextLevel = false;
+        this.requestRestart = false;
         this.posX = 0;
         this.posY = 0;
         this.direction = 0;

@@ -727,14 +727,22 @@ public class Game {
             }
 
             // ENTER to start next level after victory
+            // For network clients, this is handled in the update loop via PlayerInput
             if (event.getCode() == KeyCode.ENTER && victory) {
-                startNextLevel();
+                if (!isNetworkGame || (network != null && network.isHost())) {
+                    startNextLevel();
+                }
+                // Client will send requestNextLevel in update loop
                 return;
             }
 
             // ENTER to restart current level after game over
+            // For network clients, this is handled in the update loop via PlayerInput
             if (event.getCode() == KeyCode.ENTER && gameOver) {
-                restartCurrentLevel();
+                if (!isNetworkGame || (network != null && network.isHost())) {
+                    restartCurrentLevel();
+                }
+                // Client will send requestRestart in update loop
                 return;
             }
 
@@ -1203,8 +1211,20 @@ public class Game {
                 applyGameState(state);
             }
 
-            // If game is over or victory, don't process movement but still rendered
-            if (gameOver || victory || paused) {
+            // CLIENT: Handle game over/victory - send restart/next level requests
+            if (gameOver || victory) {
+                // Check if ENTER is pressed to request restart or next level
+                if (inputHandler.isEnterPressed()) {
+                    PlayerInput input = new PlayerInput();
+                    input.requestNextLevel = victory;
+                    input.requestRestart = gameOver;
+                    input.nickname = NicknameManager.getNickname();
+                    network.sendInput(input);
+                }
+                return;
+            }
+
+            if (paused) {
                 return;
             }
 
@@ -1266,6 +1286,25 @@ public class Game {
                 GameState state = buildGameState();
                 network.sendGameState(state);
                 lastNetworkUpdate = now;
+            }
+
+            // HOST: Check for client requests for next level/restart (during game over/victory)
+            if (gameOver || victory) {
+                for (int i = 2; i <= Math.min(playerTanks.size(), network.getConnectedPlayerCount()); i++) {
+                    PlayerInput clientInput = network.getPlayerInput(i);
+                    if (clientInput != null) {
+                        if (clientInput.requestNextLevel && victory) {
+                            System.out.println("HOST: Client " + i + " requested next level");
+                            startNextLevel();
+                            return;
+                        }
+                        if (clientInput.requestRestart && gameOver) {
+                            System.out.println("HOST: Client " + i + " requested restart");
+                            restartCurrentLevel();
+                            return;
+                        }
+                    }
+                }
             }
         }
 

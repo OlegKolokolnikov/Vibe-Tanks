@@ -13,9 +13,8 @@ public class Main extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Vibe Tanks");
 
-        // Clean up any zombie processes on port 25565 from previous runs
-        System.out.println("Performing startup port cleanup...");
-        NetworkManager.cleanupPortOnStartup();
+        // Note: Port cleanup removed - it was killing dedicated servers
+        // If you have port conflicts, manually close the other process
 
         MenuScene menuScene = new MenuScene(primaryStage, WINDOW_WIDTH, WINDOW_HEIGHT);
 

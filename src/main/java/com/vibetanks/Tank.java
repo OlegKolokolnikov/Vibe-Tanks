@@ -19,6 +19,7 @@ public class Tank {
     private static final int BASE_SIZE = 28;
     private int size = BASE_SIZE; // Instance variable for tank size
     private static final double SPEED = 2.0;
+    private static final double TARGET_FPS = 60.0; // Game is designed for 60 FPS
     private static final int SHOOT_COOLDOWN = 30; // frames
 
     private double x;
@@ -60,6 +61,11 @@ public class Tank {
     private boolean isSliding;
     private Direction slidingDirection;
     private double slideDistance;
+
+    // Respawn delay (1 second = 60 frames at 60 FPS)
+    private int respawnTimer = 0;
+    private double pendingRespawnX, pendingRespawnY;
+    private static final int RESPAWN_DELAY = 60; // 1 second
 
     // Track animation
     private int trackAnimationFrame;
@@ -994,8 +1000,48 @@ public class Tank {
     }
 
     public void respawn(double newX, double newY) {
-        this.x = newX;
-        this.y = newY;
+        // Start respawn timer instead of immediately respawning
+        this.pendingRespawnX = newX;
+        this.pendingRespawnY = newY;
+        this.respawnTimer = RESPAWN_DELAY;
+    }
+
+    // Called each frame to update respawn timer
+    public void updateRespawnTimer() {
+        if (respawnTimer > 0) {
+            respawnTimer--;
+            if (respawnTimer == 0) {
+                // Actually respawn now
+                completeRespawn();
+            }
+        }
+    }
+
+    // Check if tank is waiting to respawn
+    public boolean isWaitingToRespawn() {
+        return respawnTimer > 0;
+    }
+
+    // Get respawn timer for network sync
+    public int getRespawnTimer() {
+        return respawnTimer;
+    }
+
+    // Set respawn timer (for network sync)
+    public void setRespawnTimer(int timer) {
+        this.respawnTimer = timer;
+    }
+
+    // Set pending respawn position (for network sync)
+    public void setPendingRespawn(double x, double y, int timer) {
+        this.pendingRespawnX = x;
+        this.pendingRespawnY = y;
+        this.respawnTimer = timer;
+    }
+
+    private void completeRespawn() {
+        this.x = pendingRespawnX;
+        this.y = pendingRespawnY;
         this.direction = Direction.UP;
         this.health = maxHealth;
         this.hasShield = true;

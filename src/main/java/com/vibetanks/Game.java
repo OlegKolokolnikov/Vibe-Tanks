@@ -47,6 +47,10 @@ public class Game {
     private long lastUpdate = 0;
     private static final long FRAME_TIME = 16_666_667; // ~60 FPS in nanoseconds
 
+    // FPS counter for debugging
+    private int fpsFrameCount = 0;
+    private long fpsLastTime = System.currentTimeMillis();
+
     // Network multiplayer
     private NetworkManager network;
     private boolean isNetworkGame = false;
@@ -1092,10 +1096,23 @@ public class Game {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                if (now - lastUpdate >= FRAME_TIME) {
-                    update();
-                    render();
-                    lastUpdate = now;
+                // Calculate delta time for frame-rate independent movement
+                double deltaTime = (lastUpdate == 0) ? 1.0 : (now - lastUpdate) / (double) FRAME_TIME;
+                // Clamp delta to avoid huge jumps (e.g., when window was minimized)
+                deltaTime = Math.min(deltaTime, 3.0);
+                lastUpdate = now;
+
+                update();
+                render();
+
+                // FPS counter
+                fpsFrameCount++;
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - fpsLastTime >= 5000) {
+                    double fps = fpsFrameCount / 5.0;
+                    System.out.println("[CLIENT FPS] " + String.format("%.1f", fps));
+                    fpsFrameCount = 0;
+                    fpsLastTime = currentTime;
                 }
             }
         };
@@ -1507,13 +1524,16 @@ public class Game {
             Tank player = playerTanks.get(i);
             if (player.isAlive()) {
                 player.update(gameMap, bullets, soundManager, allTanks, base);
+            } else if (player.isWaitingToRespawn()) {
+                // Player is waiting for respawn delay
+                player.updateRespawnTimer();
             } else if (player.getLives() > 0) {
-                // Player died but has lives left - respawn at FIXED start position
+                // Player died but has lives left - start respawn timer
                 soundManager.playExplosion();
                 double respawnX = FIXED_START_POSITIONS[i][0];
                 double respawnY = FIXED_START_POSITIONS[i][1];
-                System.out.println("Player " + (i + 1) + " respawning at FIXED position: " + respawnX + ", " + respawnY);
-                player.respawn(respawnX, respawnY);
+                System.out.println("Player " + (i + 1) + " will respawn in 1 second at: " + respawnX + ", " + respawnY);
+                player.respawn(respawnX, respawnY); // This now starts the timer
             }
         }
 
@@ -3247,6 +3267,11 @@ public class Game {
 
     private void applyGameState(GameState state) {
         // Apply host's game settings (client uses host's settings in multiplayer)
+        // Debug: Log if settings differ from expected 1.0
+        if (state.hostPlayerSpeed != 1.0 || state.hostEnemySpeed != 1.0) {
+            System.out.println("[DEBUG] Received host settings: playerSpeed=" + state.hostPlayerSpeed +
+                ", enemySpeed=" + state.hostEnemySpeed);
+        }
         GameSettings.setHostSettings(
             state.hostPlayerSpeed,
             state.hostEnemySpeed,
@@ -3406,27 +3431,26 @@ public class Game {
         }
 
         // Sync dancing characters for game over animation
-        dancingInitialized = state.dancingInitialized;
-        if (state.dancingCharacters != null && !state.dancingCharacters.isEmpty()) {
+        // For network clients: initialize dancing locally when server signals game over with base destroyed
+        if (state.gameOver && !state.baseAlive && !dancingInitialized) {
+            initializeDancingCharacters();
+        }
+        // If server restarted, reset dancing state
+        if (!state.gameOver) {
+            dancingInitialized = false;
             dancingCharacters.clear();
-            for (GameState.DancingCharacterData dData : state.dancingCharacters) {
-                dancingCharacters.add(new DancingCharacter(
-                    dData.x, dData.y, dData.isAlien, dData.animFrame,
-                    dData.danceStyle, dData.colorIndex
-                ));
-            }
         }
 
         // Sync victory dancing girls
-        victoryDancingInitialized = state.victoryDancingInitialized;
-        if (state.victoryDancingGirls != null && !state.victoryDancingGirls.isEmpty()) {
+        // For network clients: initialize victory celebration locally when server signals victory
+        if (state.victory && !victoryDancingInitialized) {
+            soundManager.stopGameplaySounds();
+            initializeVictoryCelebration();
+        }
+        // If server restarted or went to next level, reset victory state
+        if (!state.victory) {
+            victoryDancingInitialized = false;
             victoryDancingGirls.clear();
-            for (GameState.DancingGirlData gData : state.victoryDancingGirls) {
-                victoryDancingGirls.add(new DancingGirl(
-                    gData.x, gData.y, gData.animFrame,
-                    gData.danceStyle, gData.dressColorIndex, gData.hairColorIndex
-                ));
-            }
         }
 
         // Sync UFO from host

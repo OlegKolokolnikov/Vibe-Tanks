@@ -107,6 +107,23 @@
     </build>
 
     <profiles>
+        <!-- Dedicated server profile -->
+        <profile>
+            <id>server</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <configuration>
+                            <mainClass>com.vibetanks.DedicatedServer</mainClass>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <!-- Windows native build profile -->
         <profile>
             <id>windows</id>

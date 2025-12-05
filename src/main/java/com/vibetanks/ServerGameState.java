@@ -52,6 +52,9 @@ public class ServerGameState {
     // Base protection
     private int baseProtectionDuration = 0;
 
+    // Dancing characters state (for game over animation sync)
+    private boolean dancingInitialized = false;
+
     // Sound manager (muted for server)
     private SoundManager soundManager;
 
@@ -98,6 +101,7 @@ public class ServerGameState {
         enemyTeamSpeedBoostDuration = 0;
         enemyWithPermanentSpeedBoost = null;
         baseProtectionDuration = 0;
+        dancingInitialized = false;
 
         System.out.println("[*] Game initialized with " + playerCount + " player(s)");
     }
@@ -175,7 +179,7 @@ public class ServerGameState {
 
     private void tryTakeLifeFromTeammate(int playerIndex) {
         Tank deadPlayer = playerTanks.get(playerIndex);
-        if (deadPlayer.isAlive()) return;
+        if (deadPlayer.isAlive() || deadPlayer.isWaitingToRespawn()) return;
 
         // Find teammate with lives to spare
         for (int i = 0; i < playerTanks.size(); i++) {
@@ -243,6 +247,7 @@ public class ServerGameState {
 
         for (Tank player : playerTanks) {
             player.update(gameMap, bullets, soundManager, allTanks, base);
+            player.updateRespawnTimer(); // Handle respawn delay
         }
 
         // Update enemy AI
@@ -269,6 +274,11 @@ public class ServerGameState {
         // Check game over
         if (!base.isAlive()) {
             gameOver = true;
+            // Initialize dancing when base is destroyed
+            if (!dancingInitialized) {
+                dancingInitialized = true;
+                System.out.println("[*] Game over - base destroyed, dancing initialized");
+            }
         } else {
             boolean allDead = true;
             for (Tank player : playerTanks) {
@@ -345,10 +355,11 @@ public class ServerGameState {
                     if (player.isAlive() && !player.hasShield() && !player.hasPauseShield()
                             && bullet.collidesWith(player)) {
                         player.damage();
-                        if (!player.isAlive() && player.getLives() > 0) {
+                        if (!player.isAlive() && !player.isWaitingToRespawn() && player.getLives() > 0) {
                             player.setLives(player.getLives() - 1);
                             if (player.getLives() > 0) {
                                 int idx = playerTanks.indexOf(player);
+                                System.out.println("[*] Player " + (idx + 1) + " will respawn in 1 second");
                                 player.respawn(
                                     PLAYER_START_POSITIONS[idx][0],
                                     PLAYER_START_POSITIONS[idx][1]
@@ -596,6 +607,15 @@ public class ServerGameState {
         state.enemyFreezeDuration = enemyFreezeDuration;
         state.playerFreezeDuration = playerFreezeDuration;
         state.enemyTeamSpeedBoostDuration = enemyTeamSpeedBoostDuration;
+
+        // Dancing state for game over animation
+        state.dancingInitialized = dancingInitialized;
+
+        // Host settings - use server's GameSettings
+        state.hostPlayerSpeed = GameSettings.getPlayerSpeedMultiplier();
+        state.hostEnemySpeed = GameSettings.getEnemySpeedMultiplier();
+        state.hostPlayerShootSpeed = GameSettings.getPlayerShootSpeedMultiplier();
+        state.hostEnemyShootSpeed = GameSettings.getEnemyShootSpeedMultiplier();
 
         return state;
     }

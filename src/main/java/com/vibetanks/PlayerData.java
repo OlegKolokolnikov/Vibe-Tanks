@@ -16,6 +16,8 @@ public class PlayerData implements Serializable {
     // Status
     public int lives;
     public boolean alive;
+    public int respawnTimer; // Frames until respawn, 0 = not waiting
+    public double pendingRespawnX, pendingRespawnY;
     public int kills;
     public int score; // Total score
     public int levelScore; // Score for current level
@@ -59,6 +61,7 @@ public class PlayerData implements Serializable {
         this.direction = tank.getDirection().ordinal();
         this.lives = tank.getLives();
         this.alive = tank.isAlive();
+        this.respawnTimer = tank.getRespawnTimer();
         this.hasShield = tank.hasShield();
         this.shieldDuration = tank.getShieldDuration();
         this.hasPauseShield = tank.hasPauseShield();
@@ -84,6 +87,7 @@ public class PlayerData implements Serializable {
     public void applyToTank(Tank tank, boolean skipPosition) {
         tank.setLives(this.lives);
         tank.setAlive(this.alive);
+        tank.setRespawnTimer(this.respawnTimer);
         if (this.alive && !skipPosition) {
             tank.setPosition(this.x, this.y);
             tank.setDirection(Direction.values()[this.direction]);

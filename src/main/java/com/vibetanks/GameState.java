@@ -22,6 +22,9 @@ public class GameState implements Serializable {
     // Bullets
     public List<BulletData> bullets = new ArrayList<>();
 
+    // Lasers
+    public List<LaserData> lasers = new ArrayList<>();
+
     // Power-ups
     public List<PowerUpData> powerUps = new ArrayList<>();
 
@@ -155,6 +158,27 @@ public class GameState implements Serializable {
             this.row = row;
             this.col = col;
             this.framesRemaining = framesRemaining;
+        }
+    }
+
+    public static class LaserData implements Serializable {
+        public long id;
+        public double startX, startY;
+        public int direction;
+        public boolean fromEnemy;
+        public int ownerPlayerNumber;
+        public int lifetime;
+        public double length;
+
+        public LaserData(long id, double startX, double startY, int direction, boolean fromEnemy, int ownerPlayerNumber, int lifetime, double length) {
+            this.id = id;
+            this.startX = startX;
+            this.startY = startY;
+            this.direction = direction;
+            this.fromEnemy = fromEnemy;
+            this.ownerPlayerNumber = ownerPlayerNumber;
+            this.lifetime = lifetime;
+            this.length = length;
         }
     }
 

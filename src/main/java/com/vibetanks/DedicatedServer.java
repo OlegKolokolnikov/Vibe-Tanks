@@ -158,11 +158,16 @@ public class DedicatedServer {
 
         while (running) {
             long now = System.nanoTime();
+            long elapsed = now - lastUpdate;
 
-            if (now - lastUpdate >= FRAME_TIME_NS) {
+            if (elapsed >= FRAME_TIME_NS) {
+                // Reset to current time - only one update per check, no catch-up
                 lastUpdate = now;
 
                 if (gameStarted && gameState != null) {
+                    // Update connected player count
+                    gameState.setConnectedPlayers(getActiveClientCount());
+
                     // Process player inputs
                     for (int i = 1; i <= MAX_PLAYERS; i++) {
                         PlayerInput input = playerInputs.remove(i);

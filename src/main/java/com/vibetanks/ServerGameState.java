@@ -58,6 +58,9 @@ public class ServerGameState {
     // Sound manager (muted for server)
     private SoundManager soundManager;
 
+    // Track actual connected players (may differ from playerTanks.size())
+    private int actualConnectedPlayers = 1;
+
     public ServerGameState(int initialPlayers) {
         // Create a sound manager but it won't actually play sounds on server
         this.soundManager = new SoundManager();
@@ -67,7 +70,24 @@ public class ServerGameState {
         playerKillsByType = new int[4][6];
         playerNicknames = new String[4];
 
-        initialize(Math.max(1, initialPlayers));
+        actualConnectedPlayers = Math.max(1, initialPlayers);
+        initialize(actualConnectedPlayers);
+    }
+
+    public void setConnectedPlayers(int count) {
+        this.actualConnectedPlayers = count;
+        // Add tanks for new players if needed
+        while (playerTanks.size() < count && playerTanks.size() < 4) {
+            int i = playerTanks.size();
+            Tank player = new Tank(
+                PLAYER_START_POSITIONS[i][0],
+                PLAYER_START_POSITIONS[i][1],
+                Direction.UP, true, i + 1
+            );
+            player.giveTemporaryShield();
+            playerTanks.add(player);
+            System.out.println("[*] Added tank for Player " + (i + 1));
+        }
     }
 
     private void initialize(int playerCount) {
@@ -198,7 +218,20 @@ public class ServerGameState {
         }
     }
 
+    // Debug: count updates per second
+    private int updateCount = 0;
+    private long lastUpdateCountTime = System.currentTimeMillis();
+
     public void update() {
+        // Debug: count updates per second
+        updateCount++;
+        long now = System.currentTimeMillis();
+        if (now - lastUpdateCountTime >= 5000) {
+            System.out.println("[DEBUG] Server updates per second: " + (updateCount / 5.0));
+            updateCount = 0;
+            lastUpdateCountTime = now;
+        }
+
         if (gameOver || victory) return;
 
         // Update freeze timers
@@ -321,7 +354,13 @@ public class ServerGameState {
             if (!bullet.isFromEnemy()) {
                 for (Tank enemy : enemyTanks) {
                     if (enemy.isAlive() && bullet.collidesWith(enemy)) {
-                        enemy.damage();
+                        boolean dropPowerUp = enemy.damage();
+
+                        // Handle power-up drops (POWER type drops on each hit, others on death with 30% chance)
+                        if (dropPowerUp || (!enemy.isAlive() && Math.random() < 0.3)) {
+                            spawnPowerUp();
+                        }
+
                         if (!enemy.isAlive()) {
                             int killer = bullet.getOwnerPlayerNumber();
                             if (killer >= 1 && killer <= 4) {
@@ -337,10 +376,6 @@ public class ServerGameState {
                                     default -> 1;
                                 };
                                 playerScores[killer - 1] += points;
-                            }
-                            // Chance for power-up
-                            if (Math.random() < 0.3) {
-                                spawnPowerUp();
                             }
                         }
                         notifyBulletDestroyed(bullet);
@@ -540,7 +575,7 @@ public class ServerGameState {
         state.victory = victory;
         state.baseAlive = base.isAlive();
         state.remainingEnemies = enemySpawner.getRemainingEnemies();
-        state.connectedPlayers = playerTanks.size();
+        state.connectedPlayers = actualConnectedPlayers;
 
         // Players - use array assignment
         for (int i = 0; i < playerTanks.size() && i < 4; i++) {
@@ -574,6 +609,19 @@ public class ServerGameState {
                 bullet.canDestroyTrees(),
                 bullet.getOwnerPlayerNumber(),
                 bullet.getSize()
+            ));
+        }
+
+        // Lasers
+        for (Laser laser : lasers) {
+            state.lasers.add(new GameState.LaserData(
+                laser.getId(),
+                laser.getStartX(), laser.getStartY(),
+                laser.getDirection().ordinal(),
+                laser.isFromEnemy(),
+                laser.getOwnerPlayerNumber(),
+                laser.getLifetime(),
+                laser.getLength()
             ));
         }
 

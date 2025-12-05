@@ -9,8 +9,8 @@ import javafx.scene.paint.Color;
  * Deals 3 damage to any unit it touches.
  */
 public class Laser {
-    private static final int BEAM_WIDTH = 8;
-    private static final int LIFETIME = 10; // Short lifetime - instant beam effect
+    private static final int BEAM_WIDTH = 12; // Wider beam for better visibility
+    private static final int LIFETIME = 15; // Slightly longer for visibility
     private static long nextId = 1;
 
     private long id;
@@ -95,24 +95,24 @@ public class Laser {
             }
         }
 
-        // Glow effect (outer layer - orange/yellow)
-        gc.setFill(Color.rgb(255, 100, 0, 0.3));
-        gc.fillRect(beamX - 4, beamY - 4, beamWidth + 8, beamHeight + 8);
+        // Outer glow (yellow/orange)
+        gc.setFill(Color.rgb(255, 200, 0, 0.5));
+        gc.fillRect(beamX - 6, beamY - 6, beamWidth + 12, beamHeight + 12);
 
-        // Mid layer (red)
-        gc.setFill(Color.rgb(255, 50, 0, 0.6));
-        gc.fillRect(beamX - 2, beamY - 2, beamWidth + 4, beamHeight + 4);
+        // Mid glow (orange)
+        gc.setFill(Color.rgb(255, 100, 0, 0.7));
+        gc.fillRect(beamX - 3, beamY - 3, beamWidth + 6, beamHeight + 6);
 
         // Core beam (bright red)
-        gc.setFill(Color.RED);
+        gc.setFill(Color.rgb(255, 0, 0));
         gc.fillRect(beamX, beamY, beamWidth, beamHeight);
 
-        // Inner core (white/yellow for intensity)
-        gc.setFill(Color.rgb(255, 255, 200, 0.8));
+        // Inner core (white hot center)
+        gc.setFill(Color.rgb(255, 255, 255, 0.9));
         double coreOffset = BEAM_WIDTH / 4.0;
         gc.fillRect(beamX + coreOffset, beamY + coreOffset,
-                   Math.max(0, beamWidth - coreOffset * 2),
-                   Math.max(0, beamHeight - coreOffset * 2));
+                   Math.max(1, beamWidth - coreOffset * 2),
+                   Math.max(1, beamHeight - coreOffset * 2));
     }
 
     /**

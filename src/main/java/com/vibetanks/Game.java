@@ -126,6 +126,9 @@ public class Game {
     private List<DancingGirl> victoryDancingGirls = new ArrayList<>();
     private boolean victoryDancingInitialized = false;
 
+    // Track actual connected players (for network games)
+    private int networkConnectedPlayers = 1;
+
     // Victory delay (5 seconds before showing victory screen)
     private boolean victoryConditionMet = false;
     private int victoryDelayTimer = 0;
@@ -698,23 +701,22 @@ public class Game {
                 // Check both flags and visual state (for client sync)
                 if (gameOver || victory || victoryDancingInitialized || dancingInitialized) {
                     returnToMenu();
-                } else if (isNetworkGame) {
-                    // Multiplayer: toggle per-player pause with shield
-                    int myPlayerIndex = network != null && !network.isHost()
-                        ? network.getPlayerNumber() - 1 : 0;
-                    if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
-                        playerPaused[myPlayerIndex] = !playerPaused[myPlayerIndex];
-                        Tank myTank = playerTanks.get(myPlayerIndex);
-                        if (playerPaused[myPlayerIndex]) {
-                            myTank.setPauseShield(true);
-                        } else {
-                            myTank.setPauseShield(false);
-                        }
-                    }
                 } else {
-                    // Single player: full game pause
+                    // Toggle pause menu for all game modes
                     paused = !paused;
                     pauseMenuSelection = 0;
+
+                    if (isNetworkGame) {
+                        // Multiplayer: also toggle shield
+                        int myPlayerIndex = network != null && !network.isHost()
+                            ? network.getPlayerNumber() - 1 : 0;
+                        if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
+                            playerPaused[myPlayerIndex] = paused;
+                            Tank myTank = playerTanks.get(myPlayerIndex);
+                            myTank.setPauseShield(paused);
+                        }
+                    }
+
                     // Stop sounds when paused
                     if (paused && soundManager != null) {
                         soundManager.stopGameplaySounds();
@@ -723,14 +725,22 @@ public class Game {
                 return;
             }
 
-            // Pause menu navigation (single player only)
-            if (paused && !isNetworkGame) {
+            // Pause menu navigation (all game modes)
+            if (paused) {
                 if (event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) {
                     pauseMenuSelection = (pauseMenuSelection + 1) % 2;
                 } else if (event.getCode() == KeyCode.ENTER) {
                     if (pauseMenuSelection == 0) {
                         // Resume
                         paused = false;
+                        if (isNetworkGame) {
+                            int myPlayerIndex = network != null && !network.isHost()
+                                ? network.getPlayerNumber() - 1 : 0;
+                            if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
+                                playerPaused[myPlayerIndex] = false;
+                                playerTanks.get(myPlayerIndex).setPauseShield(false);
+                            }
+                        }
                     } else {
                         // Exit
                         returnToMenu();
@@ -1238,7 +1248,22 @@ public class Game {
         System.out.println("UFO spawned! From " + (fromRight ? "right" : "left") + " side");
     }
 
+    // Debug: count updates per second
+    private int localUpdateCount = 0;
+    private long lastLocalUpdateTime = System.currentTimeMillis();
+
     private void update() {
+        // Debug: count local updates per second (only for non-network or host games)
+        if (!isNetworkGame || (network != null && network.isHost())) {
+            localUpdateCount++;
+            long now = System.currentTimeMillis();
+            if (now - lastLocalUpdateTime >= 5000) {
+                System.out.println("[DEBUG] Local game updates per second: " + (localUpdateCount / 5.0));
+                localUpdateCount = 0;
+                lastLocalUpdateTime = now;
+            }
+        }
+
         // Network clients must always receive game state to detect level/game transitions
         // even during victory/gameOver screens
         if (isNetworkGame && network != null && !network.isHost()) {
@@ -1527,12 +1552,12 @@ public class Game {
             } else if (player.isWaitingToRespawn()) {
                 // Player is waiting for respawn delay
                 player.updateRespawnTimer();
-            } else if (player.getLives() > 0) {
-                // Player died but has lives left - start respawn timer
-                soundManager.playExplosion();
+            } else if (player.getLives() > 1) {
+                // Player died but has lives left - decrement life and start respawn timer
+                player.setLives(player.getLives() - 1);
                 double respawnX = FIXED_START_POSITIONS[i][0];
                 double respawnY = FIXED_START_POSITIONS[i][1];
-                System.out.println("Player " + (i + 1) + " will respawn in 1 second at: " + respawnX + ", " + respawnY);
+                System.out.println("Player " + (i + 1) + " will respawn in 1 second at: " + respawnX + ", " + respawnY + " (lives left: " + player.getLives() + ")");
                 player.respawn(respawnX, respawnY); // This now starts the timer
             }
         }
@@ -2583,6 +2608,20 @@ public class Game {
         return "P" + (playerIndex + 1);
     }
 
+    /**
+     * Get the number of players to display in HUD and stats.
+     * For network games, use the server's connected player count.
+     * For local games, use playerTanks size.
+     */
+    private int getDisplayPlayerCount() {
+        if (isNetworkGame && network != null && !network.isHost()) {
+            // Client: use server's connected player count
+            return networkConnectedPlayers;
+        }
+        // Host or local game: use actual tank count
+        return playerTanks.size();
+    }
+
     // Get player name for a tank (used for kill logging)
     private String getPlayerNameForTank(Tank tank) {
         for (int i = 0; i < playerTanks.size(); i++) {
@@ -2683,8 +2722,9 @@ public class Game {
         gc.setFill(Color.WHITE);
         gc.fillText("Level: " + gameMap.getLevelNumber() + "  Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
 
-        // Display player info and power-ups - use playerTanks.size() directly
-        for (int i = 0; i < playerTanks.size(); i++) {
+        // Display player info and power-ups - only show connected players
+        int displayCount = getDisplayPlayerCount();
+        for (int i = 0; i < displayCount && i < playerTanks.size(); i++) {
             Tank player = playerTanks.get(i);
             String playerName = getPlayerDisplayName(i);
             double yOffset = 40 + i * 60;
@@ -2884,7 +2924,7 @@ public class Game {
     }
 
     private void renderEndGameStats(double startY) {
-        int activePlayers = playerTanks.size();
+        int activePlayers = getDisplayPlayerCount();
         if (activePlayers == 0) return;
 
         // Find winner (highest kills) - only if victory and more than 1 player
@@ -3279,6 +3319,9 @@ public class Game {
             state.hostEnemyShootSpeed
         );
 
+        // Track connected players from server
+        networkConnectedPlayers = state.connectedPlayers;
+
         // Dynamically add tanks if more players connected
         while (playerTanks.size() < state.connectedPlayers && playerTanks.size() < 4) {
             int playerNum = playerTanks.size() + 1;
@@ -3400,6 +3443,21 @@ public class Game {
         }
         // Update seen bullets - keep only current bullets to prevent memory leak
         seenBulletIds = currentBulletIds;
+
+        // Update lasers (recreate from state)
+        lasers.clear();
+        if (state.lasers != null) {
+            for (GameState.LaserData lData : state.lasers) {
+                Laser laser = new Laser(
+                    lData.startX, lData.startY,
+                    Direction.values()[lData.direction],
+                    lData.fromEnemy,
+                    lData.ownerPlayerNumber
+                );
+                laser.setId(lData.id);
+                lasers.add(laser);
+            }
+        }
 
         // Mark first state as received
         if (!firstStateReceived) {

@@ -1116,10 +1116,10 @@ public class Game {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                // Calculate delta time for frame-rate independent movement
-                double deltaTime = (lastUpdate == 0) ? 1.0 : (now - lastUpdate) / (double) FRAME_TIME;
-                // Clamp delta to avoid huge jumps (e.g., when window was minimized)
-                deltaTime = Math.min(deltaTime, 3.0);
+                // Skip frame if not enough time has passed (limit to ~60 FPS)
+                if (lastUpdate != 0 && now - lastUpdate < FRAME_TIME) {
+                    return;
+                }
                 lastUpdate = now;
 
                 update();
@@ -1474,7 +1474,7 @@ public class Game {
 
         // Handle player input (local or host) - pass freeze state
         boolean isPlayerFrozen = playerFreezeDuration > 0;
-        inputHandler.handleInput(gameMap, bullets, soundManager, allTanks, base, isPlayerFrozen);
+        inputHandler.handleInput(gameMap, bullets, lasers, soundManager, allTanks, base, isPlayerFrozen);
 
         // Update base protection from SHOVEL power-up
         if (baseProtectionDuration > 0) {

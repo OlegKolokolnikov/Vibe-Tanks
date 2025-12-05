@@ -5,6 +5,7 @@ import com.vibetanks.core.Base;
 import com.vibetanks.core.Bullet;
 import com.vibetanks.core.Direction;
 import com.vibetanks.core.GameMap;
+import com.vibetanks.core.Laser;
 import com.vibetanks.core.Tank;
 import com.vibetanks.network.PlayerInput;
 import javafx.scene.input.KeyCode;
@@ -60,18 +61,18 @@ public class InputHandler {
         pane.requestFocus();
     }
 
-    public void handleInput(GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
-        handleInput(map, bullets, soundManager, allTanks, base, false);
+    public void handleInput(GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base) {
+        handleInput(map, bullets, lasers, soundManager, allTanks, base, false);
     }
 
-    public void handleInput(GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
+    public void handleInput(GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
         // Handle single local player with arrow keys + space
         if (playerTanks.size() >= 1) {
-            handlePlayerInput(playerTanks.get(0), map, bullets, soundManager, allTanks, base, movementFrozen);
+            handlePlayerInput(playerTanks.get(0), map, bullets, lasers, soundManager, allTanks, base, movementFrozen);
         }
     }
 
-    private void handlePlayerInput(Tank player, GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
+    private void handlePlayerInput(Tank player, GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
         if (!player.isAlive()) return;
 
         boolean isMoving = false;
@@ -95,7 +96,15 @@ public class InputHandler {
 
         // Shooting with space (allowed even when frozen)
         if (pressedKeys.contains(KeyCode.SPACE)) {
-            player.shoot(bullets, soundManager);
+            // Use laser if tank has laser power-up, otherwise use normal bullets
+            if (player.hasLaser()) {
+                Laser laser = player.shootLaser(soundManager);
+                if (laser != null) {
+                    lasers.add(laser);
+                }
+            } else {
+                player.shoot(bullets, soundManager);
+            }
         }
     }
 

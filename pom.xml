@@ -117,7 +117,7 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>3.1.0</version>
                         <configuration>
-                            <mainClass>com.vibetanks.DedicatedServer</mainClass>
+                            <mainClass>com.vibetanks.server.DedicatedServer</mainClass>
                         </configuration>
                     </plugin>
                 </plugins>

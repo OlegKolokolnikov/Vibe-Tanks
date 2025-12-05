@@ -57,22 +57,61 @@ A classic tank battle game using JavaFX.
 - **ENTER**: Take life from teammate (when dead) / Next level / Restart
 - **ESC**: Pause (single player) / Pause with shield (multiplayer) / Return to menu
 
-## How to Run
+## Installation
 
-### Prerequisites
-- Java 17 or higher
+### Option 1: Download Pre-built Executable (Recommended)
+
+Download the latest release for your platform from the [Releases](https://github.com/OlegKolokolnikov/Vibe-Tanks/releases) page.
+
+- **Windows**: Download and extract `VibeTanks-Windows.zip`, then run `VibeTanks.exe`
+- **Linux**: Download and extract `VibeTanks-Linux.tar.gz`, then run `./VibeTanks`
+- **macOS**: Download `VibeTanks-macOS.zip`, extract, and open `VibeTanks.app`
+
+No Java installation required - everything is bundled!
+
+### Option 2: Build Native Executable from Source
+
+Build a native executable that doesn't require Java to be installed:
+
+#### Prerequisites
+- JDK 17 or higher (with jpackage tool)
 - Maven
 
-### Running the game
+#### Windows
+```bash
+build-windows.bat
+```
+After building, find the executable at `target\dist\VibeTanks\VibeTanks.exe` or use the `VibeTanks.lnk` shortcut in the project root.
+
+#### Linux
+```bash
+chmod +x build-linux.sh
+./build-linux.sh
+```
+After building, run `./VibeTanks` from the project root (symlink) or `./target/dist/VibeTanks/bin/VibeTanks`.
+
+#### macOS
+```bash
+chmod +x build-mac.sh
+./build-mac.sh
+```
+After building, open `VibeTanks.app` from the project root (symlink) or `target/dist/VibeTanks.app`.
+
+### Option 3: Run with Maven (Development)
+
+Run directly using Maven (requires Java 17+ and Maven):
 
 ```bash
 mvn clean javafx:run
 ```
 
-### Building the project
+### Option 4: Run the JAR file
+
+Build and run the shaded JAR (requires Java 17+):
 
 ```bash
-mvn clean package
+mvn clean package -DskipTests
+java -jar target/vibe-tanks-1.0-SNAPSHOT-shaded.jar
 ```
 
 ## Sound Effects

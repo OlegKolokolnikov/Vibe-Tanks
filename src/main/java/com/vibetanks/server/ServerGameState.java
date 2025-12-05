@@ -577,9 +577,25 @@ public class ServerGameState {
 
     private void spawnPowerUp() {
         Random random = new Random();
-        double x = (1 + random.nextInt(24)) * TILE_SIZE;
-        double y = (1 + random.nextInt(22)) * TILE_SIZE;
-        powerUps.add(new PowerUp(x, y));
+        int maxAttempts = 100;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            // Random position within playable area (avoiding borders)
+            int col = 2 + random.nextInt(22); // 2 to 23 (avoid border at 0,1 and 24,25)
+            int row = 2 + random.nextInt(22);
+
+            // Check if position is clear (only spawn on empty tiles)
+            GameMap.TileType tile = gameMap.getTile(row, col);
+            if (tile == GameMap.TileType.EMPTY) {
+                double x = col * TILE_SIZE;
+                double y = row * TILE_SIZE;
+                powerUps.add(new PowerUp(x, y));
+                return;
+            }
+        }
+
+        // Fallback to center if no valid position found
+        powerUps.add(new PowerUp(13 * TILE_SIZE, 13 * TILE_SIZE));
     }
 
     private void notifyBulletDestroyed(Bullet bullet) {

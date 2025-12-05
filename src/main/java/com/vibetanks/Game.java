@@ -74,6 +74,7 @@ public class Game {
     private int prevEnemyCount = 0;
     private Set<Long> seenBulletIds = new HashSet<>(); // Track bullet IDs we've already played sounds for
     private boolean firstStateReceived = false; // Skip sounds on first state to avoid burst
+    private int respawnSyncFrames = 0; // Frames to wait after respawn before sending position
 
     // SHOVEL power-up - base protection with steel
     private int baseProtectionDuration = 0;
@@ -1286,12 +1287,16 @@ public class Game {
 
                 // Send position and nickname to host (only if alive and we've received initial state from host)
                 // This prevents sending our local init position before receiving the host's authoritative position
-                if (myTank.isAlive() && firstStateReceived) {
+                // Also wait a few frames after respawn to ensure we have the correct position from server
+                if (respawnSyncFrames > 0) {
+                    respawnSyncFrames--;
+                }
+                if (myTank.isAlive() && firstStateReceived && respawnSyncFrames == 0) {
                     input.posX = myTank.getX();
                     input.posY = myTank.getY();
                     input.direction = myTank.getDirection().ordinal();
                 } else {
-                    // When dead or not yet synced, send invalid position so host knows not to use it
+                    // When dead, not yet synced, or just respawned - send invalid position so host knows not to use it
                     input.posX = -1;
                     input.posY = -1;
                     input.direction = 0;
@@ -3291,8 +3296,10 @@ public class Game {
 
             if (isFirstSync) {
                 System.out.println("Client first sync - accepting host position: " + pData.x + ", " + pData.y);
+                respawnSyncFrames = 5; // Wait a few frames before sending position
             } else if (justRespawned) {
                 System.out.println("Client respawning at host position: " + pData.x + ", " + pData.y);
+                respawnSyncFrames = 5; // Wait a few frames before sending position
             }
 
             // Play player death sound when a player dies

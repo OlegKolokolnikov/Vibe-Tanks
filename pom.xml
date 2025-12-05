@@ -8,12 +8,15 @@
     <groupId>com.vibetanks</groupId>
     <artifactId>vibe-tanks</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>21.0.1</javafx.version>
+        <app.name>VibeTanks</app.name>
+        <app.version>1.0.0</app.version>
     </properties>
 
     <dependencies>
@@ -32,6 +35,18 @@
 
     <build>
         <plugins>
+            <!-- Compiler plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
+            </plugin>
+
+            <!-- JavaFX plugin for running -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
@@ -40,6 +55,171 @@
                     <mainClass>com.vibetanks.Main</mainClass>
                 </configuration>
             </plugin>
+
+            <!-- Shade plugin to create fat JAR with all dependencies -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>shaded</shadedClassifierName>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.vibetanks.Launcher</mainClass>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- JAR plugin configuration -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.vibetanks.Launcher</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Windows native build profile -->
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.panteleyev</groupId>
+                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <version>1.6.5</version>
+                        <configuration>
+                            <name>${app.name}</name>
+                            <appVersion>${app.version}</appVersion>
+                            <vendor>VibeTanks</vendor>
+                            <destination>target/dist</destination>
+                            <input>target/jpackage-input</input>
+                            <mainJar>vibe-tanks-1.0-SNAPSHOT-shaded.jar</mainJar>
+                            <mainClass>com.vibetanks.Launcher</mainClass>
+                            <type>APP_IMAGE</type>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Windows installer profile (requires WiX Toolset) -->
+        <profile>
+            <id>windows-installer</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.panteleyev</groupId>
+                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <version>1.6.5</version>
+                        <configuration>
+                            <name>${app.name}</name>
+                            <appVersion>${app.version}</appVersion>
+                            <vendor>VibeTanks</vendor>
+                            <destination>target/dist</destination>
+                            <input>target/jpackage-input</input>
+                            <mainJar>vibe-tanks-1.0-SNAPSHOT-shaded.jar</mainJar>
+                            <mainClass>com.vibetanks.Launcher</mainClass>
+                            <type>EXE</type>
+                            <winDirChooser>true</winDirChooser>
+                            <winShortcut>true</winShortcut>
+                            <winMenu>true</winMenu>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Linux native build profile -->
+        <profile>
+            <id>linux</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>Linux</name>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.panteleyev</groupId>
+                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <version>1.6.5</version>
+                        <configuration>
+                            <name>${app.name}</name>
+                            <appVersion>${app.version}</appVersion>
+                            <vendor>VibeTanks</vendor>
+                            <destination>target/dist</destination>
+                            <input>target/jpackage-input</input>
+                            <mainJar>vibe-tanks-1.0-SNAPSHOT-shaded.jar</mainJar>
+                            <mainClass>com.vibetanks.Launcher</mainClass>
+                            <type>APP_IMAGE</type>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- macOS native build profile -->
+        <profile>
+            <id>mac</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.panteleyev</groupId>
+                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <version>1.6.5</version>
+                        <configuration>
+                            <name>${app.name}</name>
+                            <appVersion>${app.version}</appVersion>
+                            <vendor>VibeTanks</vendor>
+                            <destination>target/dist</destination>
+                            <input>target/jpackage-input</input>
+                            <mainJar>vibe-tanks-1.0-SNAPSHOT-shaded.jar</mainJar>
+                            <mainClass>com.vibetanks.Launcher</mainClass>
+                            <type>APP_IMAGE</type>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

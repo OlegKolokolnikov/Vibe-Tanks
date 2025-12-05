@@ -51,14 +51,33 @@ A classic tank battle game using JavaFX.
 
 ### Dedicated Server (Cloud Hosting)
 Run a headless server that players can connect to:
+
+#### Using Maven (Development)
 ```bash
-java -jar vibe-tanks-1.0-SNAPSHOT-shaded.jar --server
-java -jar vibe-tanks-1.0-SNAPSHOT-shaded.jar --server 12345  # Custom port
+mvn exec:java -Pserver                    # Default port 25565
+mvn exec:java -Pserver -Dexec.args=12345  # Custom port
 ```
+
+#### Using compiled classes
+```bash
+mvn clean compile -DskipTests
+java -cp target/classes com.vibetanks.DedicatedServer        # Default port
+java -cp target/classes com.vibetanks.DedicatedServer 12345  # Custom port
+```
+
+#### Server Features
 - Game starts automatically when first player connects
 - Up to 4 players can join (including mid-game)
 - Server runs at 60 FPS without graphics
+- Resets to waiting state when all players disconnect
 - Default port: 25565
+
+#### Connecting to Server
+1. Start the dedicated server
+2. Launch the game client: `mvn javafx:run`
+3. Click "JOIN GAME (ONLINE)"
+4. Enter `localhost` (if local) or server IP address
+5. Play!
 
 ## Controls
 

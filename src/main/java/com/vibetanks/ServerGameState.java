@@ -90,8 +90,14 @@ public class ServerGameState {
         enemyTanks = new ArrayList<>();
         enemySpawner = new EnemySpawner(TOTAL_ENEMIES, MAX_ENEMIES_ON_SCREEN, gameMap);
 
+        // Reset game state
         gameOver = false;
         victory = false;
+        enemyFreezeDuration = 0;
+        playerFreezeDuration = 0;
+        enemyTeamSpeedBoostDuration = 0;
+        enemyWithPermanentSpeedBoost = null;
+        baseProtectionDuration = 0;
 
         System.out.println("[*] Game initialized with " + playerCount + " player(s)");
     }
@@ -567,6 +573,29 @@ public class ServerGameState {
                 powerUp.getType().ordinal()
             ));
         }
+
+        // Map tiles (for destroyed walls)
+        state.mapTiles = gameMap.exportTiles();
+
+        // Burning tiles for fire animation
+        java.util.Map<Integer, Integer> burning = gameMap.exportBurningTiles();
+        for (java.util.Map.Entry<Integer, Integer> entry : burning.entrySet()) {
+            int key = entry.getKey();
+            int row = key / 1000;
+            int col = key % 1000;
+            state.burningTiles.add(new GameState.BurningTileData(row, col, entry.getValue()));
+        }
+
+        // Base state
+        state.baseShowFlag = base.isShowingFlag();
+        state.baseFlagHeight = base.getFlagHeight();
+        state.baseShowVictoryFlag = base.isShowingVictoryFlag();
+        state.baseVictoryFlagHeight = base.getVictoryFlagHeight();
+
+        // Freeze durations
+        state.enemyFreezeDuration = enemyFreezeDuration;
+        state.playerFreezeDuration = playerFreezeDuration;
+        state.enemyTeamSpeedBoostDuration = enemyTeamSpeedBoostDuration;
 
         return state;
     }

@@ -1238,13 +1238,14 @@ public class Game {
                     myTank.shoot(bullets, soundManager);
                 }
 
-                // Send position and nickname to host (only if alive to avoid overwriting respawn position)
-                if (myTank.isAlive()) {
+                // Send position and nickname to host (only if alive and we've received initial state from host)
+                // This prevents sending our local init position before receiving the host's authoritative position
+                if (myTank.isAlive() && firstStateReceived) {
                     input.posX = myTank.getX();
                     input.posY = myTank.getY();
                     input.direction = myTank.getDirection().ordinal();
                 } else {
-                    // When dead, send invalid position so host knows not to use it
+                    // When dead or not yet synced, send invalid position so host knows not to use it
                     input.posX = -1;
                     input.posY = -1;
                     input.direction = 0;
@@ -3082,13 +3083,24 @@ public class Game {
             PlayerData pData = state.players[i];
 
             // Skip position update for local player (client-authoritative movement)
-            // EXCEPT when respawning (was dead, now alive) - accept respawn position from host
+            // EXCEPT when:
+            // 1. First state received - need to sync initial position from host
+            // 2. Respawning (was dead, now alive) - accept respawn position from host
             boolean isLocalPlayer = (i == myPlayerIndex);
+            boolean isFirstSync = isLocalPlayer && !firstStateReceived;
             boolean justRespawned = isLocalPlayer && !tank.isAlive() && pData.alive;
-            boolean skipPosition = isLocalPlayer && !justRespawned;
+            boolean justDied = tank.isAlive() && !pData.alive;
+            boolean skipPosition = isLocalPlayer && !isFirstSync && !justRespawned;
 
-            if (justRespawned) {
+            if (isFirstSync) {
+                System.out.println("Client first sync - accepting host position: " + pData.x + ", " + pData.y);
+            } else if (justRespawned) {
                 System.out.println("Client respawning at host position: " + pData.x + ", " + pData.y);
+            }
+
+            // Play player death sound when a player dies
+            if (justDied && firstStateReceived) {
+                soundManager.playPlayerDeath();
             }
 
             pData.applyToTank(tank, skipPosition);

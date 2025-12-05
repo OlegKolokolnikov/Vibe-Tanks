@@ -1,6 +1,5 @@
-package com.vibetanks;
+package com.vibetanks.network;
 
-import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.prefs.Preferences;

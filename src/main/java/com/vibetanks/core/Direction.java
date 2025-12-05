@@ -1,4 +1,4 @@
-package com.vibetanks;
+package com.vibetanks.core;
 
 public enum Direction {
     UP(0, -1),

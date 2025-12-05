@@ -1,4 +1,4 @@
-package com.vibetanks;
+package com.vibetanks.core;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;

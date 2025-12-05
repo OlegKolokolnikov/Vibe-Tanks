@@ -1,4 +1,4 @@
-package com.vibetanks;
+package com.vibetanks.audio;
 
 import javax.sound.sampled.*;
 import java.io.File;
@@ -16,6 +16,7 @@ public class SoundManager {
     private byte[] baseDestroyedSoundData;
     private byte[] explanationMusicData;
     private byte[] treeBurnSoundData;
+    private byte[] laserSoundData;
 
     private AudioFormat audioFormat;
     private ExecutorService soundExecutor;
@@ -57,11 +58,13 @@ public class SoundManager {
             baseDestroyedSoundData = loadSoundData("/sounds/base_destroyed.wav");
             explanationMusicData = loadSoundData("/sounds/explanation_music.wav");
             treeBurnSoundData = loadSoundData("/sounds/tree_burn.wav");
+            laserSoundData = loadSoundData("/sounds/laser.wav");
 
             if (shootSoundData == null || explosionSoundData == null ||
                 introSoundData == null || sadSoundData == null ||
                 playerDeathSoundData == null || baseDestroyedSoundData == null ||
-                explanationMusicData == null || treeBurnSoundData == null) {
+                explanationMusicData == null || treeBurnSoundData == null ||
+                laserSoundData == null) {
                 System.out.println("Some sounds could not be loaded. Game will run without sound effects.");
             } else {
                 System.out.println("All sounds loaded successfully!");
@@ -149,10 +152,11 @@ public class SoundManager {
         File baseDestroyedFile = new File("src/main/resources/sounds/base_destroyed.wav");
         File explanationMusicFile = new File("src/main/resources/sounds/explanation_music.wav");
         File treeBurnFile = new File("src/main/resources/sounds/tree_burn.wav");
+        File laserFile = new File("src/main/resources/sounds/laser.wav");
 
         if (!shootFile.exists() || !explosionFile.exists() || !introFile.exists() || !sadFile.exists() ||
             !playerDeathFile.exists() || !baseDestroyedFile.exists() || !explanationMusicFile.exists() ||
-            !treeBurnFile.exists()) {
+            !treeBurnFile.exists() || !laserFile.exists()) {
             System.out.println("Generating sound files...");
             SoundGenerator.generateAllSounds();
         }
@@ -257,6 +261,10 @@ public class SoundManager {
 
     public void playTreeBurn() {
         playSoundNew(treeBurnSoundData);
+    }
+
+    public void playLaser() {
+        playSoundNew(laserSoundData);
     }
 
     public void playExplanationMusic() {

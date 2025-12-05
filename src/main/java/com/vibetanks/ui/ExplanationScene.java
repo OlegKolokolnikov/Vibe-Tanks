@@ -1,5 +1,7 @@
-package com.vibetanks;
+package com.vibetanks.ui;
 
+import com.vibetanks.audio.SoundManager;
+import com.vibetanks.core.PowerUp;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;

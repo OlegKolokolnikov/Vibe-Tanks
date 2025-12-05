@@ -1,5 +1,6 @@
-package com.vibetanks;
+package com.vibetanks.core;
 
+import com.vibetanks.audio.SoundManager;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
@@ -502,7 +503,7 @@ public class Tank {
 
         // Set fast cooldown for laser
         shootCooldown = LASER_COOLDOWN;
-        soundManager.playShoot(); // TODO: Could add a different laser sound
+        soundManager.playLaser();
 
         return new Laser(laserX, laserY, direction, !isPlayer, isPlayer ? playerNumber : 0);
     }
@@ -1030,6 +1031,15 @@ public class Tank {
     // Set respawn timer (for network sync)
     public void setRespawnTimer(int timer) {
         this.respawnTimer = timer;
+    }
+
+    // Get pending respawn position (for network sync)
+    public double getPendingRespawnX() {
+        return pendingRespawnX;
+    }
+
+    public double getPendingRespawnY() {
+        return pendingRespawnY;
     }
 
     // Set pending respawn position (for network sync)

@@ -1,4 +1,8 @@
-package com.vibetanks;
+package com.vibetanks.server;
+
+import com.vibetanks.core.GameSettings;
+import com.vibetanks.network.GameState;
+import com.vibetanks.network.PlayerInput;
 
 import java.io.*;
 import java.net.*;
@@ -9,7 +13,7 @@ import java.util.concurrent.*;
  * Dedicated server for VibeTanks - runs headless without graphics.
  * Manages game state and synchronizes all connected players.
  *
- * Usage: java -cp <classpath> com.vibetanks.DedicatedServer [port]
+ * Usage: java -cp <classpath> com.vibetanks.server.DedicatedServer [port]
  */
 public class DedicatedServer {
     private static final int DEFAULT_PORT = 25565;
@@ -344,7 +348,7 @@ public class DedicatedServer {
                 port = Integer.parseInt(args[0]);
             } catch (NumberFormatException e) {
                 System.err.println("Invalid port number: " + args[0]);
-                System.err.println("Usage: java -cp <classpath> com.vibetanks.DedicatedServer [port]");
+                System.err.println("Usage: java -cp <classpath> com.vibetanks.server.DedicatedServer [port]");
                 System.exit(1);
             }
         }

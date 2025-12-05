@@ -1,5 +1,13 @@
 package com.vibetanks;
 
+import com.vibetanks.audio.SoundManager;
+import com.vibetanks.core.*;
+import com.vibetanks.network.GameState;
+import com.vibetanks.network.NetworkManager;
+import com.vibetanks.network.PlayerData;
+import com.vibetanks.network.PlayerInput;
+import com.vibetanks.ui.InputHandler;
+import com.vibetanks.ui.MenuScene;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -77,6 +85,8 @@ public class Game {
     // For client sound effects (track previous state to detect changes)
     private int prevEnemyCount = 0;
     private Set<Long> seenBulletIds = new HashSet<>(); // Track bullet IDs we've already played sounds for
+    private Set<Long> seenLaserIds = new HashSet<>(); // Track laser IDs we've already played sounds for
+    private Set<Integer> seenBurningTileKeys = new HashSet<>(); // Track burning tile keys for sound
     private boolean firstStateReceived = false; // Skip sounds on first state to avoid burst
     private int respawnSyncFrames = 0; // Frames to wait after respawn before sending position
 
@@ -3219,6 +3229,22 @@ public class Game {
             }
         }
 
+        // Lasers
+        for (Laser laser : lasers) {
+            if (laser != null) {
+                state.lasers.add(new GameState.LaserData(
+                    laser.getId(),
+                    laser.getStartX(),
+                    laser.getStartY(),
+                    laser.getDirection().ordinal(),
+                    laser.isFromEnemy(),
+                    laser.getOwnerPlayerNumber(),
+                    laser.getLifetime(),
+                    laser.getLength()
+                ));
+            }
+        }
+
         // Game state
         state.gameOver = gameOver;
         state.victory = victory;
@@ -3445,9 +3471,16 @@ public class Game {
         seenBulletIds = currentBulletIds;
 
         // Update lasers (recreate from state)
+        Set<Long> currentLaserIds = new HashSet<>();
         lasers.clear();
         if (state.lasers != null) {
             for (GameState.LaserData lData : state.lasers) {
+                currentLaserIds.add(lData.id);
+                // Play laser sound for lasers we haven't seen before
+                // Skip on first state to avoid sound burst when joining mid-game
+                if (firstStateReceived && !seenLaserIds.contains(lData.id)) {
+                    soundManager.playLaser();
+                }
                 Laser laser = new Laser(
                     lData.startX, lData.startY,
                     Direction.values()[lData.direction],
@@ -3458,6 +3491,8 @@ public class Game {
                 lasers.add(laser);
             }
         }
+        // Update seen lasers - keep only current lasers to prevent memory leak
+        seenLaserIds = currentLaserIds;
 
         // Mark first state as received
         if (!firstStateReceived) {
@@ -3481,10 +3516,18 @@ public class Game {
 
         // Sync burning tiles for fire animation
         if (state.burningTiles != null) {
+            Set<Integer> currentBurningKeys = new HashSet<>();
             List<int[]> burningData = new ArrayList<>();
             for (GameState.BurningTileData bt : state.burningTiles) {
+                int key = bt.row * 1000 + bt.col;
+                currentBurningKeys.add(key);
+                // Play tree burn sound for new burning tiles
+                if (firstStateReceived && !seenBurningTileKeys.contains(key)) {
+                    soundManager.playTreeBurn();
+                }
                 burningData.add(new int[]{bt.row, bt.col, bt.framesRemaining});
             }
+            seenBurningTileKeys = currentBurningKeys;
             gameMap.setBurningTiles(burningData);
         }
 

@@ -1,5 +1,7 @@
 package com.vibetanks;
 
+import com.vibetanks.server.DedicatedServer;
+
 /**
  * Launcher class for the application.
  * This is needed because JavaFX applications cannot be launched directly

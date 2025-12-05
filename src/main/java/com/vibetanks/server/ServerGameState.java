@@ -1,4 +1,9 @@
-package com.vibetanks;
+package com.vibetanks.server;
+
+import com.vibetanks.audio.SoundManager;
+import com.vibetanks.core.*;
+import com.vibetanks.network.GameState;
+import com.vibetanks.network.PlayerInput;
 
 import java.util.*;
 
@@ -284,8 +289,9 @@ public class ServerGameState {
         }
 
         // Update enemy AI
-        if (enemyFreezeDuration <= 0) {
-            for (Tank enemy : enemyTanks) {
+        for (Tank enemy : enemyTanks) {
+            // Boss is immune to freeze, other enemies check freeze duration
+            if (enemyFreezeDuration <= 0 || enemy.getEnemyType() == Tank.EnemyType.BOSS) {
                 enemy.updateAI(gameMap, bullets, allTanks, base, soundManager);
             }
         }
@@ -295,6 +301,9 @@ public class ServerGameState {
 
         // Update lasers
         updateLasers();
+
+        // Update map (burning tiles, etc.)
+        gameMap.update();
 
         // Update power-ups
         updatePowerUps();
@@ -332,8 +341,8 @@ public class ServerGameState {
             Bullet bullet = iter.next();
             bullet.update();
 
-            // Check map collision
-            if (gameMap.checkBulletCollision(bullet)) {
+            // Check map collision (pass soundManager to play tree burn sound)
+            if (gameMap.checkBulletCollision(bullet, soundManager)) {
                 notifyBulletDestroyed(bullet);
                 iter.remove();
                 continue;

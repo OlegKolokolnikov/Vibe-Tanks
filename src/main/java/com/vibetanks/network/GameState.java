@@ -1,4 +1,4 @@
-package com.vibetanks;
+package com.vibetanks.network;
 
 import java.io.Serializable;
 import java.util.ArrayList;

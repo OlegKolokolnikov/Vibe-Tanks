@@ -1,5 +1,11 @@
-package com.vibetanks;
+package com.vibetanks.ui;
 
+import com.vibetanks.Game;
+import com.vibetanks.audio.SoundManager;
+import com.vibetanks.core.GameSettings;
+import com.vibetanks.core.NicknameManager;
+import com.vibetanks.network.IPHistoryManager;
+import com.vibetanks.network.NetworkManager;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,7 +19,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import java.util.List;
-import java.util.Optional;
 
 public class MenuScene {
     private Scene scene;

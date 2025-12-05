@@ -1,5 +1,10 @@
-package com.vibetanks;
+package com.vibetanks.ui;
 
+import com.vibetanks.Game;
+import com.vibetanks.core.GameMap;
+import com.vibetanks.core.LevelData;
+import com.vibetanks.core.LevelManager;
+import com.vibetanks.core.NicknameManager;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;

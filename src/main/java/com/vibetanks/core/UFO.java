@@ -1,4 +1,4 @@
-package com.vibetanks;
+package com.vibetanks.core;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -65,7 +65,7 @@ public class UFO {
         if (!movingRight && dx > -0.3) dx = -0.5;
     }
 
-    public void update(List<Bullet> bullets, int mapWidth, int mapHeight, SoundManager soundManager) {
+    public void update(List<Bullet> bullets, int mapWidth, int mapHeight, com.vibetanks.audio.SoundManager soundManager) {
         if (!alive) return;
 
         lifetime--;
@@ -117,7 +117,7 @@ public class UFO {
         lightFrame = (int)(System.currentTimeMillis() / 100) % 8;
     }
 
-    private void shoot(List<Bullet> bullets, SoundManager soundManager) {
+    private void shoot(List<Bullet> bullets, com.vibetanks.audio.SoundManager soundManager) {
         // Shoot downward
         double bulletX = x + SIZE / 2.0 - 4;
         double bulletY = y + SIZE;

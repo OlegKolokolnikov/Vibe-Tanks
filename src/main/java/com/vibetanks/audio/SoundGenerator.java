@@ -1,4 +1,4 @@
-package com.vibetanks;
+package com.vibetanks.audio;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
@@ -42,6 +42,9 @@ public class SoundGenerator {
 
             // Generate tree burn sound - crackling fire
             generateTreeBurnSound("src/main/resources/sounds/tree_burn.wav");
+
+            // Generate laser sound - sci-fi zap
+            generateLaserSound("src/main/resources/sounds/laser.wav");
 
             System.out.println("Sound files generated successfully!");
         } catch (Exception e) {
@@ -477,6 +480,73 @@ public class SoundGenerator {
 
             // Soft clip
             sample = Math.tanh(sample);
+
+            short shortSample = (short) (sample * Short.MAX_VALUE);
+            buffer[i * 2] = (byte) (shortSample & 0xFF);
+            buffer[i * 2 + 1] = (byte) ((shortSample >> 8) & 0xFF);
+        }
+
+        saveWav(filename, buffer);
+    }
+
+    private static void generateLaserSound(String filename) throws Exception {
+        // Sci-fi laser beam sound - electronic zap with harmonics
+        double duration = 0.2;
+        int numSamples = (int) (duration * SAMPLE_RATE);
+        byte[] buffer = new byte[numSamples * 2];
+
+        for (int i = 0; i < numSamples; i++) {
+            double t = (double) i / SAMPLE_RATE;
+            double tNorm = (double) i / numSamples;
+
+            double sample = 0;
+
+            // Main laser frequency - high pitched sweep down then up
+            double mainFreq;
+            if (tNorm < 0.3) {
+                // Quick sweep down
+                mainFreq = 2000 - tNorm * 2000;
+            } else {
+                // Hold and slight rise
+                mainFreq = 1400 + (tNorm - 0.3) * 800;
+            }
+
+            // Add vibrato for that classic laser wobble
+            double vibrato = 1.0 + 0.05 * Math.sin(2.0 * Math.PI * t * 40);
+            mainFreq *= vibrato;
+
+            // Saw wave for harsh laser sound
+            double phase = (t * mainFreq) % 1.0;
+            double saw = 2.0 * phase - 1.0;
+
+            // Square wave harmonic
+            double square = Math.sin(2.0 * Math.PI * t * mainFreq * 0.5) > 0 ? 1.0 : -1.0;
+
+            // Mix saw and square for rich laser tone
+            sample = saw * 0.5 + square * 0.3;
+
+            // Add high frequency sizzle
+            sample += Math.sin(2.0 * Math.PI * t * mainFreq * 2) * 0.15;
+
+            // Add some noise for energy feel
+            if (tNorm < 0.1) {
+                sample += (Math.random() * 2 - 1) * 0.2 * (1 - tNorm * 10);
+            }
+
+            // Envelope - quick attack, sustain, quick release
+            double envelope;
+            if (tNorm < 0.05) {
+                envelope = tNorm / 0.05; // Quick attack
+            } else if (tNorm > 0.85) {
+                envelope = (1.0 - tNorm) / 0.15; // Quick release
+            } else {
+                envelope = 1.0; // Sustain
+            }
+
+            sample *= envelope * 0.5;
+
+            // Soft clip for warmth
+            sample = Math.tanh(sample * 1.5);
 
             short shortSample = (short) (sample * Short.MAX_VALUE);
             buffer[i * 2] = (byte) (shortSample & 0xFF);

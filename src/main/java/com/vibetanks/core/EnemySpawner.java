@@ -1,4 +1,4 @@
-package com.vibetanks;
+package com.vibetanks.core;
 
 import java.util.List;
 import java.util.Random;

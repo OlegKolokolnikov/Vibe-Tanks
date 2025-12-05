@@ -1,4 +1,7 @@
-package com.vibetanks;
+package com.vibetanks.network;
+
+import com.vibetanks.core.Direction;
+import com.vibetanks.core.Tank;
 
 import java.io.Serializable;
 
@@ -62,6 +65,8 @@ public class PlayerData implements Serializable {
         this.lives = tank.getLives();
         this.alive = tank.isAlive();
         this.respawnTimer = tank.getRespawnTimer();
+        this.pendingRespawnX = tank.getPendingRespawnX();
+        this.pendingRespawnY = tank.getPendingRespawnY();
         this.hasShield = tank.hasShield();
         this.shieldDuration = tank.getShieldDuration();
         this.hasPauseShield = tank.hasPauseShield();
@@ -87,7 +92,12 @@ public class PlayerData implements Serializable {
     public void applyToTank(Tank tank, boolean skipPosition) {
         tank.setLives(this.lives);
         tank.setAlive(this.alive);
-        tank.setRespawnTimer(this.respawnTimer);
+        // Sync respawn state including pending position
+        if (this.respawnTimer > 0) {
+            tank.setPendingRespawn(this.pendingRespawnX, this.pendingRespawnY, this.respawnTimer);
+        } else {
+            tank.setRespawnTimer(0);
+        }
         if (this.alive && !skipPosition) {
             tank.setPosition(this.x, this.y);
             tank.setDirection(Direction.values()[this.direction]);

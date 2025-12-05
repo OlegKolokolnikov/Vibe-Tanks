@@ -1,4 +1,4 @@
-package com.vibetanks;
+package com.vibetanks.core;
 
 import java.io.*;
 import java.nio.file.*;

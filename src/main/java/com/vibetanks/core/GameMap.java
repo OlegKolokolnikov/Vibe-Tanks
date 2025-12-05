@@ -1,4 +1,4 @@
-package com.vibetanks;
+package com.vibetanks.core;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -860,7 +860,7 @@ public class GameMap {
         return checkBulletCollision(bullet, null);
     }
 
-    public boolean checkBulletCollision(Bullet bullet, SoundManager soundManager) {
+    public boolean checkBulletCollision(Bullet bullet, com.vibetanks.audio.SoundManager soundManager) {
         int col = (int) (bullet.getX() + bullet.getSize() / 2) / TILE_SIZE;
         int row = (int) (bullet.getY() + bullet.getSize() / 2) / TILE_SIZE;
 

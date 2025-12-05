@@ -1,5 +1,12 @@
-package com.vibetanks;
+package com.vibetanks.ui;
 
+import com.vibetanks.audio.SoundManager;
+import com.vibetanks.core.Base;
+import com.vibetanks.core.Bullet;
+import com.vibetanks.core.Direction;
+import com.vibetanks.core.GameMap;
+import com.vibetanks.core.Tank;
+import com.vibetanks.network.PlayerInput;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 

@@ -1,5 +1,6 @@
 package com.vibetanks;
 
+import com.vibetanks.ui.MenuScene;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;

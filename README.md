@@ -41,13 +41,24 @@ A classic tank battle game using JavaFX.
 4. **Press ENTER**: Continue to next level after victory, or restart after game over
 5. **Return to Menu**: Press **ESC** to return to menu
 
-### Online Multiplayer (2 Players)
+### Online Multiplayer (2-4 Players)
 1. **Host**: One player clicks "HOST GAME (ONLINE)" and shares their IP address
-2. **Join**: The other player clicks "JOIN GAME (ONLINE)" and enters the host's IP
+2. **Join**: Other players click "JOIN GAME (ONLINE)" and enter the host's IP
 3. **Team Up**: Work together to defend the base from enemy tanks
 4. **Per-Player Pause**: Press ESC to pause with shield (game continues for others)
 5. **Share Lives**: Press ENTER to take a life from a teammate when dead
-6. **Have Fun**: Coordinate with your teammate to survive!
+6. **Have Fun**: Coordinate with your teammates to survive!
+
+### Dedicated Server (Cloud Hosting)
+Run a headless server that players can connect to:
+```bash
+java -jar vibe-tanks-1.0-SNAPSHOT-shaded.jar --server
+java -jar vibe-tanks-1.0-SNAPSHOT-shaded.jar --server 12345  # Custom port
+```
+- Game starts automatically when first player connects
+- Up to 4 players can join (including mid-game)
+- Server runs at 60 FPS without graphics
+- Default port: 25565
 
 ## Controls
 

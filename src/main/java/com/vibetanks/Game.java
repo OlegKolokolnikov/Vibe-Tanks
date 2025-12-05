@@ -52,7 +52,7 @@ public class Game {
     };
 
     private AnimationTimer gameLoop;
-    private long nextFrameTime = 0; // For fixed timestep frame limiting
+    private long lastFrameTime = 0; // For frame rate limiting
     private static final long FRAME_TIME = 16_666_667; // ~60 FPS in nanoseconds
 
     // FPS counter for debugging
@@ -1116,23 +1116,11 @@ public class Game {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                // Initialize on first frame
-                if (nextFrameTime == 0) {
-                    nextFrameTime = now;
+                // Limit frame rate to ~60 FPS by skipping frames if not enough time has passed
+                if (lastFrameTime != 0 && now - lastFrameTime < FRAME_TIME) {
+                    return; // Not enough time has passed since last frame
                 }
-
-                // Fixed timestep: only process when scheduled time has arrived
-                if (now < nextFrameTime) {
-                    return; // Not time for next frame yet
-                }
-
-                // Schedule next frame at fixed interval (prevents drift)
-                nextFrameTime += FRAME_TIME;
-
-                // If we're really behind (lag spike), don't try to catch up - reset timing
-                if (nextFrameTime < now) {
-                    nextFrameTime = now + FRAME_TIME;
-                }
+                lastFrameTime = now;
 
                 update();
                 render();
@@ -1581,6 +1569,10 @@ public class Game {
                 double respawnY = FIXED_START_POSITIONS[i][1];
                 System.out.println("Player " + (i + 1) + " will respawn in 1 second at: " + respawnX + ", " + respawnY + " (lives left: " + player.getLives() + ")");
                 player.respawn(respawnX, respawnY); // This now starts the timer
+            } else if (player.getLives() == 1) {
+                // Player died on last life - decrement to 0 so game over check works
+                player.setLives(0);
+                System.out.println("Player " + (i + 1) + " lost their last life!");
             }
         }
 

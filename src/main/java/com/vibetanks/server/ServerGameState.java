@@ -520,11 +520,23 @@ public class ServerGameState {
             case BOMB -> {
                 // Damage all players
                 System.out.println("[*] BOMB collected by enemy - damaging all players!");
-                for (Tank player : playerTanks) {
+                for (int i = 0; i < playerTanks.size(); i++) {
+                    Tank player = playerTanks.get(i);
                     if (player.isAlive()) {
                         player.setShield(false);
                         player.setPauseShield(false);
                         player.damage();
+                        // Handle life decrement and respawn after bomb damage
+                        if (!player.isAlive() && !player.isWaitingToRespawn() && player.getLives() > 0) {
+                            player.setLives(player.getLives() - 1);
+                            if (player.getLives() > 0) {
+                                System.out.println("[*] Player " + (i + 1) + " will respawn in 1 second");
+                                player.respawn(
+                                    PLAYER_START_POSITIONS[i][0],
+                                    PLAYER_START_POSITIONS[i][1]
+                                );
+                            }
+                        }
                     }
                 }
             }

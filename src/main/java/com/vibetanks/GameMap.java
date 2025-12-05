@@ -876,13 +876,20 @@ public class GameMap {
                 tiles[row][col] = TileType.EMPTY;
             }
             return true;
-        } else if (tile == TileType.TREES && bullet.canDestroyTrees()) {
-            // Trees start burning with SAW power-up, then get destroyed
+        } else if (tile == TileType.TREES) {
+            // Check if tree is already burning - bullets pass through burning trees
             int key = row * 1000 + col;
-            if (!burningTiles.containsKey(key)) {
-                burningTiles.put(key, BURN_DURATION);
+            if (burningTiles.containsKey(key)) {
+                // Tree is burning - bullets pass through
+                return false;
             }
-            return true;
+            // Tree is not burning - only SAW bullets can start fire
+            if (bullet.canDestroyTrees()) {
+                burningTiles.put(key, BURN_DURATION);
+                return true;
+            }
+            // Normal bullets pass through non-burning trees (trees provide cover but don't block bullets)
+            return false;
         }
 
         return false; // no collision

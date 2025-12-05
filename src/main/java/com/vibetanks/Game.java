@@ -1516,7 +1516,7 @@ public class Game {
             bullet.update();
 
             // Check bullet collisions with map
-            if (gameMap.checkBulletCollision(bullet)) {
+            if (gameMap.checkBulletCollision(bullet, soundManager)) {
                 notifyBulletDestroyed(bullet);
                 bulletIterator.remove();
                 continue;

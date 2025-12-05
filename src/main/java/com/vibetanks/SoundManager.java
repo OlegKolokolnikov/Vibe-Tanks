@@ -15,6 +15,7 @@ public class SoundManager {
     private byte[] playerDeathSoundData;
     private byte[] baseDestroyedSoundData;
     private byte[] explanationMusicData;
+    private byte[] treeBurnSoundData;
 
     private AudioFormat audioFormat;
     private ExecutorService soundExecutor;
@@ -55,11 +56,12 @@ public class SoundManager {
             playerDeathSoundData = loadSoundData("/sounds/player_death.wav");
             baseDestroyedSoundData = loadSoundData("/sounds/base_destroyed.wav");
             explanationMusicData = loadSoundData("/sounds/explanation_music.wav");
+            treeBurnSoundData = loadSoundData("/sounds/tree_burn.wav");
 
             if (shootSoundData == null || explosionSoundData == null ||
                 introSoundData == null || sadSoundData == null ||
                 playerDeathSoundData == null || baseDestroyedSoundData == null ||
-                explanationMusicData == null) {
+                explanationMusicData == null || treeBurnSoundData == null) {
                 System.out.println("Some sounds could not be loaded. Game will run without sound effects.");
             } else {
                 System.out.println("All sounds loaded successfully!");
@@ -146,9 +148,11 @@ public class SoundManager {
         File playerDeathFile = new File("src/main/resources/sounds/player_death.wav");
         File baseDestroyedFile = new File("src/main/resources/sounds/base_destroyed.wav");
         File explanationMusicFile = new File("src/main/resources/sounds/explanation_music.wav");
+        File treeBurnFile = new File("src/main/resources/sounds/tree_burn.wav");
 
         if (!shootFile.exists() || !explosionFile.exists() || !introFile.exists() || !sadFile.exists() ||
-            !playerDeathFile.exists() || !baseDestroyedFile.exists() || !explanationMusicFile.exists()) {
+            !playerDeathFile.exists() || !baseDestroyedFile.exists() || !explanationMusicFile.exists() ||
+            !treeBurnFile.exists()) {
             System.out.println("Generating sound files...");
             SoundGenerator.generateAllSounds();
         }
@@ -249,6 +253,10 @@ public class SoundManager {
 
     public void playBaseDestroyed() {
         playSoundNew(baseDestroyedSoundData);
+    }
+
+    public void playTreeBurn() {
+        playSoundNew(treeBurnSoundData);
     }
 
     public void playExplanationMusic() {

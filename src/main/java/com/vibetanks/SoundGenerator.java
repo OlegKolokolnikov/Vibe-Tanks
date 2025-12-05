@@ -40,6 +40,9 @@ public class SoundGenerator {
             // Generate explanation screen music - 8-bit style loop
             generateExplanationMusic("src/main/resources/sounds/explanation_music.wav");
 
+            // Generate tree burn sound - crackling fire
+            generateTreeBurnSound("src/main/resources/sounds/tree_burn.wav");
+
             System.out.println("Sound files generated successfully!");
         } catch (Exception e) {
             System.err.println("Error generating sounds: " + e.getMessage());
@@ -418,6 +421,62 @@ public class SoundGenerator {
 
             // Overall volume
             sample *= 0.7;
+
+            short shortSample = (short) (sample * Short.MAX_VALUE);
+            buffer[i * 2] = (byte) (shortSample & 0xFF);
+            buffer[i * 2 + 1] = (byte) ((shortSample >> 8) & 0xFF);
+        }
+
+        saveWav(filename, buffer);
+    }
+
+    private static void generateTreeBurnSound(String filename) throws Exception {
+        // Classic 8-bit fire/burning sound - crackling with whoosh
+        double duration = 0.25;
+        int numSamples = (int) (duration * SAMPLE_RATE);
+        byte[] buffer = new byte[numSamples * 2];
+        java.util.Random random = new java.util.Random(456);
+
+        for (int i = 0; i < numSamples; i++) {
+            double t = (double) i / SAMPLE_RATE;
+            double tNorm = (double) i / numSamples;
+
+            double sample = 0;
+
+            // Crackling noise bursts (like fire)
+            double crackle = (random.nextDouble() * 2 - 1);
+            // Filter the noise to make it more fire-like
+            double crackleFreq = 200 + random.nextDouble() * 800;
+            crackle *= Math.sin(2.0 * Math.PI * t * crackleFreq);
+
+            // Whoosh sound - rising then falling frequency
+            double whooshFreq;
+            if (tNorm < 0.3) {
+                whooshFreq = 100 + tNorm * 400; // Rising
+            } else {
+                whooshFreq = 220 - (tNorm - 0.3) * 200; // Falling
+            }
+            double whoosh = Math.sin(2.0 * Math.PI * t * whooshFreq);
+
+            // Mix crackle and whoosh
+            sample = crackle * 0.4 + whoosh * 0.3;
+
+            // Add some low rumble
+            sample += Math.sin(2.0 * Math.PI * t * 80) * 0.2;
+
+            // Envelope - quick attack, medium decay
+            double envelope;
+            if (tNorm < 0.1) {
+                envelope = tNorm / 0.1;
+            } else {
+                envelope = 1.0 - ((tNorm - 0.1) / 0.9);
+                envelope = Math.sqrt(envelope); // Slower decay
+            }
+
+            sample *= envelope * 0.6;
+
+            // Soft clip
+            sample = Math.tanh(sample);
 
             short shortSample = (short) (sample * Short.MAX_VALUE);
             buffer[i * 2] = (byte) (shortSample & 0xFF);

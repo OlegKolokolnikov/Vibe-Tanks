@@ -857,6 +857,10 @@ public class GameMap {
     }
 
     public boolean checkBulletCollision(Bullet bullet) {
+        return checkBulletCollision(bullet, null);
+    }
+
+    public boolean checkBulletCollision(Bullet bullet, SoundManager soundManager) {
         int col = (int) (bullet.getX() + bullet.getSize() / 2) / TILE_SIZE;
         int row = (int) (bullet.getY() + bullet.getSize() / 2) / TILE_SIZE;
 
@@ -886,6 +890,10 @@ public class GameMap {
             // Tree is not burning - only SAW bullets can start fire
             if (bullet.canDestroyTrees()) {
                 burningTiles.put(key, BURN_DURATION);
+                // Play tree burn sound
+                if (soundManager != null) {
+                    soundManager.playTreeBurn();
+                }
                 return true;
             }
             // Normal bullets pass through non-burning trees (trees provide cover but don't block bullets)

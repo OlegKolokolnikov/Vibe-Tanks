@@ -43,6 +43,9 @@ public class Tank {
     private boolean canDestroyTrees; // SAW power-up
     private int machinegunCount; // MACHINEGUN power-up (each adds one extra bullet, max 5)
     private int shootCooldownReduction; // STAR power-up (each star reduces cooldown)
+    private int laserDuration; // LASER power-up duration (30 seconds = 1800 frames at 60 FPS)
+    private static final int LASER_DURATION = 1800; // 30 seconds at 60 FPS
+    private static final int LASER_COOLDOWN = 10; // Very fast shooting (6 shots per second)
 
     private Random random;
 
@@ -136,6 +139,9 @@ public class Tank {
         if (shieldDuration > 0) {
             shieldDuration--;
             if (shieldDuration == 0) hasShield = false;
+        }
+        if (laserDuration > 0) {
+            laserDuration--;
         }
 
         // Handle ice sliding
@@ -463,6 +469,35 @@ public class Tank {
         if (activeBulletCount > 0) {
             activeBulletCount--;
         }
+    }
+
+    /**
+     * Shoot a laser beam (when tank has LASER power-up active)
+     * @return the laser beam or null if can't shoot yet
+     */
+    public Laser shootLaser(SoundManager soundManager) {
+        if (!alive || laserDuration <= 0) return null;
+
+        // Laser has very fast cooldown
+        if (shootCooldown > 0) return null;
+
+        // Calculate laser start position (front of tank)
+        double laserX = x + size / 2.0;
+        double laserY = y + size / 2.0;
+
+        // Adjust position based on direction
+        switch (direction) {
+            case UP -> laserY = y;
+            case DOWN -> laserY = y + size;
+            case LEFT -> laserX = x;
+            case RIGHT -> laserX = x + size;
+        }
+
+        // Set fast cooldown for laser
+        shootCooldown = LASER_COOLDOWN;
+        soundManager.playShoot(); // TODO: Could add a different laser sound
+
+        return new Laser(laserX, laserY, direction, !isPlayer, isPlayer ? playerNumber : 0);
     }
 
     public void updateAI(GameMap map, List<Bullet> bullets, List<Tank> allTanks, Base base, SoundManager soundManager) {
@@ -910,6 +945,23 @@ public class Tank {
             // Enemies get extra life
             lives++;
         }
+    }
+
+    public void applyLaser() {
+        // LASER power-up: shoot laser beams for 30 seconds
+        laserDuration = LASER_DURATION;
+    }
+
+    public boolean hasLaser() {
+        return laserDuration > 0;
+    }
+
+    public int getLaserDuration() {
+        return laserDuration;
+    }
+
+    public void setLaserDuration(int duration) {
+        this.laserDuration = duration;
     }
 
     public boolean canSwim() {

@@ -12,7 +12,6 @@ public class PowerUp {
     public enum Type {
         GUN,        // Ability to break iron/steel walls
         STAR,       // Shooting faster (stackable)
-
         CAR,        // Tank becomes faster (stackable)
         SHIP,       // Tank can swim through water
         SHOVEL,     // Base surrounded by steel for 1 minute
@@ -21,7 +20,8 @@ public class PowerUp {
         SHIELD,     // Shield for 1 minute (players) or extra life (enemies)
         MACHINEGUN, // Bullets can wrap through destroyed borders
         FREEZE,     // Freeze enemies for 10 seconds (or freeze players if enemy takes it)
-        BOMB        // Explode all enemies (or all players if enemy takes it)
+        BOMB,       // Explode all enemies (or all players if enemy takes it)
+        LASER       // Shoot laser beam that passes through obstacles, deals 3 damage (30 seconds, rare)
     }
 
     private double x;
@@ -34,10 +34,17 @@ public class PowerUp {
         this.y = y;
         this.lifetime = LIFETIME;
 
-        // Randomly choose power-up type
+        // Randomly choose power-up type (LASER is rare - 5% chance)
         Random random = new Random();
-        Type[] types = Type.values();
-        this.type = types[random.nextInt(types.length)];
+        if (random.nextInt(100) < 5) {
+            // 5% chance for LASER
+            this.type = Type.LASER;
+        } else {
+            // 95% chance for other power-ups (excluding LASER)
+            Type[] types = Type.values();
+            int index = random.nextInt(types.length - 1); // Exclude LASER (last item)
+            this.type = types[index];
+        }
     }
 
     public PowerUp(double x, double y, Type type) {
@@ -96,6 +103,9 @@ public class PowerUp {
                 break;
             case BOMB:
                 // BOMB is handled in Game class (affects all enemies or players)
+                break;
+            case LASER:
+                tank.applyLaser();
                 break;
         }
     }
@@ -321,6 +331,26 @@ public class PowerUp {
                 gc.setFill(Color.DARKGRAY);
                 gc.fillOval(x + 9, y + 15, 6, 6);
                 break;
+            case LASER:
+                // Draw laser beam - red beam with glow
+                // Laser emitter/gun
+                gc.setFill(Color.DARKGRAY);
+                gc.fillRect(x + 3, y + 12, 10, 8);
+                gc.setFill(Color.GRAY);
+                gc.fillRect(x + 5, y + 14, 6, 4);
+                // Laser beam (red with glow effect)
+                gc.setFill(Color.DARKRED);
+                gc.fillRect(x + 13, y + 14, 18, 4);
+                gc.setFill(Color.RED);
+                gc.fillRect(x + 13, y + 15, 18, 2);
+                gc.setFill(Color.WHITE);
+                gc.fillRect(x + 13, y + 15.5, 18, 1);
+                // Glow particles
+                gc.setFill(Color.ORANGE);
+                gc.fillOval(x + 28, y + 13, 3, 3);
+                gc.fillOval(x + 26, y + 17, 2, 2);
+                gc.fillOval(x + 29, y + 16, 2, 2);
+                break;
         }
     }
 
@@ -337,6 +367,7 @@ public class PowerUp {
             case MACHINEGUN -> Color.PURPLE;
             case FREEZE -> Color.LIGHTBLUE;
             case BOMB -> Color.BLACK;
+            case LASER -> Color.RED;
         };
     }
 

@@ -58,6 +58,7 @@ public class ExplanationScene {
         addPowerUpExplanation(content, PowerUp.Type.MACHINEGUN, "MACHINEGUN", "Shoots multiple bullets in a line (stackable, max 5 bullets)");
         addPowerUpExplanation(content, PowerUp.Type.FREEZE, "FREEZE", "Freeze all enemies for 10 seconds (or players if enemy takes it)");
         addPowerUpExplanation(content, PowerUp.Type.BOMB, "BOMB", "Destroy all enemies on screen (or damage all players if enemy takes it)");
+        addPowerUpExplanation(content, PowerUp.Type.LASER, "LASER", "Shoot laser beams for 30 sec - passes through walls, deals 3 damage (RARE)");
 
         // Enemy tanks section
         Label enemiesTitle = new Label("\nENEMY TANK TYPES:");

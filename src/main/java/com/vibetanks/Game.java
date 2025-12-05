@@ -27,6 +27,7 @@ public class Game {
     private List<Tank> playerTanks;
     private List<Tank> enemyTanks;
     private List<Bullet> bullets;
+    private List<Laser> lasers;
     private List<PowerUp> powerUps;
     private EnemySpawner enemySpawner;
     private InputHandler inputHandler;
@@ -633,6 +634,7 @@ public class Game {
         // Initialize game objects
         gameMap = new GameMap(26, 26);
         bullets = new ArrayList<>();
+        lasers = new ArrayList<>();
         powerUps = new ArrayList<>();
 
         // Initialize base at bottom center
@@ -942,8 +944,9 @@ public class Game {
         // Reset base
         base = new Base(12 * 32, 24 * 32);
 
-        // Clear bullets and power-ups
+        // Clear bullets, lasers, and power-ups
         bullets.clear();
+        lasers.clear();
         powerUps.clear();
 
         // Reset player tanks (keep power-ups but reset position and give shield)
@@ -1021,14 +1024,16 @@ public class Game {
         // Reset base
         base = new Base(12 * 32, 24 * 32);
 
-        // Clear bullets and power-ups
+        // Clear bullets, lasers, and power-ups
         bullets.clear();
+        lasers.clear();
         powerUps.clear();
 
         // Reset player tanks (full reset including lives and power-ups)
         for (int i = 0; i < playerTanks.size(); i++) {
             Tank player = playerTanks.get(i);
             player.setLives(3);
+            player.setLaserDuration(0); // Clear laser power-up on restart
             player.respawn(FIXED_START_POSITIONS[i][0], FIXED_START_POSITIONS[i][1]);
         }
 
@@ -1255,7 +1260,14 @@ public class Game {
 
                 // Shoot locally for sound (skip if paused)
                 if (myTank.isAlive() && input.shoot && !playerPaused[myPlayerIndex]) {
-                    myTank.shoot(bullets, soundManager);
+                    if (myTank.hasLaser()) {
+                        Laser laser = myTank.shootLaser(soundManager);
+                        if (laser != null) {
+                            lasers.add(laser);
+                        }
+                    } else {
+                        myTank.shoot(bullets, soundManager);
+                    }
                 }
 
                 // Send position and nickname to host (only if alive and we've received initial state from host)
@@ -1361,7 +1373,14 @@ public class Game {
                         }
                         // Handle shooting on host (for bullet sync)
                         if (clientInput.shoot && clientTank.isAlive()) {
-                            clientTank.shoot(bullets, soundManager);
+                            if (clientTank.hasLaser()) {
+                                Laser laser = clientTank.shootLaser(soundManager);
+                                if (laser != null) {
+                                    lasers.add(laser);
+                                }
+                            } else {
+                                clientTank.shoot(bullets, soundManager);
+                            }
                         }
                         // Check if client is requesting a life transfer
                         if (clientInput.requestLife) {
@@ -1656,6 +1675,84 @@ public class Game {
             }
         }
 
+        // Update lasers and check collisions
+        Iterator<Laser> laserIterator = lasers.iterator();
+        while (laserIterator.hasNext()) {
+            Laser laser = laserIterator.next();
+            laser.update();
+
+            // Remove expired lasers
+            if (laser.isExpired()) {
+                laserIterator.remove();
+                continue;
+            }
+
+            // Laser collisions - damage any tank in the beam's path
+            // Laser passes through everything except tanks and base (dealing 3 damage)
+            if (!laser.isFromEnemy()) {
+                // Player laser - hits enemies
+                for (Tank enemy : enemyTanks) {
+                    if (enemy.isAlive() && laser.collidesWith(enemy)) {
+                        // Deal 3 damage
+                        for (int dmg = 0; dmg < 3 && enemy.isAlive(); dmg++) {
+                            enemy.damage();
+                        }
+                        if (!enemy.isAlive()) {
+                            soundManager.playExplosion();
+                            // Track kill for the player who fired the laser
+                            int killerPlayer = laser.getOwnerPlayerNumber();
+                            if (killerPlayer >= 1 && killerPlayer <= 4) {
+                                playerKills[killerPlayer - 1]++;
+                                int enemyTypeOrdinal = enemy.getEnemyType().ordinal();
+                                if (enemyTypeOrdinal < 6) {
+                                    playerKillsByType[killerPlayer - 1][enemyTypeOrdinal]++;
+                                }
+                                // Award points based on enemy type
+                                int points = switch (enemy.getEnemyType()) {
+                                    case POWER -> 2;
+                                    case HEAVY -> 5;
+                                    case BOSS -> 10;
+                                    default -> 1;
+                                };
+                                addScore(killerPlayer - 1, points);
+                                // BOSS kill rewards
+                                if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
+                                    Tank killer = playerTanks.get(killerPlayer - 1);
+                                    bossKillerPlayerIndex = killerPlayer - 1;
+                                    bossKillPowerUpReward = applyRandomPowerUp(killer);
+                                }
+                            }
+                            // Chance for power-up drop
+                            if (Math.random() < 0.3) {
+                                double[] spawnPos = getRandomPowerUpSpawnPosition();
+                                powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                            }
+                        }
+                    }
+                }
+                // Player laser can hit base (but shouldn't since it passes through obstacles)
+                // However, if aimed directly at base, it will hit it
+                if (laser.collidesWithBase(base) && base.isAlive()) {
+                    base.destroy();
+                    soundManager.playBaseDestroyed();
+                    gameOver = true;
+                }
+            } else {
+                // Enemy laser (if enemies could have lasers) - hits players
+                for (Tank player : playerTanks) {
+                    if (player.isAlive() && !player.hasShield() && !player.hasPauseShield() && laser.collidesWith(player)) {
+                        // Deal 3 damage
+                        for (int dmg = 0; dmg < 3 && player.isAlive(); dmg++) {
+                            player.damage();
+                        }
+                        if (!player.isAlive()) {
+                            soundManager.playPlayerDeath();
+                        }
+                    }
+                }
+            }
+        }
+
         // Update power-ups
         Iterator<PowerUp> powerUpIterator = powerUps.iterator();
         while (powerUpIterator.hasNext()) {
@@ -1852,6 +1949,11 @@ public class Game {
         // Render bullets
         for (Bullet bullet : bullets) {
             bullet.render(gc);
+        }
+
+        // Render lasers
+        for (Laser laser : lasers) {
+            laser.render(gc);
         }
 
         // Render player tanks
@@ -2300,6 +2402,7 @@ public class Game {
             case MACHINEGUN -> Color.PURPLE;
             case FREEZE -> Color.LIGHTBLUE;
             case BOMB -> Color.BLACK;
+            case LASER -> Color.RED;
         };
     }
 
@@ -2921,6 +3024,7 @@ public class Game {
             case SHOVEL -> "Shovel (steel base)";
             case FREEZE -> "Freeze";
             case BOMB -> "Bomb";
+            case LASER -> "Laser (beam attack)";
         };
     }
 
@@ -3342,8 +3446,9 @@ public class Game {
                 myTank.setDirection(Direction.UP);
                 myTank.giveTemporaryShield();
             }
-            // Clear bullets and power-ups for clean state
+            // Clear bullets, lasers, and power-ups for clean state
             bullets.clear();
+            lasers.clear();
             powerUps.clear();
             // Clear enemy tanks - will be recreated from state
             enemyTanks.clear();
@@ -3430,7 +3535,15 @@ public class Game {
 
         // Apply shooting (always allowed, even when frozen)
         if (input.shoot) {
-            tank.shoot(bullets, soundManager);
+            // Use laser if tank has laser power-up, otherwise use normal bullets
+            if (tank.hasLaser()) {
+                Laser laser = tank.shootLaser(soundManager);
+                if (laser != null) {
+                    lasers.add(laser);
+                }
+            } else {
+                tank.shoot(bullets, soundManager);
+            }
         }
     }
 

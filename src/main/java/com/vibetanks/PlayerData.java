@@ -33,6 +33,7 @@ public class PlayerData implements Serializable {
     public int carCount;
     public boolean hasSaw;
     public int machinegunCount;
+    public int laserDuration; // LASER power-up duration in frames
 
     // Identity
     public String nickname;
@@ -67,6 +68,7 @@ public class PlayerData implements Serializable {
         this.carCount = tank.getCarCount();
         this.hasSaw = tank.hasSaw();
         this.machinegunCount = tank.getMachinegunCount();
+        this.laserDuration = tank.getLaserDuration();
         this.kills = kills;
         this.score = score;
         this.levelScore = levelScore;
@@ -94,6 +96,7 @@ public class PlayerData implements Serializable {
         tank.setCarCount(this.carCount);
         tank.setSaw(this.hasSaw);
         tank.setMachinegunCount(this.machinegunCount);
+        tank.setLaserDuration(this.laserDuration);
     }
 
     /**

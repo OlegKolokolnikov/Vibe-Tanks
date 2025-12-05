@@ -52,7 +52,7 @@ public class Game {
     };
 
     private AnimationTimer gameLoop;
-    private long lastUpdate = 0;
+    private long nextFrameTime = 0; // For fixed timestep frame limiting
     private static final long FRAME_TIME = 16_666_667; // ~60 FPS in nanoseconds
 
     // FPS counter for debugging
@@ -1116,11 +1116,23 @@ public class Game {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                // Skip frame if not enough time has passed (limit to ~60 FPS)
-                if (lastUpdate != 0 && now - lastUpdate < FRAME_TIME) {
-                    return;
+                // Initialize on first frame
+                if (nextFrameTime == 0) {
+                    nextFrameTime = now;
                 }
-                lastUpdate = now;
+
+                // Fixed timestep: only process when scheduled time has arrived
+                if (now < nextFrameTime) {
+                    return; // Not time for next frame yet
+                }
+
+                // Schedule next frame at fixed interval (prevents drift)
+                nextFrameTime += FRAME_TIME;
+
+                // If we're really behind (lag spike), don't try to catch up - reset timing
+                if (nextFrameTime < now) {
+                    nextFrameTime = now + FRAME_TIME;
+                }
 
                 update();
                 render();

@@ -154,7 +154,7 @@ public class DedicatedServer {
     }
 
     private void runGameLoop() {
-        long lastUpdate = System.nanoTime();
+        long nextFrameTime = System.nanoTime();
         int frameCount = 0;
         long lastFpsTime = System.currentTimeMillis();
 
@@ -162,11 +162,15 @@ public class DedicatedServer {
 
         while (running) {
             long now = System.nanoTime();
-            long elapsed = now - lastUpdate;
 
-            if (elapsed >= FRAME_TIME_NS) {
-                // Reset to current time - only one update per check, no catch-up
-                lastUpdate = now;
+            if (now >= nextFrameTime) {
+                // Schedule next frame at fixed interval (prevents drift)
+                nextFrameTime += FRAME_TIME_NS;
+
+                // If we're really behind (lag spike), don't try to catch up - reset timing
+                if (nextFrameTime < now) {
+                    nextFrameTime = now + FRAME_TIME_NS;
+                }
 
                 if (gameStarted && gameState != null) {
                     // Update connected player count
@@ -257,9 +261,15 @@ public class DedicatedServer {
                     victoryLogged = false;
                 }
             } else {
-                // Sleep a bit to avoid busy waiting
+                // Sleep for approximately the remaining time until next frame
+                long sleepNs = nextFrameTime - now;
+                long sleepMs = sleepNs / 1_000_000;
                 try {
-                    Thread.sleep(1);
+                    if (sleepMs > 1) {
+                        Thread.sleep(sleepMs - 1); // Sleep slightly less to avoid overshooting
+                    } else {
+                        Thread.yield(); // Give other threads a chance
+                    }
                 } catch (InterruptedException e) {
                     break;
                 }

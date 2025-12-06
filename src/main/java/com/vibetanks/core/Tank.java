@@ -1022,6 +1022,14 @@ public class Tank {
         this.respawnTimer = RESPAWN_DELAY;
     }
 
+    // Immediate spawn without delay (for level start)
+    public void spawnImmediate(double newX, double newY) {
+        this.pendingRespawnX = newX;
+        this.pendingRespawnY = newY;
+        this.respawnTimer = 0;
+        completeRespawn();
+    }
+
     // Called each frame to update respawn timer
     public void updateRespawnTimer() {
         if (respawnTimer > 0) {

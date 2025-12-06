@@ -1069,7 +1069,7 @@ public class Game {
             Tank player = playerTanks.get(i);
             player.setLives(3);
             player.setLaserDuration(0); // Clear laser power-up on restart
-            player.respawn(FIXED_START_POSITIONS[i][0], FIXED_START_POSITIONS[i][1]);
+            player.spawnImmediate(FIXED_START_POSITIONS[i][0], FIXED_START_POSITIONS[i][1]);
         }
 
         // Clear enemy tanks and reset spawner

@@ -3452,11 +3452,13 @@ public class Game {
         // Update bullets (recreate from state) and detect new bullets for sound
         Set<Long> currentBulletIds = new HashSet<>();
         bullets.clear();
+        int localPlayerNum = network != null ? network.getPlayerNumber() : 1;
         for (GameState.BulletData bData : state.bullets) {
             currentBulletIds.add(bData.id);
             // Play shoot sound for bullets we haven't seen before
             // Skip on first state to avoid sound burst when joining mid-game
-            if (firstStateReceived && !seenBulletIds.contains(bData.id)) {
+            // Skip for local player's bullets - they already played sound when shooting locally
+            if (firstStateReceived && !seenBulletIds.contains(bData.id) && bData.ownerPlayerNumber != localPlayerNum) {
                 soundManager.playShoot();
             }
             Bullet bullet = new Bullet(
@@ -3482,7 +3484,8 @@ public class Game {
                 currentLaserIds.add(lData.id);
                 // Play laser sound for lasers we haven't seen before
                 // Skip on first state to avoid sound burst when joining mid-game
-                if (firstStateReceived && !seenLaserIds.contains(lData.id)) {
+                // Skip for local player's lasers - they already played sound when shooting locally
+                if (firstStateReceived && !seenLaserIds.contains(lData.id) && lData.ownerPlayerNumber != localPlayerNum) {
                     soundManager.playLaser();
                 }
                 Laser laser = new Laser(

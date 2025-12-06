@@ -616,11 +616,26 @@ public class Tank {
         // Scale factor for rendering (1.0 for normal tanks, 4.0 for BOSS)
         double scale = (double) size / BASE_SIZE;
 
-        // Draw shield if active (circle)
+        // Draw shield if active (animated waving circle)
         if (hasShield) {
-            gc.setStroke(Color.CYAN);
-            gc.setLineWidth(2 * scale);
-            gc.strokeOval(x - 4 * scale, y - 4 * scale, size + 8 * scale, size + 8 * scale);
+            // Use System.currentTimeMillis() for sync across all clients
+            long time = System.currentTimeMillis();
+
+            // Draw multiple overlapping circles with wave effect
+            for (int i = 0; i < 3; i++) {
+                // Each ring has a different phase offset
+                double phase = time / 150.0 + i * Math.PI * 2 / 3;
+                double wave = Math.sin(phase) * 2 * scale; // Wave amplitude
+                double breathe = Math.sin(time / 300.0) * 1.5 * scale; // Breathing effect
+
+                // Color varies slightly for each ring
+                double alpha = 0.6 + 0.4 * Math.sin(phase + i);
+                gc.setStroke(Color.color(0, 0.8 + 0.2 * Math.sin(phase), 1, alpha));
+                gc.setLineWidth((2 - i * 0.5) * scale);
+
+                double offset = 4 * scale + wave + breathe + i * 2 * scale;
+                gc.strokeOval(x - offset, y - offset, size + offset * 2, size + offset * 2);
+            }
         }
 
         // Draw pause shield (yellow/orange pulsing)

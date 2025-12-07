@@ -123,10 +123,15 @@ public class Tank {
         this.shieldDuration = isPlayer ? 180 : 0; // 3 seconds
         if (isPlayer) {
             this.speedMultiplier = 1.0;
+            this.bulletPower = 1;
+            this.canSwim = false;
+            this.canDestroyTrees = false;
+        } else if (enemyType != EnemyType.BOSS && enemyType != EnemyType.HEAVY) {
+            // Only reset these for non-BOSS/HEAVY enemies (BOSS and HEAVY set these in switch)
+            this.bulletPower = 1;
+            this.canSwim = false;
+            this.canDestroyTrees = false;
         }
-        this.bulletPower = 1;
-        this.canSwim = false;
-        this.canDestroyTrees = false;
         this.machinegunCount = 0;
         this.shootCooldownReduction = 0;
         this.random = new Random();

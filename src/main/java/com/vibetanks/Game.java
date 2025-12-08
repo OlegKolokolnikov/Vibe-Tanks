@@ -1,5 +1,7 @@
 package com.vibetanks;
 
+import com.vibetanks.animation.DancingCharacter;
+import com.vibetanks.animation.DancingGirl;
 import com.vibetanks.audio.SoundManager;
 import com.vibetanks.core.*;
 import com.vibetanks.network.GameState;
@@ -147,304 +149,7 @@ public class Game {
     private PowerUp.Type bossKillPowerUpReward = null; // Power-up received for killing boss
 
     // Inner class for dancing characters
-    private static class DancingCharacter {
-        static final Color[] ALIEN_COLORS = {Color.LIME, Color.CYAN, Color.MAGENTA, Color.YELLOW};
-        static final Color[] HUMAN_COLORS = {Color.PEACHPUFF, Color.TAN, Color.SANDYBROWN, Color.WHEAT};
-
-        double x, y;
-        boolean isAlien;
-        int animFrame;
-        int danceStyle; // 0-2 different dance moves
-        int colorIndex;
-        Color color;
-
-        DancingCharacter(double x, double y, boolean isAlien, int danceStyle) {
-            this.x = x;
-            this.y = y;
-            this.isAlien = isAlien;
-            this.animFrame = 0;
-            this.danceStyle = danceStyle;
-            // Random colors for variety
-            if (isAlien) {
-                this.colorIndex = (int)(Math.random() * ALIEN_COLORS.length);
-                this.color = ALIEN_COLORS[colorIndex];
-            } else {
-                this.colorIndex = (int)(Math.random() * HUMAN_COLORS.length);
-                this.color = HUMAN_COLORS[colorIndex];
-            }
-        }
-
-        // Constructor for network sync (with specific colorIndex)
-        DancingCharacter(double x, double y, boolean isAlien, int animFrame, int danceStyle, int colorIndex) {
-            this.x = x;
-            this.y = y;
-            this.isAlien = isAlien;
-            this.animFrame = animFrame;
-            this.danceStyle = danceStyle;
-            this.colorIndex = colorIndex;
-            if (isAlien) {
-                this.color = ALIEN_COLORS[colorIndex % ALIEN_COLORS.length];
-            } else {
-                this.color = HUMAN_COLORS[colorIndex % HUMAN_COLORS.length];
-            }
-        }
-
-        void update() {
-            animFrame++;
-        }
-
-        void render(GraphicsContext gc) {
-            int cycle = (animFrame / 8) % 4; // Animation cycle
-
-            gc.save();
-            gc.translate(x, y);
-
-            if (isAlien) {
-                renderAlien(gc, cycle);
-            } else {
-                renderHuman(gc, cycle);
-            }
-
-            gc.restore();
-        }
-
-        private void renderAlien(GraphicsContext gc, int cycle) {
-            // Body bobbing
-            double bob = Math.sin(animFrame * 0.3) * 3;
-
-            // Alien body (oval)
-            gc.setFill(color);
-            gc.fillOval(-10, -20 + bob, 20, 25);
-
-            // Big eyes
-            gc.setFill(Color.BLACK);
-            gc.fillOval(-7, -15 + bob, 6, 8);
-            gc.fillOval(1, -15 + bob, 6, 8);
-            gc.setFill(Color.WHITE);
-            gc.fillOval(-5, -13 + bob, 2, 2);
-            gc.fillOval(3, -13 + bob, 2, 2);
-
-            // Antennae bobbing
-            gc.setStroke(color);
-            gc.setLineWidth(2);
-            double antennaBob = Math.sin(animFrame * 0.5) * 5;
-            gc.strokeLine(-5, -20 + bob, -8 + antennaBob, -30 + bob);
-            gc.strokeLine(5, -20 + bob, 8 - antennaBob, -30 + bob);
-            gc.setFill(color.brighter());
-            gc.fillOval(-10 + antennaBob, -33 + bob, 5, 5);
-            gc.fillOval(6 - antennaBob, -33 + bob, 5, 5);
-
-            // Arms dancing
-            double armAngle = Math.sin(animFrame * 0.4 + danceStyle) * 45;
-            gc.setStroke(color);
-            gc.setLineWidth(3);
-            gc.save();
-            gc.translate(-10, -10 + bob);
-            gc.rotate(-45 + armAngle);
-            gc.strokeLine(0, 0, -12, 0);
-            gc.restore();
-            gc.save();
-            gc.translate(10, -10 + bob);
-            gc.rotate(45 - armAngle);
-            gc.strokeLine(0, 0, 12, 0);
-            gc.restore();
-
-            // Legs dancing
-            double legMove = Math.sin(animFrame * 0.3 + danceStyle * 0.5) * 8;
-            gc.strokeLine(-5, 5 + bob, -5 + legMove, 20);
-            gc.strokeLine(5, 5 + bob, 5 - legMove, 20);
-        }
-
-        private void renderHuman(GraphicsContext gc, int cycle) {
-            double bob = Math.sin(animFrame * 0.25) * 2;
-
-            // Head
-            gc.setFill(color);
-            gc.fillOval(-8, -28 + bob, 16, 16);
-
-            // Hair
-            gc.setFill(Color.BROWN);
-            gc.fillRect(-8, -28 + bob, 16, 6);
-
-            // Eyes
-            gc.setFill(Color.BLACK);
-            gc.fillOval(-5, -22 + bob, 3, 3);
-            gc.fillOval(2, -22 + bob, 3, 3);
-
-            // Smile
-            gc.setStroke(Color.BLACK);
-            gc.setLineWidth(1);
-            gc.strokeArc(-4, -18 + bob, 8, 6, 180, 180, javafx.scene.shape.ArcType.OPEN);
-
-            // Body
-            gc.setFill(Color.DARKGREEN); // Military uniform
-            gc.fillRect(-7, -12 + bob, 14, 18);
-
-            // Arms dancing
-            double armSwing = Math.sin(animFrame * 0.35 + danceStyle) * 40;
-            gc.setStroke(color);
-            gc.setLineWidth(4);
-            gc.save();
-            gc.translate(-7, -8 + bob);
-            gc.rotate(-30 + armSwing);
-            gc.strokeLine(0, 0, -10, 0);
-            gc.restore();
-            gc.save();
-            gc.translate(7, -8 + bob);
-            gc.rotate(30 - armSwing);
-            gc.strokeLine(0, 0, 10, 0);
-            gc.restore();
-
-            // Legs dancing
-            double legSwing = Math.sin(animFrame * 0.3 + danceStyle * 0.7) * 10;
-            gc.setFill(Color.DARKGREEN);
-            gc.save();
-            gc.translate(-4, 6 + bob);
-            gc.rotate(legSwing);
-            gc.fillRect(-2, 0, 4, 14);
-            gc.restore();
-            gc.save();
-            gc.translate(4, 6 + bob);
-            gc.rotate(-legSwing);
-            gc.fillRect(-2, 0, 4, 14);
-            gc.restore();
-
-            // Boots
-            gc.setFill(Color.BLACK);
-            gc.fillRect(-6 + legSwing/2, 18 + bob, 5, 4);
-            gc.fillRect(1 - legSwing/2, 18 + bob, 5, 4);
-        }
-    }
-
-    // Inner class for victory dancing girls
-    private static class DancingGirl {
-        static final Color[] DRESS_COLORS = {Color.RED, Color.HOTPINK, Color.CYAN, Color.YELLOW, Color.LIME, Color.ORANGE};
-        static final Color[] HAIR_COLORS = {Color.BLACK, Color.BROWN, Color.SADDLEBROWN, Color.GOLD, Color.ORANGERED};
-
-        double x, y;
-        int animFrame;
-        int danceStyle;
-        Color dressColor;
-        Color hairColor;
-        int dressColorIndex;
-        int hairColorIndex;
-
-        DancingGirl(double x, double y, int danceStyle) {
-            this.x = x;
-            this.y = y;
-            this.animFrame = (int)(Math.random() * 60); // Random start frame for variety
-            this.danceStyle = danceStyle;
-            this.dressColorIndex = (int)(Math.random() * DRESS_COLORS.length);
-            this.hairColorIndex = (int)(Math.random() * HAIR_COLORS.length);
-            this.dressColor = DRESS_COLORS[dressColorIndex];
-            this.hairColor = HAIR_COLORS[hairColorIndex];
-        }
-
-        // Constructor for network sync
-        DancingGirl(double x, double y, int animFrame, int danceStyle, int dressColorIndex, int hairColorIndex) {
-            this.x = x;
-            this.y = y;
-            this.animFrame = animFrame;
-            this.danceStyle = danceStyle;
-            this.dressColorIndex = dressColorIndex;
-            this.hairColorIndex = hairColorIndex;
-            this.dressColor = DRESS_COLORS[dressColorIndex % DRESS_COLORS.length];
-            this.hairColor = HAIR_COLORS[hairColorIndex % HAIR_COLORS.length];
-        }
-
-        void update() {
-            animFrame++;
-        }
-
-        void render(GraphicsContext gc) {
-            gc.save();
-            gc.translate(x, y);
-
-            double bob = Math.sin(animFrame * 0.2 + danceStyle) * 3;
-            double sway = Math.sin(animFrame * 0.15 + danceStyle * 0.5) * 5;
-
-            // Hair (long, flowing)
-            gc.setFill(hairColor);
-            double hairSway = Math.sin(animFrame * 0.1) * 8;
-            gc.fillOval(-12 + hairSway * 0.3, -38 + bob, 24, 20);
-            // Hair strands flowing down
-            gc.fillRect(-10 + hairSway * 0.2, -28 + bob, 6, 25);
-            gc.fillRect(4 + hairSway * 0.4, -28 + bob, 6, 25);
-
-            // Face
-            gc.setFill(Color.PEACHPUFF);
-            gc.fillOval(-8, -36 + bob, 16, 18);
-
-            // Eyes (cute anime style)
-            gc.setFill(Color.WHITE);
-            gc.fillOval(-6, -32 + bob, 5, 6);
-            gc.fillOval(1, -32 + bob, 5, 6);
-            gc.setFill(Color.rgb(50, 50, 150)); // Blue eyes
-            gc.fillOval(-5, -31 + bob, 3, 4);
-            gc.fillOval(2, -31 + bob, 3, 4);
-            gc.setFill(Color.WHITE); // Eye shine
-            gc.fillOval(-4, -31 + bob, 1, 1);
-            gc.fillOval(3, -31 + bob, 1, 1);
-
-            // Blush
-            gc.setFill(Color.rgb(255, 180, 180, 0.6));
-            gc.fillOval(-8, -27 + bob, 4, 2);
-            gc.fillOval(4, -27 + bob, 4, 2);
-
-            // Smile
-            gc.setStroke(Color.rgb(200, 100, 100));
-            gc.setLineWidth(1);
-            gc.strokeArc(-3, -26 + bob, 6, 4, 180, 180, javafx.scene.shape.ArcType.OPEN);
-
-            // Body/Dress (flowing)
-            gc.setFill(dressColor);
-            // Top of dress
-            gc.fillRect(-8 + sway * 0.2, -18 + bob, 16, 12);
-
-            // Skirt (swaying)
-            double skirtSway = Math.sin(animFrame * 0.25 + danceStyle) * 8;
-            gc.beginPath();
-            gc.moveTo(-8 + sway * 0.2, -6 + bob);
-            gc.lineTo(8 + sway * 0.2, -6 + bob);
-            gc.lineTo(14 + skirtSway, 20 + bob);
-            gc.lineTo(-14 - skirtSway, 20 + bob);
-            gc.closePath();
-            gc.fill();
-
-            // Skirt folds
-            gc.setStroke(dressColor.darker());
-            gc.setLineWidth(1);
-            gc.strokeLine(-4 + sway * 0.1, -6 + bob, -6 - skirtSway * 0.3, 18 + bob);
-            gc.strokeLine(4 + sway * 0.1, -6 + bob, 6 + skirtSway * 0.3, 18 + bob);
-
-            // Arms (dancing motion)
-            double armAngle = Math.sin(animFrame * 0.3 + danceStyle) * 50;
-            gc.setFill(Color.PEACHPUFF);
-            gc.save();
-            gc.translate(-8 + sway * 0.2, -14 + bob);
-            gc.rotate(-60 + armAngle);
-            gc.fillRect(0, 0, 4, 16);
-            gc.restore();
-            gc.save();
-            gc.translate(8 + sway * 0.2, -14 + bob);
-            gc.rotate(60 - armAngle);
-            gc.fillRect(-4, 0, 4, 16);
-            gc.restore();
-
-            // Legs (under skirt, slight movement)
-            double legMove = Math.sin(animFrame * 0.2 + danceStyle * 0.5) * 3;
-            gc.setFill(Color.PEACHPUFF);
-            gc.fillRect(-5 + legMove, 18 + bob, 4, 10);
-            gc.fillRect(1 - legMove, 18 + bob, 4, 10);
-
-            // Shoes
-            gc.setFill(dressColor.darker());
-            gc.fillRect(-6 + legMove, 27 + bob, 5, 3);
-            gc.fillRect(0 - legMove, 27 + bob, 5, 3);
-
-            gc.restore();
-        }
-    }
+    // DancingCharacter and DancingGirl classes extracted to com.vibetanks.animation package
 
     // Constructor for local game
     public Game(Pane root, int width, int height, int playerCount, int totalEnemies, Stage stage) {
@@ -3280,8 +2985,8 @@ public class Game {
         state.dancingInitialized = dancingInitialized;
         for (DancingCharacter dancer : dancingCharacters) {
             state.dancingCharacters.add(new GameState.DancingCharacterData(
-                dancer.x, dancer.y, dancer.isAlien, dancer.animFrame,
-                dancer.danceStyle, dancer.colorIndex
+                dancer.getX(), dancer.getY(), dancer.isAlien(), dancer.getAnimFrame(),
+                dancer.getDanceStyle(), dancer.getColorIndex()
             ));
         }
 
@@ -3289,8 +2994,8 @@ public class Game {
         state.victoryDancingInitialized = victoryDancingInitialized;
         for (DancingGirl girl : victoryDancingGirls) {
             state.victoryDancingGirls.add(new GameState.DancingGirlData(
-                girl.x, girl.y, girl.animFrame,
-                girl.danceStyle, girl.dressColorIndex, girl.hairColorIndex
+                girl.getX(), girl.getY(), girl.getAnimFrame(),
+                girl.getDanceStyle(), girl.getDressColorIndex(), girl.getHairColorIndex()
             ));
         }
 

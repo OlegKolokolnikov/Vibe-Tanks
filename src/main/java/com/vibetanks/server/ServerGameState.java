@@ -59,6 +59,11 @@ public class ServerGameState {
 
     // Dancing characters state (for game over animation sync)
     private boolean dancingInitialized = false;
+    private List<ServerDancingCharacter> dancingCharacters = new ArrayList<>();
+
+    // Victory dancing girls state
+    private boolean victoryDancingInitialized = false;
+    private List<ServerDancingGirl> victoryDancingGirls = new ArrayList<>();
 
     // Sound manager (muted for server)
     private SoundManager soundManager;
@@ -93,6 +98,10 @@ public class ServerGameState {
     }
 
     private void initialize(int playerCount) {
+        // Reset bullet IDs to prevent overflow after extended play
+        Bullet.resetIdCounter();
+        Laser.resetIdCounter();
+
         gameMap = new GameMap(MAP_SIZE, MAP_SIZE);
         bullets = new ArrayList<>();
         lasers = new ArrayList<>();
@@ -121,6 +130,9 @@ public class ServerGameState {
         enemyWithPermanentSpeedBoostIndex = -1;
         baseProtectionDuration = 0;
         dancingInitialized = false;
+        victoryDancingInitialized = false;
+        dancingCharacters.clear();
+        victoryDancingGirls.clear();
         ufo = null;
         easterEgg = null;
 
@@ -237,7 +249,23 @@ public class ServerGameState {
             lastUpdateCountTime = now;
         }
 
-        if (gameOver || victory) return;
+        // Handle game over / victory animations
+        if (gameOver) {
+            // Initialize and update dancing characters for game over
+            initializeDancingCharacters();
+            for (ServerDancingCharacter dancer : dancingCharacters) {
+                dancer.update();
+            }
+            return;
+        }
+        if (victory) {
+            // Initialize and update victory celebration
+            initializeVictoryCelebration();
+            for (ServerDancingGirl girl : victoryDancingGirls) {
+                girl.update();
+            }
+            return;
+        }
 
         // Update freeze timers
         if (enemyFreezeDuration > 0) enemyFreezeDuration--;
@@ -313,19 +341,11 @@ public class ServerGameState {
         // Update Easter egg
         updateEasterEgg();
 
-        // Check victory condition
-        if (enemySpawner.allEnemiesSpawned() && enemyTanks.isEmpty()) {
-            victory = true;
-        }
-
-        // Check game over
+        // Check game over FIRST (takes priority over victory)
+        // Game over if base destroyed OR all players dead
         if (!base.isAlive()) {
             gameOver = true;
-            // Initialize dancing when base is destroyed
-            if (!dancingInitialized) {
-                dancingInitialized = true;
-                System.out.println("[*] Game over - base destroyed, dancing initialized");
-            }
+            victory = false; // Game over takes priority
         } else {
             boolean allDead = true;
             for (Tank player : playerTanks) {
@@ -336,7 +356,13 @@ public class ServerGameState {
             }
             if (allDead) {
                 gameOver = true;
+                victory = false; // Game over takes priority
             }
+        }
+
+        // Check victory condition ONLY if not game over
+        if (!gameOver && enemySpawner.allEnemiesSpawned() && enemyTanks.isEmpty()) {
+            victory = true;
         }
     }
 
@@ -776,6 +802,19 @@ public class ServerGameState {
 
         // Dancing state for game over animation
         state.dancingInitialized = dancingInitialized;
+        for (ServerDancingCharacter dancer : dancingCharacters) {
+            state.dancingCharacters.add(new GameState.DancingCharacterData(
+                dancer.x, dancer.y, dancer.isAlien, dancer.animFrame, dancer.danceStyle, dancer.colorIndex
+            ));
+        }
+
+        // Victory dancing girls
+        state.victoryDancingInitialized = victoryDancingInitialized;
+        for (ServerDancingGirl girl : victoryDancingGirls) {
+            state.victoryDancingGirls.add(new GameState.DancingGirlData(
+                girl.x, girl.y, girl.animFrame, girl.danceStyle, girl.dressColorIndex, girl.hairColorIndex
+            ));
+        }
 
         // UFO state
         if (ufo != null && ufo.isAlive()) {
@@ -837,5 +876,145 @@ public class ServerGameState {
     public int getCurrentLevel() { return currentLevel; }
     public int getRemainingEnemies() {
         return enemySpawner != null ? enemySpawner.getRemainingEnemies() + enemyTanks.size() : 0;
+    }
+
+    /**
+     * Initialize dancing characters for game over animation.
+     * Called when base is destroyed.
+     */
+    private void initializeDancingCharacters() {
+        if (dancingInitialized) return;
+        dancingInitialized = true;
+
+        // Raise the skull flag on the destroyed base
+        base.raiseFlag();
+
+        Random random = new Random();
+
+        // Create dancing aliens/humans from enemy tank positions
+        if (!enemyTanks.isEmpty()) {
+            for (Tank enemy : enemyTanks) {
+                // Each enemy tank spawns 1-2 characters
+                int numCharacters = 1 + random.nextInt(2);
+                for (int i = 0; i < numCharacters; i++) {
+                    double offsetX = (random.nextDouble() - 0.5) * 40;
+                    double offsetY = (random.nextDouble() - 0.5) * 40;
+                    boolean isAlien = random.nextBoolean();
+                    int danceStyle = random.nextInt(3);
+                    int colorIndex = random.nextInt(4); // 4 colors available
+                    dancingCharacters.add(new ServerDancingCharacter(
+                        enemy.getX() + 16 + offsetX,
+                        enemy.getY() + 16 + offsetY,
+                        isAlien, danceStyle, colorIndex
+                    ));
+                }
+            }
+        }
+
+        // Also spawn some around the destroyed base
+        double baseX = base.getX() + 32;
+        double baseY = base.getY() + 32;
+        for (int i = 0; i < 6; i++) {
+            double angle = (Math.PI * 2 * i) / 6;
+            double radius = 60 + random.nextDouble() * 30;
+            double x = baseX + Math.cos(angle) * radius;
+            double y = baseY + Math.sin(angle) * radius;
+            boolean isAlien = random.nextBoolean();
+            int danceStyle = random.nextInt(3);
+            int colorIndex = random.nextInt(4);
+            dancingCharacters.add(new ServerDancingCharacter(x, y, isAlien, danceStyle, colorIndex));
+        }
+
+        System.out.println("[*] Dancing characters initialized: " + dancingCharacters.size());
+    }
+
+    /**
+     * Initialize victory celebration with dancing girls.
+     * Called when all enemies are defeated.
+     */
+    private void initializeVictoryCelebration() {
+        if (victoryDancingInitialized) return;
+        victoryDancingInitialized = true;
+
+        // Raise the victory flag on the base
+        base.raiseVictoryFlag();
+
+        Random random = new Random();
+
+        // Get number of active players
+        int activePlayers = playerTanks.size();
+
+        // Spawn dancing girls based on player count (1-2 girls per player)
+        int girlCount = activePlayers + random.nextInt(activePlayers + 1);
+
+        // Position girls around the base
+        double baseX = base.getX() + 16;
+        double baseY = base.getY() - 20;
+
+        for (int i = 0; i < girlCount; i++) {
+            // Spread girls in a semi-circle above the base
+            double angle = Math.PI + (Math.PI * (i + 0.5) / girlCount);
+            double radius = 80 + random.nextDouble() * 40;
+            double x = baseX + Math.cos(angle) * radius;
+            double y = baseY + Math.sin(angle) * radius * 0.6;
+            int danceStyle = random.nextInt(4);
+            int dressColorIndex = random.nextInt(6); // 6 dress colors
+            int hairColorIndex = random.nextInt(5);  // 5 hair colors
+            int startFrame = random.nextInt(60);     // Random start frame
+
+            victoryDancingGirls.add(new ServerDancingGirl(x, y, startFrame, danceStyle, dressColorIndex, hairColorIndex));
+        }
+
+        System.out.println("[*] Victory celebration initialized with " + girlCount + " dancing girls");
+    }
+
+    /**
+     * Server-side dancing character for game over animation.
+     * Stores position and visual attributes to sync to clients.
+     */
+    private static class ServerDancingCharacter {
+        double x, y;
+        boolean isAlien;
+        int animFrame;
+        int danceStyle;
+        int colorIndex;
+
+        ServerDancingCharacter(double x, double y, boolean isAlien, int danceStyle, int colorIndex) {
+            this.x = x;
+            this.y = y;
+            this.isAlien = isAlien;
+            this.animFrame = 0;
+            this.danceStyle = danceStyle;
+            this.colorIndex = colorIndex;
+        }
+
+        void update() {
+            animFrame++;
+        }
+    }
+
+    /**
+     * Server-side dancing girl for victory animation.
+     * Stores position and visual attributes to sync to clients.
+     */
+    private static class ServerDancingGirl {
+        double x, y;
+        int animFrame;
+        int danceStyle;
+        int dressColorIndex;
+        int hairColorIndex;
+
+        ServerDancingGirl(double x, double y, int animFrame, int danceStyle, int dressColorIndex, int hairColorIndex) {
+            this.x = x;
+            this.y = y;
+            this.animFrame = animFrame;
+            this.danceStyle = danceStyle;
+            this.dressColorIndex = dressColorIndex;
+            this.hairColorIndex = hairColorIndex;
+        }
+
+        void update() {
+            animFrame++;
+        }
     }
 }

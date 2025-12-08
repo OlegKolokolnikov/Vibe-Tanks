@@ -13,6 +13,13 @@ public class Laser {
     private static final int LIFETIME = 15; // Slightly longer for visibility
     private static long nextId = 1;
 
+    /**
+     * Reset laser ID counter. Call this at level start/restart to prevent overflow.
+     */
+    public static void resetIdCounter() {
+        nextId = 1;
+    }
+
     private long id;
     private double startX;
     private double startY;

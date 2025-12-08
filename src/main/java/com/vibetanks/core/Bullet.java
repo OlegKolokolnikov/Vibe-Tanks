@@ -8,6 +8,13 @@ public class Bullet {
     private static final double SPEED = 6.0;
     private static long nextId = 1; // Global bullet ID counter
 
+    /**
+     * Reset bullet ID counter. Call this at level start/restart to prevent overflow.
+     */
+    public static void resetIdCounter() {
+        nextId = 1;
+    }
+
     private long id;
     private double x;
     private double y;

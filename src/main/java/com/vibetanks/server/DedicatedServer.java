@@ -29,8 +29,9 @@ public class DedicatedServer {
     private final List<ClientConnection> clients = new CopyOnWriteArrayList<>();
     private final Map<Integer, PlayerInput> playerInputs = new ConcurrentHashMap<>();
 
-    // Game state (headless)
+    // Game state (headless) - synchronized access required
     private ServerGameState gameState;
+    private final Object gameStateLock = new Object();
     private boolean gameOverLogged = false;
     private boolean victoryLogged = false;
 
@@ -111,9 +112,13 @@ public class DedicatedServer {
                 }
 
                 // If game already running, add player to game
-                if (gameStarted && gameState != null) {
-                    gameState.addPlayer(playerNum);
-                    System.out.println("[*] Player " + playerNum + " joined the game in progress");
+                if (gameStarted) {
+                    synchronized (gameStateLock) {
+                        if (gameState != null) {
+                            gameState.addPlayer(playerNum);
+                            System.out.println("[*] Player " + playerNum + " joined the game in progress");
+                        }
+                    }
                 }
 
                 System.out.println("[*] Total players: " + clients.size());
@@ -168,74 +173,82 @@ public class DedicatedServer {
             if (elapsed >= FRAME_TIME_NS) {
                 lastFrameTime = now;
 
-                if (gameStarted && gameState != null) {
-                    // Update connected player count
-                    gameState.setConnectedPlayers(getActiveClientCount());
+                if (gameStarted) {
+                    synchronized (gameStateLock) {
+                        if (gameState != null) {
+                            // Update connected player count
+                            gameState.setConnectedPlayers(getActiveClientCount());
 
-                    // Process player inputs
-                    for (int i = 1; i <= MAX_PLAYERS; i++) {
-                        PlayerInput input = playerInputs.remove(i);
-                        if (input != null) {
-                            gameState.processInput(i, input);
-                        }
-                    }
-
-                    // Update game state
-                    gameState.update();
-
-                    // Send state to all clients
-                    GameState state = gameState.buildNetworkState();
-                    broadcastState(state);
-
-                    // Handle game over / victory
-                    if (gameState.isGameOver()) {
-                        if (!gameOverLogged) {
-                            System.out.println("[!] GAME OVER - Press ENTER to restart");
-                            gameOverLogged = true;
-                        }
-                        // Check for restart requests
-                        for (int i = 1; i <= clients.size(); i++) {
-                            PlayerInput input = playerInputs.get(i);
-                            if (input != null && input.requestRestart) {
-                                System.out.println("[*] Restarting game by request from Player " + i);
-                                gameState.restartLevel();
-                                gameOverLogged = false;
-                                victoryLogged = false;
-                                break;
+                            // Process player inputs
+                            for (int i = 1; i <= MAX_PLAYERS; i++) {
+                                PlayerInput input = playerInputs.remove(i);
+                                if (input != null) {
+                                    gameState.processInput(i, input);
+                                }
                             }
-                        }
-                    }
 
-                    if (gameState.isVictory()) {
-                        if (!victoryLogged) {
-                            System.out.println("[!] VICTORY - Level " + gameState.getCurrentLevel() + " complete");
-                            victoryLogged = true;
-                        }
-                        // Check for next level requests
-                        for (int i = 1; i <= clients.size(); i++) {
-                            PlayerInput input = playerInputs.get(i);
-                            if (input != null && input.requestNextLevel) {
-                                System.out.println("[*] Starting next level by request from Player " + i);
-                                gameState.nextLevel();
-                                gameOverLogged = false;
-                                victoryLogged = false;
-                                break;
+                            // Update game state
+                            gameState.update();
+
+                            // Send state to all clients
+                            GameState state = gameState.buildNetworkState();
+                            broadcastState(state);
+
+                            // Handle game over / victory
+                            if (gameState.isGameOver()) {
+                                if (!gameOverLogged) {
+                                    System.out.println("[!] GAME OVER - Press ENTER to restart");
+                                    gameOverLogged = true;
+                                }
+                                // Check for restart requests
+                                for (int i = 1; i <= clients.size(); i++) {
+                                    PlayerInput input = playerInputs.get(i);
+                                    if (input != null && input.requestRestart) {
+                                        System.out.println("[*] Restarting game by request from Player " + i);
+                                        gameState.restartLevel();
+                                        gameOverLogged = false;
+                                        victoryLogged = false;
+                                        break;
+                                    }
+                                }
                             }
+
+                            if (gameState.isVictory()) {
+                                if (!victoryLogged) {
+                                    System.out.println("[!] VICTORY - Level " + gameState.getCurrentLevel() + " complete");
+                                    victoryLogged = true;
+                                }
+                                // Check for next level requests
+                                for (int i = 1; i <= clients.size(); i++) {
+                                    PlayerInput input = playerInputs.get(i);
+                                    if (input != null && input.requestNextLevel) {
+                                        System.out.println("[*] Starting next level by request from Player " + i);
+                                        gameState.nextLevel();
+                                        gameOverLogged = false;
+                                        victoryLogged = false;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            frameCount++;
                         }
                     }
-
-                    frameCount++;
                 }
 
                 // Print status every 5 seconds
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - lastFpsTime >= 5000) {
-                    if (gameStarted && gameState != null) {
-                        double fps = frameCount / 5.0;
-                        System.out.println("[*] Server FPS: " + String.format("%.1f", fps) +
-                            " | Players: " + getActiveClientCount() + "/" + MAX_PLAYERS +
-                            " | Level: " + gameState.getCurrentLevel() +
-                            " | Enemies: " + gameState.getRemainingEnemies());
+                    if (gameStarted) {
+                        synchronized (gameStateLock) {
+                            if (gameState != null) {
+                                double fps = frameCount / 5.0;
+                                System.out.println("[*] Server FPS: " + String.format("%.1f", fps) +
+                                    " | Players: " + getActiveClientCount() + "/" + MAX_PLAYERS +
+                                    " | Level: " + gameState.getCurrentLevel() +
+                                    " | Enemies: " + gameState.getRemainingEnemies());
+                            }
+                        }
                     } else {
                         System.out.println("[*] Waiting for players... (" + getActiveClientCount() + " connected)");
                     }
@@ -251,10 +264,12 @@ public class DedicatedServer {
                 // If all players disconnected, reset to waiting state
                 if (beforeCount > 0 && afterCount == 0 && gameStarted) {
                     System.out.println("[*] All players disconnected - resetting to waiting state");
-                    gameStarted = false;
-                    gameState = null;
-                    gameOverLogged = false;
-                    victoryLogged = false;
+                    synchronized (gameStateLock) {
+                        gameStarted = false;
+                        gameState = null;
+                        gameOverLogged = false;
+                        victoryLogged = false;
+                    }
                 }
             } else {
                 // Sleep for approximately the remaining time until next frame

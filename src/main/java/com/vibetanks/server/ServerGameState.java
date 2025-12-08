@@ -351,26 +351,13 @@ public class ServerGameState {
         updateEasterEgg();
 
         // Check game over FIRST (takes priority over victory)
-        // Game over if base destroyed OR all players dead
-        if (!base.isAlive()) {
+        if (GameLogic.checkGameOver(base, playerTanks)) {
             gameOver = true;
             victory = false; // Game over takes priority
-        } else {
-            boolean allDead = true;
-            for (Tank player : playerTanks) {
-                if (player.isAlive() || player.getLives() > 0) {
-                    allDead = false;
-                    break;
-                }
-            }
-            if (allDead) {
-                gameOver = true;
-                victory = false; // Game over takes priority
-            }
         }
 
         // Check victory condition ONLY if not game over
-        if (!gameOver && enemySpawner.allEnemiesSpawned() && enemyTanks.isEmpty()) {
+        if (!gameOver && GameLogic.checkVictory(enemySpawner, enemyTanks)) {
             victory = true;
         }
     }
@@ -593,38 +580,25 @@ public class ServerGameState {
             return;
         }
 
-        // Check player collection
-        for (Tank player : playerTanks) {
-            if (player.isAlive() && easterEgg.collidesWith(player)) {
-                // Player collects easter egg: transform enemies to POWER, give 3 lives
-                for (Tank enemy : enemyTanks) {
-                    if (enemy.isAlive() && enemy.getEnemyType() != Tank.EnemyType.BOSS) {
-                        enemy.setEnemyType(Tank.EnemyType.POWER);
-                    }
-                }
-                player.setLives(player.getLives() + 3);
-                base.setEasterEggMode(true);
-                easterEgg.collect();
-                easterEgg = null;
-                System.out.println("[*] Player collected Easter egg! Enemies transformed to POWER, +3 lives.");
-                return;
-            }
-        }
+        // Check collection using shared logic
+        int collectionResult = GameLogic.checkEasterEggCollection(easterEgg, playerTanks, enemyTanks);
 
-        // Check enemy collection
-        for (Tank enemy : enemyTanks) {
-            if (enemy.isAlive() && easterEgg.collidesWith(enemy)) {
-                // Enemy collects easter egg: transform all to HEAVY
-                for (Tank e : enemyTanks) {
-                    if (e.isAlive() && e.getEnemyType() != Tank.EnemyType.BOSS) {
-                        e.setEnemyType(Tank.EnemyType.HEAVY);
-                    }
-                }
-                easterEgg.collect();
-                easterEgg = null;
-                System.out.println("[*] Enemy collected Easter egg! Enemies transformed to HEAVY.");
-                return;
-            }
+        if (collectionResult > 0) {
+            // Player collected (result is playerIndex + 1)
+            int playerIndex = collectionResult - 1;
+            Tank player = playerTanks.get(playerIndex);
+            GameLogic.applyEasterEggEffect(enemyTanks, true);
+            player.setLives(player.getLives() + 3);
+            base.setEasterEggMode(true);
+            easterEgg.collect();
+            easterEgg = null;
+            System.out.println("[*] Player collected Easter egg! Enemies transformed to POWER, +3 lives.");
+        } else if (collectionResult < 0) {
+            // Enemy collected
+            GameLogic.applyEasterEggEffect(enemyTanks, false);
+            easterEgg.collect();
+            easterEgg = null;
+            System.out.println("[*] Enemy collected Easter egg! Enemies transformed to HEAVY.");
         }
     }
 
@@ -698,32 +672,12 @@ public class ServerGameState {
     }
 
     private void spawnPowerUp() {
-        int maxAttempts = 100;
-
-        for (int attempt = 0; attempt < maxAttempts; attempt++) {
-            // Random position within playable area (avoiding borders)
-            int col = 2 + GameConstants.RANDOM.nextInt(22); // 2 to 23 (avoid border at 0,1 and 24,25)
-            int row = 2 + GameConstants.RANDOM.nextInt(22);
-
-            // Check if position is clear (only spawn on empty tiles)
-            GameMap.TileType tile = gameMap.getTile(row, col);
-            if (tile == GameMap.TileType.EMPTY) {
-                double x = col * TILE_SIZE;
-                double y = row * TILE_SIZE;
-                powerUps.add(new PowerUp(x, y));
-                return;
-            }
-        }
-
-        // Fallback to center if no valid position found
-        powerUps.add(new PowerUp(13 * TILE_SIZE, 13 * TILE_SIZE));
+        double[] pos = GameLogic.findPowerUpSpawnPosition(gameMap, TILE_SIZE);
+        powerUps.add(new PowerUp(pos[0], pos[1]));
     }
 
     private void notifyBulletDestroyed(Bullet bullet) {
-        int ownerNum = bullet.getOwnerPlayerNumber();
-        if (ownerNum >= 1 && ownerNum <= playerTanks.size()) {
-            playerTanks.get(ownerNum - 1).bulletDestroyed();
-        }
+        GameLogic.notifyBulletDestroyed(bullet, playerTanks);
     }
 
     public GameState buildNetworkState() {

@@ -3,6 +3,7 @@ package com.vibetanks.server;
 import com.vibetanks.core.GameSettings;
 import com.vibetanks.network.GameState;
 import com.vibetanks.network.PlayerInput;
+import com.vibetanks.util.GameLogger;
 
 import java.io.*;
 import java.net.*;
@@ -16,6 +17,7 @@ import java.util.concurrent.*;
  * Usage: java -cp <classpath> com.vibetanks.server.DedicatedServer [port]
  */
 public class DedicatedServer {
+    private static final GameLogger LOG = GameLogger.getLogger(DedicatedServer.class);
     private static final int DEFAULT_PORT = 25565;
     private static final int MAX_PLAYERS = 4;
     private static final long FRAME_TIME_NS = 16_666_667; // ~60 FPS
@@ -46,18 +48,21 @@ public class DedicatedServer {
             serverSocket.bind(new InetSocketAddress(port));
             running = true;
 
-            System.out.println("========================================");
-            System.out.println("  VibeTanks Dedicated Server");
-            System.out.println("========================================");
-            System.out.println("Server started on port " + port);
-            System.out.println("Game settings:");
-            System.out.println("  - Player speed: " + (GameSettings.getPlayerSpeedMultiplier() * 100) + "%");
-            System.out.println("  - Enemy speed: " + (GameSettings.getEnemySpeedMultiplier() * 100) + "%");
-            System.out.println("  - Player shoot speed: " + (GameSettings.getPlayerShootSpeedMultiplier() * 100) + "%");
-            System.out.println("  - Enemy shoot speed: " + (GameSettings.getEnemyShootSpeedMultiplier() * 100) + "%");
-            System.out.println("Waiting for players to connect...");
-            System.out.println("Game will start when first player connects.");
-            System.out.println("----------------------------------------");
+            // Configure logging for server mode
+            GameLogger.configureForServer();
+
+            LOG.info("========================================");
+            LOG.info("  VibeTanks Dedicated Server");
+            LOG.info("========================================");
+            LOG.info("Server started on port {}", port);
+            LOG.info("Game settings:");
+            LOG.info("  - Player speed: {}%", GameSettings.getPlayerSpeedMultiplier() * 100);
+            LOG.info("  - Enemy speed: {}%", GameSettings.getEnemySpeedMultiplier() * 100);
+            LOG.info("  - Player shoot speed: {}%", GameSettings.getPlayerShootSpeedMultiplier() * 100);
+            LOG.info("  - Enemy shoot speed: {}%", GameSettings.getEnemyShootSpeedMultiplier() * 100);
+            LOG.info("Waiting for players to connect...");
+            LOG.info("Game will start when first player connects.");
+            LOG.info("----------------------------------------");
 
             // Start accept thread
             Thread acceptThread = new Thread(this::acceptClients, "AcceptThread");
@@ -67,7 +72,7 @@ public class DedicatedServer {
             runGameLoop();
 
         } catch (IOException e) {
-            System.err.println("Failed to start server: " + e.getMessage());
+            LOG.error("Failed to start server: {}", e.getMessage());
             e.printStackTrace();
         }
     }
@@ -83,8 +88,7 @@ public class DedicatedServer {
                 Socket clientSocket = serverSocket.accept();
                 int playerNum = clients.size() + 1;
 
-                System.out.println("[+] Player " + playerNum + " connected from " +
-                    clientSocket.getInetAddress().getHostAddress());
+                LOG.info("Player {} connected from {}", playerNum, clientSocket.getInetAddress().getHostAddress());
 
                 // Create output stream first
                 ObjectOutputStream out = new ObjectOutputStream(clientSocket.getOutputStream());
@@ -116,16 +120,16 @@ public class DedicatedServer {
                     synchronized (gameStateLock) {
                         if (gameState != null) {
                             gameState.addPlayer(playerNum);
-                            System.out.println("[*] Player " + playerNum + " joined the game in progress");
+                            LOG.info("Player {} joined the game in progress", playerNum);
                         }
                     }
                 }
 
-                System.out.println("[*] Total players: " + clients.size());
+                LOG.info("Total players: {}", clients.size());
 
             } catch (IOException e) {
                 if (running) {
-                    System.err.println("Error accepting connection: " + e.getMessage());
+                    LOG.error("Error accepting connection: {}", e.getMessage());
                 }
             } catch (InterruptedException e) {
                 break;
@@ -143,16 +147,16 @@ public class DedicatedServer {
             }
         } catch (Exception e) {
             if (running && client.isActive()) {
-                System.out.println("[-] Player " + client.playerNumber + " disconnected: " + e.getMessage());
+                LOG.info("Player {} disconnected: {}", client.playerNumber, e.getMessage());
                 client.setActive(false);
             }
         }
     }
 
     private void startGame() {
-        System.out.println("\n========================================");
-        System.out.println("  GAME STARTING!");
-        System.out.println("========================================\n");
+        LOG.info("========================================");
+        LOG.info("  GAME STARTING!");
+        LOG.info("========================================");
 
         gameStarted = true;
         gameState = new ServerGameState(clients.size());
@@ -163,7 +167,7 @@ public class DedicatedServer {
         int frameCount = 0;
         long lastFpsTime = System.currentTimeMillis();
 
-        System.out.println("[*] Game loop started, waiting for connections...");
+        LOG.info("Game loop started, waiting for connections...");
 
         while (running) {
             long now = System.nanoTime();
@@ -204,13 +208,13 @@ public class DedicatedServer {
                             // Handle game over / victory using already-collected inputs
                             if (gameState.isGameOver()) {
                                 if (!gameOverLogged) {
-                                    System.out.println("[!] GAME OVER - Press ENTER to restart");
+                                    LOG.warn("GAME OVER - Press ENTER to restart");
                                     gameOverLogged = true;
                                 }
                                 // Check for restart requests from collected inputs
                                 for (PlayerInput input : frameInputs.values()) {
                                     if (input != null && input.requestRestart) {
-                                        System.out.println("[*] Restarting game by player request");
+                                        LOG.info("Restarting game by player request");
                                         gameState.restartLevel();
                                         gameOverLogged = false;
                                         victoryLogged = false;
@@ -219,13 +223,13 @@ public class DedicatedServer {
                                 }
                             } else if (gameState.isVictory()) {
                                 if (!victoryLogged) {
-                                    System.out.println("[!] VICTORY - Level " + gameState.getCurrentLevel() + " complete");
+                                    LOG.info("VICTORY - Level {} complete", gameState.getCurrentLevel());
                                     victoryLogged = true;
                                 }
                                 // Check for next level requests from collected inputs
                                 for (PlayerInput input : frameInputs.values()) {
                                     if (input != null && input.requestNextLevel) {
-                                        System.out.println("[*] Starting next level by player request");
+                                        LOG.info("Starting next level by player request");
                                         gameState.nextLevel();
                                         gameOverLogged = false;
                                         victoryLogged = false;
@@ -251,14 +255,13 @@ public class DedicatedServer {
                         synchronized (gameStateLock) {
                             if (gameState != null) {
                                 double fps = frameCount / 5.0;
-                                System.out.println("[*] Server FPS: " + String.format("%.1f", fps) +
-                                    " | Players: " + getActiveClientCount() + "/" + MAX_PLAYERS +
-                                    " | Level: " + gameState.getCurrentLevel() +
-                                    " | Enemies: " + gameState.getRemainingEnemies());
+                                LOG.info("Server FPS: {} | Players: {}/{} | Level: {} | Enemies: {}",
+                                    String.format("%.1f", fps), getActiveClientCount(), MAX_PLAYERS,
+                                    gameState.getCurrentLevel(), gameState.getRemainingEnemies());
                             }
                         }
                     } else {
-                        System.out.println("[*] Waiting for players... (" + getActiveClientCount() + " connected)");
+                        LOG.info("Waiting for players... ({} connected)", getActiveClientCount());
                     }
                     frameCount = 0;
                     lastFpsTime = currentTime;
@@ -271,7 +274,7 @@ public class DedicatedServer {
 
                 // If all players disconnected, reset to waiting state
                 if (beforeCount > 0 && afterCount == 0 && gameStarted) {
-                    System.out.println("[*] All players disconnected - resetting to waiting state");
+                    LOG.info("All players disconnected - resetting to waiting state");
                     synchronized (gameStateLock) {
                         gameStarted = false;
                         gameState = null;
@@ -304,7 +307,7 @@ public class DedicatedServer {
                     client.out.flush();
                     client.out.reset();
                 } catch (IOException e) {
-                    System.out.println("[-] Failed to send to Player " + client.playerNumber);
+                    LOG.warn("Failed to send to Player {}", client.playerNumber);
                     client.setActive(false);
                 }
             }
@@ -321,7 +324,7 @@ public class DedicatedServer {
 
     public void stop() {
         running = false;
-        System.out.println("\n[*] Shutting down server...");
+        LOG.info("Shutting down server...");
 
         for (ClientConnection client : clients) {
             client.close();
@@ -333,10 +336,10 @@ public class DedicatedServer {
                 serverSocket.close();
             }
         } catch (IOException e) {
-            System.err.println("Error closing server socket: " + e.getMessage());
+            LOG.error("Error closing server socket: {}", e.getMessage());
         }
 
-        System.out.println("[*] Server stopped.");
+        LOG.info("Server stopped.");
     }
 
     // Client connection wrapper
@@ -376,8 +379,8 @@ public class DedicatedServer {
             try {
                 port = Integer.parseInt(args[0]);
             } catch (NumberFormatException e) {
-                System.err.println("Invalid port number: " + args[0]);
-                System.err.println("Usage: java -cp <classpath> com.vibetanks.server.DedicatedServer [port]");
+                GameLogger.getLogger(DedicatedServer.class).error("Invalid port number: {}", args[0]);
+                GameLogger.getLogger(DedicatedServer.class).error("Usage: java -cp <classpath> com.vibetanks.server.DedicatedServer [port]");
                 System.exit(1);
             }
         }

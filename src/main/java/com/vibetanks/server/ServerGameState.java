@@ -4,6 +4,7 @@ import com.vibetanks.audio.SoundManager;
 import com.vibetanks.core.*;
 import com.vibetanks.network.GameState;
 import com.vibetanks.network.PlayerInput;
+import com.vibetanks.util.GameLogger;
 
 import java.util.*;
 
@@ -12,6 +13,8 @@ import java.util.*;
  * Runs all game logic without graphics/rendering.
  */
 public class ServerGameState {
+    private static final GameLogger LOG = GameLogger.getLogger(ServerGameState.class);
+
     // Use shared constants
     private static final int MAP_SIZE = GameConstants.MAP_SIZE;
     private static final int TILE_SIZE = GameConstants.TILE_SIZE;
@@ -89,7 +92,7 @@ public class ServerGameState {
             Tank player = new Tank(pos[0], pos[1], Direction.UP, true, i + 1);
             player.giveTemporaryShield();
             playerTanks.add(player);
-            System.out.println("[*] Added tank for Player " + (i + 1));
+            LOG.info("Added tank for Player {}", i + 1);
         }
     }
 
@@ -133,7 +136,7 @@ public class ServerGameState {
         ufo = null;
         easterEgg = null;
 
-        System.out.println("[*] Game initialized with " + playerCount + " player(s)");
+        LOG.info("Game initialized with {} player(s)", playerCount);
     }
 
     public void addPlayer(int playerNumber) {
@@ -144,7 +147,7 @@ public class ServerGameState {
                 Tank player = new Tank(pos[0], pos[1], Direction.UP, true, idx + 1);
                 player.giveTemporaryShield();
                 playerTanks.add(player);
-                System.out.println("[*] Added Player " + (idx + 1) + " tank to game");
+                LOG.info("Added Player {} tank to game", idx + 1);
             }
         }
     }
@@ -238,7 +241,7 @@ public class ServerGameState {
                 deadPlayer.setLives(1);
                 double[] pos = GameConstants.getPlayerStartPosition(playerIndex);
                 deadPlayer.respawn(pos[0], pos[1]);
-                System.out.println("[*] Player " + (playerIndex + 1) + " took life from Player " + (i + 1));
+                LOG.info("Player {} took life from Player {}", playerIndex + 1, i + 1);
                 break;
             }
         }
@@ -253,7 +256,7 @@ public class ServerGameState {
         updateCount++;
         long now = System.currentTimeMillis();
         if (now - lastUpdateCountTime >= 5000) {
-            System.out.println("[DEBUG] Server updates per second: " + (updateCount / 5.0));
+            LOG.debug("Server updates per second: {}", updateCount / 5.0);
             updateCount = 0;
             lastUpdateCountTime = now;
         }
@@ -297,7 +300,7 @@ public class ServerGameState {
                     }
                 }
                 enemyWithPermanentSpeedBoostIndex = -1; // Clear the index
-                System.out.println("[*] Enemy team speed boost expired");
+                LOG.debug("Enemy team speed boost expired");
             }
         }
 
@@ -419,7 +422,7 @@ public class ServerGameState {
                             player.setLives(player.getLives() - 1);
                             if (player.getLives() > 0) {
                                 int idx = playerTanks.indexOf(player);
-                                System.out.println("[*] Player " + (idx + 1) + " will respawn in 1 second");
+                                LOG.info("Player {} will respawn in 1 second", idx + 1);
                                 double[] pos = GameConstants.getPlayerStartPosition(idx);
                                 player.respawn(pos[0], pos[1]);
                             }
@@ -479,7 +482,7 @@ public class ServerGameState {
                         if (destroyed) {
                             // Spawn easter egg at UFO position
                             easterEgg = new EasterEgg(ufo.getX(), ufo.getY());
-                            System.out.println("[*] UFO destroyed by laser! Easter egg spawned.");
+                            LOG.info("UFO destroyed by laser! Easter egg spawned");
                             break;
                         }
                     }
@@ -539,7 +542,7 @@ public class ServerGameState {
             double startX = movingRight ? -48 : mapPixelSize;
             double startY = 50 + Math.random() * (mapPixelSize - 150);
             ufo = new UFO(startX, startY, movingRight);
-            System.out.println("[*] UFO spawned!");
+            LOG.info("UFO spawned!");
         }
 
         if (ufo != null && ufo.isAlive()) {
@@ -557,7 +560,7 @@ public class ServerGameState {
                     if (destroyed) {
                         // Spawn easter egg at UFO position
                         easterEgg = new EasterEgg(ufo.getX(), ufo.getY());
-                        System.out.println("[*] UFO destroyed! Easter egg spawned.");
+                        LOG.info("UFO destroyed! Easter egg spawned");
                     }
                     break;
                 }
@@ -592,13 +595,13 @@ public class ServerGameState {
             base.setEasterEggMode(true);
             easterEgg.collect();
             easterEgg = null;
-            System.out.println("[*] Player collected Easter egg! Enemies transformed to POWER, +3 lives.");
+            LOG.info("Player collected Easter egg! Enemies transformed to POWER, +3 lives.");
         } else if (collectionResult < 0) {
             // Enemy collected
             GameLogic.applyEasterEggEffect(enemyTanks, false);
             easterEgg.collect();
             easterEgg = null;
-            System.out.println("[*] Enemy collected Easter egg! Enemies transformed to HEAVY.");
+            LOG.info("Enemy collected Easter egg! Enemies transformed to HEAVY.");
         }
     }
 
@@ -612,11 +615,11 @@ public class ServerGameState {
             case FREEZE -> {
                 // Freeze players for 10 seconds
                 playerFreezeDuration = GameConstants.FREEZE_TIME;
-                System.out.println("[*] FREEZE: Players frozen for 10 seconds!");
+                LOG.info("FREEZE: Players frozen for 10 seconds!");
             }
             case BOMB -> {
                 // Damage all players
-                System.out.println("[*] BOMB collected by enemy - damaging all players!");
+                LOG.info("BOMB collected by enemy - damaging all players!");
                 for (int i = 0; i < playerTanks.size(); i++) {
                     Tank player = playerTanks.get(i);
                     if (player.isAlive()) {
@@ -627,7 +630,7 @@ public class ServerGameState {
                         if (!player.isAlive() && !player.isWaitingToRespawn() && player.getLives() > 0) {
                             player.setLives(player.getLives() - 1);
                             if (player.getLives() > 0) {
-                                System.out.println("[*] Player " + (i + 1) + " will respawn in 1 second");
+                                LOG.info("Player {} will respawn in 1 second", i + 1);
                                 double[] pos = GameConstants.getPlayerStartPosition(i);
                                 player.respawn(pos[0], pos[1]);
                             }
@@ -647,7 +650,7 @@ public class ServerGameState {
                         otherEnemy.applyTempSpeedBoost(ENEMY_TEAM_SPEED_BOOST);
                     }
                 }
-                System.out.println("[*] CAR: All enemies get speed boost for 30 seconds!");
+                LOG.info("CAR: All enemies get speed boost for 30 seconds!");
             }
             default -> powerUp.applyEffect(enemy);
         }
@@ -822,7 +825,7 @@ public class ServerGameState {
     }
 
     public void restartLevel() {
-        System.out.println("[*] Restarting level " + currentLevel);
+        LOG.info("Restarting level {}", currentLevel);
 
         // Reset kills for this level (scores persist across restarts)
         playerStats.resetKillsOnly();
@@ -833,7 +836,7 @@ public class ServerGameState {
 
     public void nextLevel() {
         currentLevel++;
-        System.out.println("[*] Starting level " + currentLevel);
+        LOG.info("Starting level {}", currentLevel);
 
         // Reset kills and level scores, keep total scores
         playerStats.resetKillsOnly();
@@ -894,7 +897,7 @@ public class ServerGameState {
             dancingCharacters.add(new ServerDancingCharacter(x, y, isAlien, danceStyle, colorIndex));
         }
 
-        System.out.println("[*] Dancing characters initialized: " + dancingCharacters.size());
+        LOG.info("Dancing characters initialized: {}", dancingCharacters.size());
     }
 
     /**
@@ -932,7 +935,7 @@ public class ServerGameState {
             victoryDancingGirls.add(new ServerDancingGirl(x, y, startFrame, danceStyle, dressColorIndex, hairColorIndex));
         }
 
-        System.out.println("[*] Victory celebration initialized with " + girlCount + " dancing girls");
+        LOG.info("Victory celebration initialized with {} dancing girls", girlCount);
     }
 
     /**

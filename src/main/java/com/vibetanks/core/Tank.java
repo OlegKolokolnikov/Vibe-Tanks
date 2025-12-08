@@ -47,7 +47,6 @@ public class Tank {
     private int machinegunCount; // MACHINEGUN power-up (each adds one extra bullet, max 5)
     private int shootCooldownReduction; // STAR power-up (each star reduces cooldown)
     private int laserDuration; // LASER power-up duration (30 seconds = 1800 frames at 60 FPS)
-    private static final int LASER_DURATION = 1800; // 30 seconds at 60 FPS
     private static final int LASER_COOLDOWN = 10; // Very fast shooting (6 shots per second)
 
     private Random random;
@@ -986,9 +985,9 @@ public class Tank {
 
     public void applyShield() {
         if (isPlayer) {
-            // Players get shield for 1 minute (3600 frames at 60 FPS)
+            // Players get shield for 1 minute
             hasShield = true;
-            shieldDuration = 3600;
+            shieldDuration = GameConstants.SHIELD_DURATION;
         } else {
             // Enemies get extra life
             lives++;
@@ -997,7 +996,7 @@ public class Tank {
 
     public void applyLaser() {
         // LASER power-up: shoot laser beams for 30 seconds
-        laserDuration = LASER_DURATION;
+        laserDuration = GameConstants.LASER_DURATION;
     }
 
     public boolean hasLaser() {
@@ -1083,7 +1082,7 @@ public class Tank {
         this.direction = Direction.UP;
         this.health = maxHealth;
         this.hasShield = true;
-        this.shieldDuration = 180;
+        this.shieldDuration = GameConstants.TEMPORARY_SHIELD_DURATION;
         this.alive = true;
 
         // Clear all power-ups on respawn
@@ -1097,7 +1096,7 @@ public class Tank {
 
     public void giveTemporaryShield() {
         this.hasShield = true;
-        this.shieldDuration = 180; // 3 seconds at 60 FPS
+        this.shieldDuration = GameConstants.TEMPORARY_SHIELD_DURATION;
     }
 
     public void setPosition(double x, double y) {

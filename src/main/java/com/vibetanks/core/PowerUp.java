@@ -7,7 +7,7 @@ import java.util.Random;
 
 public class PowerUp {
     private static final int SIZE = 32; // Same size as tank
-    private static final int LIFETIME = 600; // 10 seconds
+    private static final int LIFETIME = GameConstants.POWERUP_LIFETIME;
     private static long nextId = 1;
 
     /**

@@ -13,7 +13,7 @@ import javafx.scene.paint.Color;
  */
 public class EasterEgg {
     private static final int SIZE = 32;
-    private static final int LIFETIME = 600; // 10 seconds at 60 FPS
+    private static final int LIFETIME = GameConstants.EASTER_EGG_LIFETIME;
 
     private double x;
     private double y;

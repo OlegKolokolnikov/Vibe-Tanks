@@ -10,7 +10,7 @@ public class UFO {
     private static final int SIZE = 48;
     private static final double SPEED = 1.5;
     private static final int SHOOT_COOLDOWN = 90; // frames between shots
-    private static final int LIFETIME = 1800; // 30 seconds at 60 FPS
+    private static final int LIFETIME = GameConstants.UFO_LIFETIME;
     private static final int DIRECTION_CHANGE_INTERVAL = 60; // Change direction every second
 
     private double x, y;

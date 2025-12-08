@@ -628,7 +628,7 @@ public class ServerGameState {
             }
             case FREEZE -> {
                 // Freeze players for 10 seconds
-                playerFreezeDuration = 600;
+                playerFreezeDuration = GameConstants.FREEZE_TIME;
                 System.out.println("[*] FREEZE: Players frozen for 10 seconds!");
             }
             case BOMB -> {
@@ -674,10 +674,10 @@ public class ServerGameState {
         switch (powerUp.getType()) {
             case SHOVEL -> {
                 gameMap.setBaseProtection(GameMap.TileType.STEEL);
-                baseProtectionDuration = 3600;
+                baseProtectionDuration = GameConstants.BASE_PROTECTION_TIME;
             }
             case FREEZE -> {
-                enemyFreezeDuration = 600;
+                enemyFreezeDuration = GameConstants.FREEZE_TIME;
             }
             case BOMB -> {
                 for (Tank enemy : enemyTanks) {

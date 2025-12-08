@@ -38,6 +38,16 @@ public final class GameConstants {
     // Enemy team speed boost
     public static final double ENEMY_TEAM_SPEED_BOOST = 0.3; // 30% speed boost
 
+    // Shield durations
+    public static final int SHIELD_DURATION = 3600;           // 1 minute (full shield power-up)
+    public static final int TEMPORARY_SHIELD_DURATION = 180;  // 3 seconds (respawn/start shield)
+
+    // Power-up effect durations
+    public static final int LASER_DURATION = 1800;            // 30 seconds
+    public static final int POWERUP_LIFETIME = 600;           // 10 seconds
+    public static final int UFO_LIFETIME = 1800;              // 30 seconds
+    public static final int EASTER_EGG_LIFETIME = 600;        // 10 seconds
+
     // UFO settings
     public static final double UFO_SPAWN_CHANCE = 0.0005; // Per frame chance
 

@@ -291,4 +291,164 @@ class PowerUpTest {
             assertEquals(250, powerUp.getY());
         }
     }
+
+    @Nested
+    @DisplayName("ID Tracking Tests")
+    class IdTrackingTests {
+
+        @BeforeEach
+        void setUp() {
+            // Reset ID counter before each test to ensure predictable IDs
+            PowerUp.resetIdCounter();
+        }
+
+        @Test
+        @DisplayName("First power-up after reset should have ID 1")
+        void firstPowerUpHasIdOne() {
+            powerUp = new PowerUp(0, 0, PowerUp.Type.STAR);
+            assertEquals(1, powerUp.getId());
+        }
+
+        @Test
+        @DisplayName("Sequential power-ups should have incrementing IDs")
+        void sequentialPowerUpsHaveIncrementingIds() {
+            PowerUp p1 = new PowerUp(0, 0, PowerUp.Type.GUN);
+            PowerUp p2 = new PowerUp(10, 20, PowerUp.Type.STAR);
+            PowerUp p3 = new PowerUp(30, 40, PowerUp.Type.CAR);
+
+            assertEquals(1, p1.getId());
+            assertEquals(2, p2.getId());
+            assertEquals(3, p3.getId());
+        }
+
+        @Test
+        @DisplayName("Reset counter should start IDs from 1 again")
+        void resetCounterStartsFromOne() {
+            // Create some power-ups
+            new PowerUp(0, 0, PowerUp.Type.GUN);
+            new PowerUp(0, 0, PowerUp.Type.STAR);
+            new PowerUp(0, 0, PowerUp.Type.CAR);
+
+            // Reset and create new power-up
+            PowerUp.resetIdCounter();
+            powerUp = new PowerUp(0, 0, PowerUp.Type.BOMB);
+
+            assertEquals(1, powerUp.getId());
+        }
+
+        @Test
+        @DisplayName("Random constructor should also assign unique IDs")
+        void randomConstructorAssignsUniqueIds() {
+            PowerUp p1 = new PowerUp(0, 0);
+            PowerUp p2 = new PowerUp(10, 20);
+            PowerUp p3 = new PowerUp(30, 40);
+
+            assertEquals(1, p1.getId());
+            assertEquals(2, p2.getId());
+            assertEquals(3, p3.getId());
+        }
+
+        @Test
+        @DisplayName("ID should not change after updates")
+        void idDoesNotChangeAfterUpdates() {
+            powerUp = new PowerUp(0, 0, PowerUp.Type.FREEZE);
+            long originalId = powerUp.getId();
+
+            for (int i = 0; i < 100; i++) {
+                powerUp.update();
+            }
+
+            assertEquals(originalId, powerUp.getId());
+        }
+
+        @Test
+        @DisplayName("Network sync constructor should use provided ID")
+        void networkSyncConstructorUsesProvidedId() {
+            powerUp = new PowerUp(999, 100, 200, PowerUp.Type.LASER, 500);
+
+            assertEquals(999, powerUp.getId());
+            assertEquals(100, powerUp.getX());
+            assertEquals(200, powerUp.getY());
+            assertEquals(PowerUp.Type.LASER, powerUp.getType());
+            assertEquals(500, powerUp.getLifetime());
+        }
+
+        @Test
+        @DisplayName("Network sync constructor should not affect ID counter")
+        void networkSyncConstructorDoesNotAffectCounter() {
+            // Create power-up with auto ID
+            PowerUp p1 = new PowerUp(0, 0, PowerUp.Type.GUN);
+            assertEquals(1, p1.getId());
+
+            // Create power-up with explicit ID (network sync)
+            PowerUp pSync = new PowerUp(999, 50, 50, PowerUp.Type.STAR, 300);
+            assertEquals(999, pSync.getId());
+
+            // Next auto ID should continue from where it left off
+            PowerUp p2 = new PowerUp(0, 0, PowerUp.Type.CAR);
+            assertEquals(2, p2.getId());
+        }
+    }
+
+    @Nested
+    @DisplayName("Lifetime Getter Tests")
+    class LifetimeGetterTests {
+
+        @BeforeEach
+        void setUp() {
+            PowerUp.resetIdCounter();
+        }
+
+        @Test
+        @DisplayName("New power-up should have full lifetime")
+        void newPowerUpHasFullLifetime() {
+            powerUp = new PowerUp(0, 0, PowerUp.Type.STAR);
+            assertEquals(600, powerUp.getLifetime());
+        }
+
+        @Test
+        @DisplayName("Lifetime should decrease with each update")
+        void lifetimeDecreasesWithUpdate() {
+            powerUp = new PowerUp(0, 0, PowerUp.Type.STAR);
+
+            powerUp.update();
+            assertEquals(599, powerUp.getLifetime());
+
+            powerUp.update();
+            assertEquals(598, powerUp.getLifetime());
+        }
+
+        @Test
+        @DisplayName("Network sync constructor should set custom lifetime")
+        void networkSyncSetsCustomLifetime() {
+            powerUp = new PowerUp(1, 0, 0, PowerUp.Type.STAR, 123);
+            assertEquals(123, powerUp.getLifetime());
+        }
+
+        @Test
+        @DisplayName("Lifetime should reach zero when expired")
+        void lifetimeReachesZeroWhenExpired() {
+            powerUp = new PowerUp(0, 0, PowerUp.Type.STAR);
+
+            for (int i = 0; i < 600; i++) {
+                powerUp.update();
+            }
+
+            assertEquals(0, powerUp.getLifetime());
+            assertTrue(powerUp.isExpired());
+        }
+
+        @Test
+        @DisplayName("Lifetime can go negative with more updates")
+        void lifetimeCanGoNegative() {
+            powerUp = new PowerUp(0, 0, PowerUp.Type.STAR);
+
+            for (int i = 0; i < 610; i++) {
+                powerUp.update();
+            }
+
+            assertEquals(-10, powerUp.getLifetime());
+            assertTrue(powerUp.isExpired());
+        }
+    }
 }

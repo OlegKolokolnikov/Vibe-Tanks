@@ -478,7 +478,12 @@ public class ServerGameState {
                             int killer = laser.getOwnerPlayerNumber();
                             if (killer >= 1 && killer <= 4) {
                                 playerKills[killer - 1]++;
-                                playerScores[killer - 1] += 1;
+                                int enemyType = enemy.getEnemyType().ordinal();
+                                if (enemyType < 6) {
+                                    playerKillsByType[killer - 1][enemyType]++;
+                                }
+                                int points = GameConstants.getScoreForEnemyType(enemy.getEnemyType());
+                                playerScores[killer - 1] += points;
                             }
                         }
                     }

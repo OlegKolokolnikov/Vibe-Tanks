@@ -72,15 +72,17 @@ public class Game {
     private int pauseMenuSelection = 0; // 0 = Resume, 1 = Exit
     private boolean[] playerPaused = new boolean[4]; // Per-player pause for multiplayer
 
-    // Player kills and score tracking
-    private int[] playerKills = new int[4];
-    private int[] playerScores = new int[4]; // Total score across all levels
-    private int[] playerLevelScores = new int[4]; // Score for current level only
+    // Player kills and score tracking (consolidated in PlayerStats)
+    private PlayerStats playerStats = new PlayerStats();
+    // Legacy arrays - delegate to playerStats for backwards compatibility during migration
+    private int[] playerKills = playerStats.getKillsArray();
+    private int[] playerScores = playerStats.getScoresArray();
+    private int[] playerLevelScores = playerStats.getLevelScoresArray();
     private boolean winnerBonusAwarded = false;
 
     // Kills per enemy type per player: [playerIndex][enemyTypeOrdinal]
     // Enemy types: REGULAR=0, ARMORED=1, FAST=2, POWER=3, HEAVY=4, BOSS=5
-    private int[][] playerKillsByType = new int[4][6];
+    private int[][] playerKillsByType = playerStats.getKillsByTypeMatrix();
 
     // For client sound effects (track previous state to detect changes)
     private int prevEnemyCount = 0;

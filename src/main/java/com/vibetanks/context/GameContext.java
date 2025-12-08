@@ -58,11 +58,13 @@ public class GameContext {
     private int pauseMenuSelection = 0;
     private boolean[] playerPaused = new boolean[4];
 
-    // Score tracking
-    private int[] playerKills = new int[4];
-    private int[] playerScores = new int[4];
-    private int[] playerLevelScores = new int[4];
-    private int[][] playerKillsByType = new int[4][6];
+    // Score tracking (consolidated in PlayerStats)
+    private PlayerStats playerStats = new PlayerStats();
+    // Legacy arrays - delegate to playerStats for backwards compatibility during migration
+    private int[] playerKills = playerStats.getKillsArray();
+    private int[] playerScores = playerStats.getScoresArray();
+    private int[] playerLevelScores = playerStats.getLevelScoresArray();
+    private int[][] playerKillsByType = playerStats.getKillsByTypeMatrix();
     private boolean winnerBonusAwarded = false;
 
     // Power-up effect durations
@@ -194,6 +196,16 @@ public class GameContext {
     public void setPlayerPaused(boolean[] playerPaused) { this.playerPaused = playerPaused; }
 
     // Score tracking
+    public PlayerStats getPlayerStats() { return playerStats; }
+    public void setPlayerStats(PlayerStats playerStats) {
+        this.playerStats = playerStats;
+        // Update legacy array references
+        this.playerKills = playerStats.getKillsArray();
+        this.playerScores = playerStats.getScoresArray();
+        this.playerLevelScores = playerStats.getLevelScoresArray();
+        this.playerKillsByType = playerStats.getKillsByTypeMatrix();
+    }
+
     public int[] getPlayerKills() { return playerKills; }
     public void setPlayerKills(int[] playerKills) { this.playerKills = playerKills; }
 

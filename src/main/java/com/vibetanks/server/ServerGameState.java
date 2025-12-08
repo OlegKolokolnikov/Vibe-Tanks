@@ -38,10 +38,8 @@ public class ServerGameState {
     private boolean gameOver = false;
     private boolean victory = false;
 
-    // Player stats
-    private int[] playerKills;
-    private int[] playerScores;
-    private int[][] playerKillsByType;
+    // Player stats (consolidated)
+    private PlayerStats playerStats;
     private String[] playerNicknames;
 
     // Freeze timers
@@ -75,9 +73,7 @@ public class ServerGameState {
         // Create a sound manager but it won't actually play sounds on server
         this.soundManager = new SoundManager();
 
-        playerKills = new int[4];
-        playerScores = new int[4];
-        playerKillsByType = new int[4][6];
+        playerStats = new PlayerStats();
         playerNicknames = new String[4];
 
         actualConnectedPlayers = Math.max(1, initialPlayers);
@@ -417,13 +413,7 @@ public class ServerGameState {
                         if (!enemy.isAlive()) {
                             int killer = bullet.getOwnerPlayerNumber();
                             if (killer >= 1 && killer <= 4) {
-                                playerKills[killer - 1]++;
-                                int enemyType = enemy.getEnemyType().ordinal();
-                                if (enemyType < 6) {
-                                    playerKillsByType[killer - 1][enemyType]++;
-                                }
-                                int points = GameConstants.getScoreForEnemyType(enemy.getEnemyType());
-                                playerScores[killer - 1] += points;
+                                playerStats.recordKill(killer - 1, enemy.getEnemyType());
                             }
                         }
                         notifyBulletDestroyed(bullet);
@@ -489,13 +479,7 @@ public class ServerGameState {
                         if (!enemy.isAlive()) {
                             int killer = laser.getOwnerPlayerNumber();
                             if (killer >= 1 && killer <= 4) {
-                                playerKills[killer - 1]++;
-                                int enemyType = enemy.getEnemyType().ordinal();
-                                if (enemyType < 6) {
-                                    playerKillsByType[killer - 1][enemyType]++;
-                                }
-                                int points = GameConstants.getScoreForEnemyType(enemy.getEnemyType());
-                                playerScores[killer - 1] += points;
+                                playerStats.recordKill(killer - 1, enemy.getEnemyType());
                             }
                         }
                     }
@@ -754,8 +738,8 @@ public class ServerGameState {
         // Players - use array assignment
         for (int i = 0; i < playerTanks.size() && i < 4; i++) {
             Tank tank = playerTanks.get(i);
-            state.players[i].copyFromTank(tank, playerKills[i], playerScores[i], playerScores[i],
-                playerNicknames[i], playerKillsByType[i]);
+            state.players[i].copyFromTank(tank, playerStats.getKills(i), playerStats.getScore(i),
+                playerStats.getLevelScore(i), playerNicknames[i], playerStats.getKillsByTypeArray(i));
         }
 
         // Enemies
@@ -886,11 +870,9 @@ public class ServerGameState {
     public void restartLevel() {
         System.out.println("[*] Restarting level " + currentLevel);
 
-        // Reset stats for this level
-        for (int i = 0; i < playerKills.length; i++) {
-            playerKills[i] = 0;
-            Arrays.fill(playerKillsByType[i], 0);
-        }
+        // Reset kills for this level (scores persist across restarts)
+        playerStats.resetKillsOnly();
+        playerStats.resetLevelScores();
 
         initialize(playerTanks.size());
     }
@@ -899,7 +881,10 @@ public class ServerGameState {
         currentLevel++;
         System.out.println("[*] Starting level " + currentLevel);
 
-        // Keep scores, reset level-specific stuff
+        // Reset kills and level scores, keep total scores
+        playerStats.resetKillsOnly();
+        playerStats.resetLevelScores();
+
         initialize(playerTanks.size());
     }
 

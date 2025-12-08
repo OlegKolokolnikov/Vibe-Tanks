@@ -369,4 +369,19 @@ public class Base {
     public boolean isEasterEggMode() {
         return easterEggMode;
     }
+
+    /**
+     * Reset the base to initial state (for new level or game restart).
+     */
+    public void reset() {
+        this.alive = true;
+        this.showFlag = false;
+        this.flagHeight = 0;
+        this.flagWaveFrame = 0;
+        this.showVictoryFlag = false;
+        this.victoryFlagHeight = 0;
+        this.victoryFlagWaveFrame = 0;
+        this.easterEggMode = false;
+        this.easterEggAnimFrame = 0;
+    }
 }

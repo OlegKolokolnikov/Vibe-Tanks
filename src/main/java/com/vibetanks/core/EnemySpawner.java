@@ -130,4 +130,15 @@ public class EnemySpawner {
     public boolean allEnemiesSpawned() {
         return spawnedCount >= totalEnemies;
     }
+
+    /**
+     * Reset the spawner for a new level or game restart.
+     */
+    public void reset(int newTotalEnemies, GameMap newMap) {
+        this.totalEnemies = newTotalEnemies;
+        this.spawnedCount = 0;
+        this.spawnCooldown = SPAWN_DELAY;
+        this.map = newMap;
+        this.levelNumber = newMap.getLevelNumber();
+    }
 }

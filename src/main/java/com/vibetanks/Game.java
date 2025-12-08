@@ -5,6 +5,7 @@ import com.vibetanks.animation.DancingGirl;
 import com.vibetanks.audio.SoundManager;
 import com.vibetanks.core.*;
 import com.vibetanks.rendering.EffectRenderer;
+import com.vibetanks.rendering.GameRenderer;
 import com.vibetanks.rendering.IconRenderer;
 import com.vibetanks.network.GameState;
 import com.vibetanks.network.NetworkManager;
@@ -44,6 +45,7 @@ public class Game {
     private InputHandler inputHandler;
     private SoundManager soundManager;
     private Base base;
+    private GameRenderer gameRenderer;
     private EffectRenderer effectRenderer;
     private IconRenderer iconRenderer;
     private double[][] playerStartPositions; // For respawning
@@ -499,11 +501,10 @@ public class Game {
         soundManager = new SoundManager();
         soundManager.playIntro();
 
-        // Initialize effect renderer
-        effectRenderer = new EffectRenderer(gc, width, height);
-
-        // Initialize icon renderer
-        iconRenderer = new IconRenderer(gc);
+        // Initialize renderers
+        gameRenderer = new GameRenderer(gc, width, height);
+        effectRenderer = gameRenderer.getEffectRenderer();
+        iconRenderer = gameRenderer.getIconRenderer();
     }
 
     private void returnToMenu() {

@@ -488,6 +488,19 @@ public class ServerGameState {
                         }
                     }
                 }
+                // UFO hit
+                if (ufo != null && ufo.isAlive() && laser.collidesWithUFO(ufo)) {
+                    // Laser deals 3 damage to UFO
+                    for (int i = 0; i < 3 && ufo.isAlive(); i++) {
+                        boolean destroyed = ufo.damage();
+                        if (destroyed) {
+                            // Spawn easter egg at UFO position
+                            easterEgg = new EasterEgg(ufo.getX(), ufo.getY());
+                            System.out.println("[*] UFO destroyed by laser! Easter egg spawned.");
+                            break;
+                        }
+                    }
+                }
                 // Base hit
                 if (laser.collidesWithBase(base) && base.isAlive()) {
                     base.destroy();

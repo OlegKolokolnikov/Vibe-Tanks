@@ -171,6 +171,56 @@ public class Laser {
     }
 
     /**
+     * Check if laser beam intersects with UFO
+     */
+    public boolean collidesWithUFO(UFO ufo) {
+        if (ufo == null || !ufo.isAlive() || fromEnemy) return false;
+
+        double ufoX = ufo.getX();
+        double ufoY = ufo.getY();
+        double ufoSize = 48; // UFO size
+
+        // Get beam bounding box
+        double beamLeft, beamRight, beamTop, beamBottom;
+
+        switch (direction) {
+            case UP -> {
+                beamLeft = startX - BEAM_WIDTH / 2.0;
+                beamRight = startX + BEAM_WIDTH / 2.0;
+                beamTop = startY - length;
+                beamBottom = startY;
+            }
+            case DOWN -> {
+                beamLeft = startX - BEAM_WIDTH / 2.0;
+                beamRight = startX + BEAM_WIDTH / 2.0;
+                beamTop = startY;
+                beamBottom = startY + length;
+            }
+            case LEFT -> {
+                beamLeft = startX - length;
+                beamRight = startX;
+                beamTop = startY - BEAM_WIDTH / 2.0;
+                beamBottom = startY + BEAM_WIDTH / 2.0;
+            }
+            case RIGHT -> {
+                beamLeft = startX;
+                beamRight = startX + length;
+                beamTop = startY - BEAM_WIDTH / 2.0;
+                beamBottom = startY + BEAM_WIDTH / 2.0;
+            }
+            default -> {
+                return false;
+            }
+        }
+
+        // Check rectangle intersection
+        return beamLeft < ufoX + ufoSize &&
+               beamRight > ufoX &&
+               beamTop < ufoY + ufoSize &&
+               beamBottom > ufoY;
+    }
+
+    /**
      * Check if laser beam hits the base
      */
     public boolean collidesWithBase(Base base) {

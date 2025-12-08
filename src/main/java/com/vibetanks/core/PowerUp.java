@@ -8,6 +8,14 @@ import java.util.Random;
 public class PowerUp {
     private static final int SIZE = 32; // Same size as tank
     private static final int LIFETIME = 600; // 10 seconds
+    private static long nextId = 1;
+
+    /**
+     * Reset power-up ID counter. Call this at level start/restart to prevent overflow.
+     */
+    public static void resetIdCounter() {
+        nextId = 1;
+    }
 
     public enum Type {
         GUN,        // Ability to break iron/steel walls
@@ -24,12 +32,14 @@ public class PowerUp {
         LASER       // Shoot laser beam that passes through obstacles, deals 3 damage (30 seconds, rare)
     }
 
+    private long id;
     private double x;
     private double y;
     private Type type;
     private int lifetime;
 
     public PowerUp(double x, double y) {
+        this.id = nextId++;
         this.x = x;
         this.y = y;
         this.lifetime = LIFETIME;
@@ -48,10 +58,22 @@ public class PowerUp {
     }
 
     public PowerUp(double x, double y, Type type) {
+        this.id = nextId++;
         this.x = x;
         this.y = y;
         this.lifetime = LIFETIME;
         this.type = type;
+    }
+
+    /**
+     * Constructor with explicit ID (for network sync).
+     */
+    public PowerUp(long id, double x, double y, Type type, int lifetime) {
+        this.id = id;
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.lifetime = lifetime;
     }
 
     public void update() {
@@ -371,7 +393,9 @@ public class PowerUp {
         };
     }
 
+    public long getId() { return id; }
     public double getX() { return x; }
     public double getY() { return y; }
     public Type getType() { return type; }
+    public int getLifetime() { return lifetime; }
 }

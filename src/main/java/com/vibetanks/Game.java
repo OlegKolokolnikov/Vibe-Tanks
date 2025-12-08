@@ -43,13 +43,8 @@ public class Game {
     private Base base;
     private double[][] playerStartPositions; // For respawning
 
-    // Fixed start positions for each player (indexed by playerNumber - 1)
-    private static final double[][] FIXED_START_POSITIONS = {
-        {8 * 32, 24 * 32},   // Player 1
-        {16 * 32, 24 * 32},  // Player 2
-        {9 * 32, 24 * 32},   // Player 3
-        {15 * 32, 24 * 32}   // Player 4
-    };
+    // Fixed start positions - use shared constants
+    private static final double[][] FIXED_START_POSITIONS = GameConstants.PLAYER_START_POSITIONS;
 
     private AnimationTimer gameLoop;
     private long lastFrameTime = 0; // For frame rate limiting
@@ -90,25 +85,25 @@ public class Game {
     private boolean firstStateReceived = false; // Skip sounds on first state to avoid burst
     private int respawnSyncFrames = 0; // Frames to wait after respawn before sending position
 
-    // SHOVEL power-up - base protection with steel
+    // SHOVEL power-up - base protection with steel (use shared constants)
     private int baseProtectionDuration = 0;
-    private static final int BASE_PROTECTION_TIME = 3600; // 1 minute at 60 FPS
+    private static final int BASE_PROTECTION_TIME = GameConstants.BASE_PROTECTION_TIME;
     private boolean isFlashing = false;
     private int flashCount = 0; // Counts the number of flashes (up to 10 for 5 complete flashes)
     private int flashTimer = 0; // Timer for each flash state (60 frames = 1 second)
-    private static final int FLASH_DURATION = 60; // 1 second at 60 FPS
+    private static final int FLASH_DURATION = GameConstants.FLASH_DURATION;
     private static final int TOTAL_FLASHES = 10; // 5 complete flashes (10 state changes)
 
-    // FREEZE power-up - freeze enemies or players
+    // FREEZE power-up - freeze enemies or players (use shared constants)
     private int enemyFreezeDuration = 0;
     private int playerFreezeDuration = 0;
-    private static final int FREEZE_TIME = 600; // 10 seconds at 60 FPS
+    private static final int FREEZE_TIME = GameConstants.FREEZE_TIME;
 
-    // Enemy team speed boost (when enemy picks up CAR)
+    // Enemy team speed boost (when enemy picks up CAR) - use shared constants
     private int enemyTeamSpeedBoostDuration = 0;
     private Tank enemyWithPermanentSpeedBoost = null; // The enemy who picked up CAR keeps the boost
-    private static final int ENEMY_SPEED_BOOST_TIME = 1800; // 30 seconds at 60 FPS
-    private static final double ENEMY_TEAM_SPEED_BOOST = 0.3; // 30% speed boost
+    private static final int ENEMY_SPEED_BOOST_TIME = GameConstants.ENEMY_SPEED_BOOST_TIME;
+    private static final double ENEMY_TEAM_SPEED_BOOST = GameConstants.ENEMY_TEAM_SPEED_BOOST;
 
     // Victory dancing anime girl
     private ImageView victoryImageView;
@@ -126,7 +121,7 @@ public class Game {
     private boolean ufoWasKilled = false; // Track if UFO was killed vs escaped
     private int ufoLostMessageTimer = 0; // Timer for "Lost it!" message (3 seconds = 180 frames)
     private int ufoKilledMessageTimer = 0; // Timer for "Zed is dead!" message (3 seconds = 180 frames)
-    private static final int UFO_MESSAGE_DURATION = 180; // 3 seconds at 60 FPS
+    private static final int UFO_MESSAGE_DURATION = GameConstants.UFO_MESSAGE_DURATION;
     private boolean dancingInitialized = false;
 
     // Easter egg collectible (spawns when UFO is killed)
@@ -139,10 +134,10 @@ public class Game {
     // Track actual connected players (for network games)
     private int networkConnectedPlayers = 1;
 
-    // Victory delay (5 seconds before showing victory screen)
+    // Victory delay (5 seconds before showing victory screen) - use shared constant
     private boolean victoryConditionMet = false;
     private int victoryDelayTimer = 0;
-    private static final int VICTORY_DELAY = 300; // 5 seconds at 60 FPS
+    private static final int VICTORY_DELAY = GameConstants.VICTORY_DELAY;
 
     // Player nicknames (index 0-3 for players 1-4)
     private String[] playerNicknames = new String[4];
@@ -3226,9 +3221,11 @@ public class Game {
         for (PowerUp powerUp : powerUps) {
             if (powerUp != null) {
                 state.powerUps.add(new GameState.PowerUpData(
+                    powerUp.getId(),
                     powerUp.getX(),
                     powerUp.getY(),
-                    powerUp.getType().ordinal()
+                    powerUp.getType().ordinal(),
+                    powerUp.getLifetime()
                 ));
             }
         }

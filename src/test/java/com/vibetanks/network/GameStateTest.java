@@ -240,11 +240,13 @@ class GameStateTest {
         @Test
         @DisplayName("PowerUpData constructor should set all fields")
         void powerUpDataConstructorSetsFields() {
-            GameState.PowerUpData powerUp = new GameState.PowerUpData(100, 200, 3);
+            GameState.PowerUpData powerUp = new GameState.PowerUpData(1, 100, 200, 3, 600);
 
+            assertEquals(1, powerUp.id);
             assertEquals(100, powerUp.x);
             assertEquals(200, powerUp.y);
             assertEquals(3, powerUp.type);
+            assertEquals(600, powerUp.lifetime);
         }
 
         @Test

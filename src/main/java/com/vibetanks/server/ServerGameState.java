@@ -98,9 +98,10 @@ public class ServerGameState {
     }
 
     private void initialize(int playerCount) {
-        // Reset bullet IDs to prevent overflow after extended play
+        // Reset IDs to prevent overflow after extended play
         Bullet.resetIdCounter();
         Laser.resetIdCounter();
+        PowerUp.resetIdCounter();
 
         gameMap = new GameMap(MAP_SIZE, MAP_SIZE);
         bullets = new ArrayList<>();
@@ -772,8 +773,10 @@ public class ServerGameState {
         // Power-ups
         for (PowerUp powerUp : powerUps) {
             state.powerUps.add(new GameState.PowerUpData(
+                powerUp.getId(),
                 powerUp.getX(), powerUp.getY(),
-                powerUp.getType().ordinal()
+                powerUp.getType().ordinal(),
+                powerUp.getLifetime()
             ));
         }
 

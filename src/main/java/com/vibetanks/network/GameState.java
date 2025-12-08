@@ -229,13 +229,17 @@ public class GameState implements Serializable {
     }
 
     public static class PowerUpData implements Serializable {
+        public long id;
         public double x, y;
         public int type; // Ordinal of PowerUp.Type
+        public int lifetime;
 
-        public PowerUpData(double x, double y, int type) {
+        public PowerUpData(long id, double x, double y, int type, int lifetime) {
+            this.id = id;
             this.x = x;
             this.y = y;
             this.type = type;
+            this.lifetime = lifetime;
         }
     }
 

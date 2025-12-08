@@ -289,4 +289,109 @@ class BulletTest {
             assertTrue(sawBullet.canDestroyTrees());
         }
     }
+
+    @Nested
+    @DisplayName("ID Tracking Tests")
+    class IdTrackingTests {
+
+        @BeforeEach
+        void setUp() {
+            // Reset ID counter before each test for predictable IDs
+            Bullet.resetIdCounter();
+        }
+
+        @Test
+        @DisplayName("First bullet after reset should have ID 1")
+        void firstBulletHasIdOne() {
+            bullet = new Bullet(0, 0, Direction.UP, false, 1, false);
+            assertEquals(1, bullet.getId());
+        }
+
+        @Test
+        @DisplayName("Sequential bullets should have incrementing IDs")
+        void sequentialBulletsHaveIncrementingIds() {
+            Bullet b1 = new Bullet(0, 0, Direction.UP, false, 1, false);
+            Bullet b2 = new Bullet(10, 20, Direction.DOWN, true, 1, false);
+            Bullet b3 = new Bullet(30, 40, Direction.LEFT, false, 2, true, 1);
+
+            assertEquals(1, b1.getId());
+            assertEquals(2, b2.getId());
+            assertEquals(3, b3.getId());
+        }
+
+        @Test
+        @DisplayName("Reset counter should start IDs from 1 again")
+        void resetCounterStartsFromOne() {
+            // Create some bullets
+            new Bullet(0, 0, Direction.UP, false, 1, false);
+            new Bullet(0, 0, Direction.DOWN, true, 1, false);
+            new Bullet(0, 0, Direction.LEFT, false, 2, true);
+
+            // Reset and create new bullet
+            Bullet.resetIdCounter();
+            bullet = new Bullet(0, 0, Direction.RIGHT, false, 1, false);
+
+            assertEquals(1, bullet.getId());
+        }
+
+        @Test
+        @DisplayName("Explicit ID constructor should use provided ID")
+        void explicitIdConstructorUsesProvidedId() {
+            bullet = new Bullet(999L, 100, 200, Direction.UP, false, 1, false, 1, 8);
+
+            assertEquals(999, bullet.getId());
+        }
+
+        @Test
+        @DisplayName("Explicit ID constructor should not affect ID counter")
+        void explicitIdDoesNotAffectCounter() {
+            Bullet b1 = new Bullet(0, 0, Direction.UP, false, 1, false);
+            assertEquals(1, b1.getId());
+
+            // Create bullet with explicit ID
+            Bullet bSync = new Bullet(999L, 50, 50, Direction.DOWN, false, 1, false, 1, 8);
+            assertEquals(999, bSync.getId());
+
+            // Next auto ID should continue from 2, not 1000
+            Bullet b2 = new Bullet(0, 0, Direction.LEFT, false, 1, false);
+            assertEquals(2, b2.getId());
+        }
+
+        @Test
+        @DisplayName("ID should be preserved after updates")
+        void idPreservedAfterUpdates() {
+            bullet = new Bullet(100, 100, Direction.UP, false, 1, false);
+            long id = bullet.getId();
+
+            for (int i = 0; i < 50; i++) {
+                bullet.update();
+            }
+
+            assertEquals(id, bullet.getId());
+        }
+
+        @Test
+        @DisplayName("All constructor variants should generate unique IDs")
+        void allConstructorVariantsGenerateUniqueIds() {
+            Bullet b1 = new Bullet(0, 0, Direction.UP, false, 1, false);
+            Bullet b2 = new Bullet(0, 0, Direction.UP, false, 1, false, 1);
+            Bullet b3 = new Bullet(0, 0, Direction.UP, false, 1, false, 2, 16);
+
+            assertEquals(1, b1.getId());
+            assertEquals(2, b2.getId());
+            assertEquals(3, b3.getId());
+        }
+
+        @Test
+        @DisplayName("Different bullet sizes should still get sequential IDs")
+        void differentSizesGetSequentialIds() {
+            Bullet small = new Bullet(0, 0, Direction.UP, false, 1, false, 1, 8);
+            Bullet medium = new Bullet(0, 0, Direction.UP, false, 1, false, 1, 16);
+            Bullet large = new Bullet(0, 0, Direction.UP, false, 1, false, 1, 32);
+
+            assertEquals(1, small.getId());
+            assertEquals(2, medium.getId());
+            assertEquals(3, large.getId());
+        }
+    }
 }

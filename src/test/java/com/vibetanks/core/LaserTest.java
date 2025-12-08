@@ -175,6 +175,46 @@ class LaserTest {
     @DisplayName("ID Tests")
     class IdTests {
 
+        @BeforeEach
+        void setUp() {
+            // Reset ID counter before each test for predictable IDs
+            Laser.resetIdCounter();
+        }
+
+        @Test
+        @DisplayName("First laser after reset should have ID 1")
+        void firstLaserHasIdOne() {
+            laser = new Laser(0, 0, Direction.UP, false, 1);
+            assertEquals(1, laser.getId());
+        }
+
+        @Test
+        @DisplayName("Sequential lasers should have incrementing IDs")
+        void sequentialLasersHaveIncrementingIds() {
+            Laser l1 = new Laser(0, 0, Direction.UP, false, 1);
+            Laser l2 = new Laser(10, 20, Direction.DOWN, false, 2);
+            Laser l3 = new Laser(30, 40, Direction.LEFT, true, 0);
+
+            assertEquals(1, l1.getId());
+            assertEquals(2, l2.getId());
+            assertEquals(3, l3.getId());
+        }
+
+        @Test
+        @DisplayName("Reset counter should start IDs from 1 again")
+        void resetCounterStartsFromOne() {
+            // Create some lasers
+            new Laser(0, 0, Direction.UP, false, 1);
+            new Laser(0, 0, Direction.DOWN, false, 2);
+            new Laser(0, 0, Direction.LEFT, false, 3);
+
+            // Reset and create new laser
+            Laser.resetIdCounter();
+            laser = new Laser(0, 0, Direction.RIGHT, false, 1);
+
+            assertEquals(1, laser.getId());
+        }
+
         @Test
         @DisplayName("setId should change laser ID")
         void setIdChangesId() {
@@ -188,6 +228,20 @@ class LaserTest {
         }
 
         @Test
+        @DisplayName("setId should not affect ID counter")
+        void setIdDoesNotAffectCounter() {
+            Laser l1 = new Laser(0, 0, Direction.UP, false, 1);
+            assertEquals(1, l1.getId());
+
+            // Manually set ID to a high value
+            l1.setId(999L);
+
+            // Next auto ID should continue from 2, not 1000
+            Laser l2 = new Laser(0, 0, Direction.DOWN, false, 1);
+            assertEquals(2, l2.getId());
+        }
+
+        @Test
         @DisplayName("ID should be preserved after updates")
         void idPreservedAfterUpdates() {
             laser = new Laser(0, 0, Direction.UP, false, 1);
@@ -197,6 +251,21 @@ class LaserTest {
                 laser.update();
             }
 
+            assertEquals(id, laser.getId());
+        }
+
+        @Test
+        @DisplayName("ID should be preserved even after expiry")
+        void idPreservedAfterExpiry() {
+            laser = new Laser(0, 0, Direction.UP, false, 1);
+            long id = laser.getId();
+
+            // Update past expiry
+            for (int i = 0; i < 100; i++) {
+                laser.update();
+            }
+
+            assertTrue(laser.isExpired());
             assertEquals(id, laser.getId());
         }
     }

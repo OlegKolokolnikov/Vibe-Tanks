@@ -174,55 +174,58 @@ public class DedicatedServer {
                 lastFrameTime = now;
 
                 if (gameStarted) {
+                    // Collect inputs atomically outside the lock to reduce lock contention
+                    Map<Integer, PlayerInput> frameInputs = new HashMap<>();
+                    for (int i = 1; i <= MAX_PLAYERS; i++) {
+                        PlayerInput input = playerInputs.remove(i);
+                        if (input != null) {
+                            frameInputs.put(i, input);
+                        }
+                    }
+
+                    // Build state inside lock, broadcast outside
+                    GameState stateToSend = null;
                     synchronized (gameStateLock) {
                         if (gameState != null) {
                             // Update connected player count
                             gameState.setConnectedPlayers(getActiveClientCount());
 
-                            // Process player inputs
-                            for (int i = 1; i <= MAX_PLAYERS; i++) {
-                                PlayerInput input = playerInputs.remove(i);
-                                if (input != null) {
-                                    gameState.processInput(i, input);
-                                }
+                            // Process collected player inputs
+                            for (Map.Entry<Integer, PlayerInput> entry : frameInputs.entrySet()) {
+                                gameState.processInput(entry.getKey(), entry.getValue());
                             }
 
                             // Update game state
                             gameState.update();
 
-                            // Send state to all clients
-                            GameState state = gameState.buildNetworkState();
-                            broadcastState(state);
+                            // Build network state (immutable snapshot)
+                            stateToSend = gameState.buildNetworkState();
 
-                            // Handle game over / victory
+                            // Handle game over / victory using already-collected inputs
                             if (gameState.isGameOver()) {
                                 if (!gameOverLogged) {
                                     System.out.println("[!] GAME OVER - Press ENTER to restart");
                                     gameOverLogged = true;
                                 }
-                                // Check for restart requests
-                                for (int i = 1; i <= clients.size(); i++) {
-                                    PlayerInput input = playerInputs.get(i);
+                                // Check for restart requests from collected inputs
+                                for (PlayerInput input : frameInputs.values()) {
                                     if (input != null && input.requestRestart) {
-                                        System.out.println("[*] Restarting game by request from Player " + i);
+                                        System.out.println("[*] Restarting game by player request");
                                         gameState.restartLevel();
                                         gameOverLogged = false;
                                         victoryLogged = false;
                                         break;
                                     }
                                 }
-                            }
-
-                            if (gameState.isVictory()) {
+                            } else if (gameState.isVictory()) {
                                 if (!victoryLogged) {
                                     System.out.println("[!] VICTORY - Level " + gameState.getCurrentLevel() + " complete");
                                     victoryLogged = true;
                                 }
-                                // Check for next level requests
-                                for (int i = 1; i <= clients.size(); i++) {
-                                    PlayerInput input = playerInputs.get(i);
+                                // Check for next level requests from collected inputs
+                                for (PlayerInput input : frameInputs.values()) {
                                     if (input != null && input.requestNextLevel) {
-                                        System.out.println("[*] Starting next level by request from Player " + i);
+                                        System.out.println("[*] Starting next level by player request");
                                         gameState.nextLevel();
                                         gameOverLogged = false;
                                         victoryLogged = false;
@@ -233,6 +236,11 @@ public class DedicatedServer {
 
                             frameCount++;
                         }
+                    }
+
+                    // Broadcast state OUTSIDE the lock to prevent blocking game loop
+                    if (stateToSend != null) {
+                        broadcastState(stateToSend);
                     }
                 }
 

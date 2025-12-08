@@ -5,6 +5,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class NetworkManager {
@@ -12,14 +13,14 @@ public class NetworkManager {
     private static final int MAX_PLAYERS = 4; // 1 host + 3 clients
 
     private ServerSocket serverSocket;
-    private boolean isHost;
-    private boolean connected = false;
-    private boolean isHosting = false; // Track if currently hosting
-    private int playerNumber = 1; // Which player this instance controls
+    private volatile boolean isHost;
+    private volatile boolean connected = false;
+    private volatile boolean isHosting = false; // Track if currently hosting
+    private volatile int playerNumber = 1; // Which player this instance controls
 
-    // For host: manage multiple clients
-    private List<ClientHandler> clients = new ArrayList<>();
-    private Map<Integer, PlayerInput> playerInputs = new ConcurrentHashMap<>();
+    // For host: manage multiple clients (thread-safe list)
+    private final List<ClientHandler> clients = new CopyOnWriteArrayList<>();
+    private final Map<Integer, PlayerInput> playerInputs = new ConcurrentHashMap<>();
     private Thread acceptThread; // Track accept thread
 
     // For client: single connection to host
@@ -35,7 +36,7 @@ public class NetworkManager {
         private ObjectOutputStream out;
         private ObjectInputStream in;
         private int playerNumber;
-        private boolean active = true;
+        private volatile boolean active = true;
 
         public ClientHandler(Socket socket, int playerNumber, ObjectOutputStream out) throws IOException {
             this.socket = socket;
@@ -106,33 +107,33 @@ public class NetworkManager {
 
     // Kill any process using the specified port
     private void killProcessOnPort(int port) {
+        Process netstatProcess = null;
+        Process killProcess = null;
         try {
             System.out.println("Checking for process on port " + port + "...");
 
             // Find process using the port
-            Process netstatProcess = Runtime.getRuntime().exec("netstat -ano");
-            java.io.BufferedReader reader = new java.io.BufferedReader(
-                new java.io.InputStreamReader(netstatProcess.getInputStream())
-            );
-
-            String line;
+            netstatProcess = Runtime.getRuntime().exec("netstat -ano");
             String pid = null;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains(":" + port + " ") && line.contains("LISTENING")) {
-                    // Extract PID from the end of the line
-                    String[] parts = line.trim().split("\\s+");
-                    pid = parts[parts.length - 1];
-                    break;
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(netstatProcess.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains(":" + port + " ") && line.contains("LISTENING")) {
+                        // Extract PID from the end of the line
+                        String[] parts = line.trim().split("\\s+");
+                        pid = parts[parts.length - 1];
+                        break;
+                    }
                 }
             }
-            reader.close();
             netstatProcess.waitFor();
 
             if (pid != null && !pid.isEmpty()) {
                 System.out.println("Found process " + pid + " using port " + port + ", killing it...");
 
                 // Kill the process using PowerShell
-                Process killProcess = Runtime.getRuntime().exec(
+                killProcess = Runtime.getRuntime().exec(
                     "powershell -Command \"Stop-Process -Id " + pid + " -Force\""
                 );
                 killProcess.waitFor();
@@ -145,6 +146,14 @@ public class NetworkManager {
             }
         } catch (Exception e) {
             System.err.println("Error checking/killing process on port: " + e.getMessage());
+        } finally {
+            // Ensure processes are destroyed to prevent zombie processes
+            if (netstatProcess != null) {
+                netstatProcess.destroyForcibly();
+            }
+            if (killProcess != null) {
+                killProcess.destroyForcibly();
+            }
         }
     }
 
@@ -425,10 +434,10 @@ public class NetworkManager {
     public String getPublicIP() {
         try {
             URL url = new URL("https://api.ipify.org");
-            BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
-            String ip = in.readLine();
-            in.close();
-            return ip;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                String ip = reader.readLine();
+                return ip != null ? ip : "Unknown";
+            }
         } catch (Exception e) {
             return "Unknown (check internet connection)";
         }

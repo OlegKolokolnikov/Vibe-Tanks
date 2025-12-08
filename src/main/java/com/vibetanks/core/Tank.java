@@ -5,7 +5,6 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 import java.util.List;
-import java.util.Random;
 
 public class Tank {
     public enum EnemyType {
@@ -48,8 +47,6 @@ public class Tank {
     private int shootCooldownReduction; // STAR power-up (each star reduces cooldown)
     private int laserDuration; // LASER power-up duration (30 seconds = 1800 frames at 60 FPS)
     private static final int LASER_COOLDOWN = 10; // Very fast shooting (6 shots per second)
-
-    private Random random;
 
     // AI variables
     private int aiMoveCooldown;
@@ -133,7 +130,6 @@ public class Tank {
         }
         this.machinegunCount = 0;
         this.shootCooldownReduction = 0;
-        this.random = new Random();
         this.aiMoveCooldown = 60;
         this.aiShootCooldown = 90;
         this.lastX = x;
@@ -525,13 +521,13 @@ public class Tank {
                 Direction[] directions = Direction.values();
                 Direction originalDirection = direction;
                 for (int i = 0; i < 4; i++) {
-                    direction = directions[random.nextInt(4)];
+                    direction = directions[GameConstants.RANDOM.nextInt(4)];
                     if (direction != originalDirection) {
                         break;
                     }
                 }
                 stuckCounter = 0;
-                aiMoveCooldown = 60 + random.nextInt(120); // Commit to new direction longer
+                aiMoveCooldown = 60 + GameConstants.RANDOM.nextInt(120); // Commit to new direction longer
             }
         } else {
             stuckCounter = 0;
@@ -546,18 +542,18 @@ public class Tank {
         // Randomly shoot
         if (aiShootCooldown <= 0) {
             shoot(bullets, soundManager);
-            aiShootCooldown = 60 + random.nextInt(60);
+            aiShootCooldown = 60 + GameConstants.RANDOM.nextInt(60);
         }
 
         // Change direction occasionally
         if (aiMoveCooldown <= 0) {
             // 70% move towards base, 30% random
-            if (random.nextDouble() < 0.7) {
+            if (GameConstants.RANDOM.nextDouble() < 0.7) {
                 moveTowardsBase(base);
             } else {
-                direction = Direction.values()[random.nextInt(4)];
+                direction = Direction.values()[GameConstants.RANDOM.nextInt(4)];
             }
-            aiMoveCooldown = 30 + random.nextInt(90);
+            aiMoveCooldown = 30 + GameConstants.RANDOM.nextInt(90);
         }
 
         // Move in current direction

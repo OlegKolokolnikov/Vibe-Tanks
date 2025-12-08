@@ -205,8 +205,20 @@ public class ServerGameState {
             int mapPixelSize = MAP_SIZE * TILE_SIZE;
             if (input.posX < mapPixelSize - player.getSize() &&
                 input.posY < mapPixelSize - player.getSize()) {
+
+                // Anti-cheat: validate player didn't move too far (max ~10 pixels per frame at 2.5x speed)
+                // Base speed is ~2-3 pixels/frame, with CAR power-ups max 2.5x = ~7.5 pixels
+                // Allow some margin for network jitter: 15 pixels max per update
+                double dx = Math.abs(input.posX - player.getX());
+                double dy = Math.abs(input.posY - player.getY());
+                double maxMovePerFrame = 15.0; // Max allowed movement per frame
+
+                boolean validMove = (dx <= maxMovePerFrame && dy <= maxMovePerFrame) ||
+                                   player.isWaitingToRespawn() || // Allow teleport after respawn
+                                   (dx == 0 && dy == 0); // No movement is always valid
+
                 // Validate position doesn't collide with walls (unless player has SHIP for water)
-                if (!gameMap.checkTankCollision(input.posX, input.posY, player.getSize(), player.canSwim())) {
+                if (validMove && !gameMap.checkTankCollision(input.posX, input.posY, player.getSize(), player.canSwim())) {
                     player.setPosition(input.posX, input.posY);
                 }
                 // Always accept direction change
@@ -702,13 +714,12 @@ public class ServerGameState {
     }
 
     private void spawnPowerUp() {
-        Random random = new Random();
         int maxAttempts = 100;
 
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             // Random position within playable area (avoiding borders)
-            int col = 2 + random.nextInt(22); // 2 to 23 (avoid border at 0,1 and 24,25)
-            int row = 2 + random.nextInt(22);
+            int col = 2 + GameConstants.RANDOM.nextInt(22); // 2 to 23 (avoid border at 0,1 and 24,25)
+            int row = 2 + GameConstants.RANDOM.nextInt(22);
 
             // Check if position is clear (only spawn on empty tiles)
             GameMap.TileType tile = gameMap.getTile(row, col);
@@ -910,19 +921,17 @@ public class ServerGameState {
         // Raise the skull flag on the destroyed base
         base.raiseFlag();
 
-        Random random = new Random();
-
         // Create dancing aliens/humans from enemy tank positions
         if (!enemyTanks.isEmpty()) {
             for (Tank enemy : enemyTanks) {
                 // Each enemy tank spawns 1-2 characters
-                int numCharacters = 1 + random.nextInt(2);
+                int numCharacters = 1 + GameConstants.RANDOM.nextInt(2);
                 for (int i = 0; i < numCharacters; i++) {
-                    double offsetX = (random.nextDouble() - 0.5) * 40;
-                    double offsetY = (random.nextDouble() - 0.5) * 40;
-                    boolean isAlien = random.nextBoolean();
-                    int danceStyle = random.nextInt(3);
-                    int colorIndex = random.nextInt(4); // 4 colors available
+                    double offsetX = (GameConstants.RANDOM.nextDouble() - 0.5) * 40;
+                    double offsetY = (GameConstants.RANDOM.nextDouble() - 0.5) * 40;
+                    boolean isAlien = GameConstants.RANDOM.nextBoolean();
+                    int danceStyle = GameConstants.RANDOM.nextInt(3);
+                    int colorIndex = GameConstants.RANDOM.nextInt(4); // 4 colors available
                     dancingCharacters.add(new ServerDancingCharacter(
                         enemy.getX() + 16 + offsetX,
                         enemy.getY() + 16 + offsetY,
@@ -937,12 +946,12 @@ public class ServerGameState {
         double baseY = base.getY() + 32;
         for (int i = 0; i < 6; i++) {
             double angle = (Math.PI * 2 * i) / 6;
-            double radius = 60 + random.nextDouble() * 30;
+            double radius = 60 + GameConstants.RANDOM.nextDouble() * 30;
             double x = baseX + Math.cos(angle) * radius;
             double y = baseY + Math.sin(angle) * radius;
-            boolean isAlien = random.nextBoolean();
-            int danceStyle = random.nextInt(3);
-            int colorIndex = random.nextInt(4);
+            boolean isAlien = GameConstants.RANDOM.nextBoolean();
+            int danceStyle = GameConstants.RANDOM.nextInt(3);
+            int colorIndex = GameConstants.RANDOM.nextInt(4);
             dancingCharacters.add(new ServerDancingCharacter(x, y, isAlien, danceStyle, colorIndex));
         }
 
@@ -960,13 +969,11 @@ public class ServerGameState {
         // Raise the victory flag on the base
         base.raiseVictoryFlag();
 
-        Random random = new Random();
-
         // Get number of active players
         int activePlayers = playerTanks.size();
 
         // Spawn dancing girls based on player count (1-2 girls per player)
-        int girlCount = activePlayers + random.nextInt(activePlayers + 1);
+        int girlCount = activePlayers + GameConstants.RANDOM.nextInt(activePlayers + 1);
 
         // Position girls around the base
         double baseX = base.getX() + 16;
@@ -975,13 +982,13 @@ public class ServerGameState {
         for (int i = 0; i < girlCount; i++) {
             // Spread girls in a semi-circle above the base
             double angle = Math.PI + (Math.PI * (i + 0.5) / girlCount);
-            double radius = 80 + random.nextDouble() * 40;
+            double radius = 80 + GameConstants.RANDOM.nextDouble() * 40;
             double x = baseX + Math.cos(angle) * radius;
             double y = baseY + Math.sin(angle) * radius * 0.6;
-            int danceStyle = random.nextInt(4);
-            int dressColorIndex = random.nextInt(6); // 6 dress colors
-            int hairColorIndex = random.nextInt(5);  // 5 hair colors
-            int startFrame = random.nextInt(60);     // Random start frame
+            int danceStyle = GameConstants.RANDOM.nextInt(4);
+            int dressColorIndex = GameConstants.RANDOM.nextInt(6); // 6 dress colors
+            int hairColorIndex = GameConstants.RANDOM.nextInt(5);  // 5 hair colors
+            int startFrame = GameConstants.RANDOM.nextInt(60);     // Random start frame
 
             victoryDancingGirls.add(new ServerDancingGirl(x, y, startFrame, danceStyle, dressColorIndex, hairColorIndex));
         }

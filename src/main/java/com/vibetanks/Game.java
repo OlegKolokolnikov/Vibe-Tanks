@@ -23,7 +23,6 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.util.*;
-import java.util.Random;
 
 public class Game {
     private final Pane root;
@@ -850,13 +849,12 @@ public class Game {
     }
 
     private double[] getRandomPowerUpSpawnPosition() {
-        Random random = new Random();
         int maxAttempts = 100;
 
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             // Random position within playable area (avoiding borders)
-            int col = 2 + random.nextInt(22); // 2 to 23 (avoid border at 0,1 and 24,25)
-            int row = 2 + random.nextInt(22);
+            int col = 2 + GameConstants.RANDOM.nextInt(22); // 2 to 23 (avoid border at 0,1 and 24,25)
+            int row = 2 + GameConstants.RANDOM.nextInt(22);
 
             double x = col * 32;
             double y = row * 32;
@@ -874,7 +872,6 @@ public class Game {
 
     private PowerUp.Type applyRandomPowerUp(Tank player) {
         // Choose a random power-up type (excluding BOMB and FREEZE which affect game state)
-        Random random = new Random();
         PowerUp.Type[] goodTypes = {
             PowerUp.Type.GUN,
             PowerUp.Type.STAR,
@@ -885,7 +882,7 @@ public class Game {
             PowerUp.Type.SHIELD,
             PowerUp.Type.MACHINEGUN
         };
-        PowerUp.Type type = goodTypes[random.nextInt(goodTypes.length)];
+        PowerUp.Type type = goodTypes[GameConstants.RANDOM.nextInt(goodTypes.length)];
 
         // Apply the power-up effect directly to the player
         PowerUp tempPowerUp = new PowerUp(0, 0, type);
@@ -958,10 +955,9 @@ public class Game {
         }
 
         // Spawn UFO from random side
-        Random random = new Random();
-        boolean fromRight = random.nextBoolean();
+        boolean fromRight = GameConstants.RANDOM.nextBoolean();
         double startX = fromRight ? width + 10 : -58;
-        double startY = 100 + random.nextInt(height - 300);
+        double startY = 100 + GameConstants.RANDOM.nextInt(height - 300);
 
         ufo = new UFO(startX, startY, !fromRight); // Moving opposite to start side
         ufoSpawnedThisLevel = true;
@@ -1839,19 +1835,17 @@ public class Game {
         // Raise the skull flag on the destroyed base
         base.raiseFlag();
 
-        Random random = new Random();
-
         // Create dancing aliens/humans from enemy tank positions
         // If there are enemy tanks, use their positions; otherwise spawn around the destroyed base
         if (!enemyTanks.isEmpty()) {
             for (Tank enemy : enemyTanks) {
                 // Each enemy tank spawns 1-2 characters
-                int numCharacters = 1 + random.nextInt(2);
+                int numCharacters = 1 + GameConstants.RANDOM.nextInt(2);
                 for (int i = 0; i < numCharacters; i++) {
-                    double offsetX = (random.nextDouble() - 0.5) * 40;
-                    double offsetY = (random.nextDouble() - 0.5) * 40;
-                    boolean isAlien = random.nextBoolean();
-                    int danceStyle = random.nextInt(3);
+                    double offsetX = (GameConstants.RANDOM.nextDouble() - 0.5) * 40;
+                    double offsetY = (GameConstants.RANDOM.nextDouble() - 0.5) * 40;
+                    boolean isAlien = GameConstants.RANDOM.nextBoolean();
+                    int danceStyle = GameConstants.RANDOM.nextInt(3);
                     dancingCharacters.add(new DancingCharacter(
                         enemy.getX() + 16 + offsetX,
                         enemy.getY() + 16 + offsetY,
@@ -1867,11 +1861,11 @@ public class Game {
         double baseY = base.getY() + 32;
         for (int i = 0; i < 6; i++) {
             double angle = (Math.PI * 2 * i) / 6;
-            double radius = 60 + random.nextDouble() * 30;
+            double radius = 60 + GameConstants.RANDOM.nextDouble() * 30;
             double x = baseX + Math.cos(angle) * radius;
             double y = baseY + Math.sin(angle) * radius;
-            boolean isAlien = random.nextBoolean();
-            int danceStyle = random.nextInt(3);
+            boolean isAlien = GameConstants.RANDOM.nextBoolean();
+            int danceStyle = GameConstants.RANDOM.nextInt(3);
             dancingCharacters.add(new DancingCharacter(x, y, isAlien, danceStyle));
         }
     }
@@ -1883,13 +1877,11 @@ public class Game {
         // Raise the Soviet victory flag on the base
         base.raiseVictoryFlag();
 
-        Random random = new Random();
-
         // Get number of active players - use playerTanks.size() directly
         int activePlayers = playerTanks.size();
 
         // Spawn dancing girls based on player count (1-2 girls per player)
-        int girlCount = activePlayers + random.nextInt(activePlayers + 1); // Players to 2x players
+        int girlCount = activePlayers + GameConstants.RANDOM.nextInt(activePlayers + 1); // Players to 2x players
 
         // Position girls around the base
         double baseX = base.getX() + 16;
@@ -1898,10 +1890,10 @@ public class Game {
         for (int i = 0; i < girlCount; i++) {
             // Spread girls in a semi-circle above the base
             double angle = Math.PI + (Math.PI * (i + 0.5) / girlCount); // Semi-circle above
-            double radius = 80 + random.nextDouble() * 40;
+            double radius = 80 + GameConstants.RANDOM.nextDouble() * 40;
             double x = baseX + Math.cos(angle) * radius;
             double y = baseY + Math.sin(angle) * radius * 0.6; // Flatten the vertical spread
-            int danceStyle = random.nextInt(4);
+            int danceStyle = GameConstants.RANDOM.nextInt(4);
 
             victoryDancingGirls.add(new DancingGirl(x, y, danceStyle));
         }

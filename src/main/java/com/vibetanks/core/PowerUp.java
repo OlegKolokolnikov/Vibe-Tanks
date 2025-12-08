@@ -3,8 +3,6 @@ package com.vibetanks.core;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
-import java.util.Random;
-
 public class PowerUp {
     private static final int SIZE = 32; // Same size as tank
     private static final int LIFETIME = GameConstants.POWERUP_LIFETIME;
@@ -45,14 +43,13 @@ public class PowerUp {
         this.lifetime = LIFETIME;
 
         // Randomly choose power-up type (LASER is rare - 5% chance)
-        Random random = new Random();
-        if (random.nextInt(100) < 5) {
+        if (GameConstants.RANDOM.nextInt(100) < 5) {
             // 5% chance for LASER
             this.type = Type.LASER;
         } else {
             // 95% chance for other power-ups (excluding LASER)
             Type[] types = Type.values();
-            int index = random.nextInt(types.length - 1); // Exclude LASER (last item)
+            int index = GameConstants.RANDOM.nextInt(types.length - 1); // Exclude LASER (last item)
             this.type = types[index];
         }
     }

@@ -1,11 +1,19 @@
 package com.vibetanks.core;
 
+import java.util.Random;
+
 /**
  * Shared game constants to eliminate duplication between Game.java and ServerGameState.java.
  * Single source of truth for all game configuration values.
  */
 public final class GameConstants {
     private GameConstants() {} // Prevent instantiation
+
+    /**
+     * Shared Random instance to avoid creating new Random objects in hot paths.
+     * Thread-safe for game use (single game thread).
+     */
+    public static final Random RANDOM = new Random();
 
     // Map dimensions
     public static final int MAP_SIZE = 26;

@@ -12,18 +12,11 @@ import java.util.*;
  * Runs all game logic without graphics/rendering.
  */
 public class ServerGameState {
-    private static final int MAP_SIZE = 26;
-    private static final int TILE_SIZE = 32;
-    private static final int TOTAL_ENEMIES = 20;
-    private static final int MAX_ENEMIES_ON_SCREEN = 5;
-
-    // Fixed start positions for each player
-    private static final double[][] PLAYER_START_POSITIONS = {
-        {8 * TILE_SIZE, 24 * TILE_SIZE},   // Player 1
-        {16 * TILE_SIZE, 24 * TILE_SIZE},  // Player 2
-        {9 * TILE_SIZE, 24 * TILE_SIZE},   // Player 3
-        {15 * TILE_SIZE, 24 * TILE_SIZE}   // Player 4
-    };
+    // Use shared constants
+    private static final int MAP_SIZE = GameConstants.MAP_SIZE;
+    private static final int TILE_SIZE = GameConstants.TILE_SIZE;
+    private static final int TOTAL_ENEMIES = GameConstants.TOTAL_ENEMIES;
+    private static final int MAX_ENEMIES_ON_SCREEN = GameConstants.MAX_ENEMIES_ON_SCREEN;
 
     private GameMap gameMap;
     private List<Tank> playerTanks;
@@ -33,6 +26,13 @@ public class ServerGameState {
     private List<PowerUp> powerUps;
     private Base base;
     private EnemySpawner enemySpawner;
+
+    // UFO bonus enemy
+    private UFO ufo = null;
+    private static final double UFO_SPAWN_CHANCE = GameConstants.UFO_SPAWN_CHANCE;
+
+    // Easter egg collectible (spawns when UFO is killed)
+    private EasterEgg easterEgg = null;
 
     private int currentLevel = 1;
     private boolean gameOver = false;
@@ -50,9 +50,9 @@ public class ServerGameState {
 
     // Enemy team speed boost (when enemy picks up CAR)
     private int enemyTeamSpeedBoostDuration = 0;
-    private Tank enemyWithPermanentSpeedBoost = null;
-    private static final int ENEMY_SPEED_BOOST_TIME = 1800; // 30 seconds at 60 FPS
-    private static final double ENEMY_TEAM_SPEED_BOOST = 0.3; // 30% speed boost
+    private int enemyWithPermanentSpeedBoostIndex = -1; // Index in enemyTanks list, -1 = none
+    private static final int ENEMY_SPEED_BOOST_TIME = GameConstants.ENEMY_SPEED_BOOST_TIME;
+    private static final double ENEMY_TEAM_SPEED_BOOST = GameConstants.ENEMY_TEAM_SPEED_BOOST;
 
     // Base protection
     private int baseProtectionDuration = 0;
@@ -84,11 +84,8 @@ public class ServerGameState {
         // Add tanks for new players if needed
         while (playerTanks.size() < count && playerTanks.size() < 4) {
             int i = playerTanks.size();
-            Tank player = new Tank(
-                PLAYER_START_POSITIONS[i][0],
-                PLAYER_START_POSITIONS[i][1],
-                Direction.UP, true, i + 1
-            );
+            double[] pos = GameConstants.getPlayerStartPosition(i);
+            Tank player = new Tank(pos[0], pos[1], Direction.UP, true, i + 1);
             player.giveTemporaryShield();
             playerTanks.add(player);
             System.out.println("[*] Added tank for Player " + (i + 1));
@@ -100,16 +97,13 @@ public class ServerGameState {
         bullets = new ArrayList<>();
         lasers = new ArrayList<>();
         powerUps = new ArrayList<>();
-        base = new Base(12 * TILE_SIZE, 24 * TILE_SIZE);
+        base = new Base(GameConstants.BASE_X, GameConstants.BASE_Y);
 
         // Initialize player tanks
         playerTanks = new ArrayList<>();
         for (int i = 0; i < playerCount; i++) {
-            Tank player = new Tank(
-                PLAYER_START_POSITIONS[i][0],
-                PLAYER_START_POSITIONS[i][1],
-                Direction.UP, true, i + 1
-            );
+            double[] pos = GameConstants.getPlayerStartPosition(i);
+            Tank player = new Tank(pos[0], pos[1], Direction.UP, true, i + 1);
             player.giveTemporaryShield();
             playerTanks.add(player);
         }
@@ -124,9 +118,11 @@ public class ServerGameState {
         enemyFreezeDuration = 0;
         playerFreezeDuration = 0;
         enemyTeamSpeedBoostDuration = 0;
-        enemyWithPermanentSpeedBoost = null;
+        enemyWithPermanentSpeedBoostIndex = -1;
         baseProtectionDuration = 0;
         dancingInitialized = false;
+        ufo = null;
+        easterEgg = null;
 
         System.out.println("[*] Game initialized with " + playerCount + " player(s)");
     }
@@ -135,11 +131,8 @@ public class ServerGameState {
         while (playerTanks.size() < playerNumber) {
             int idx = playerTanks.size();
             if (idx < 4) {
-                Tank player = new Tank(
-                    PLAYER_START_POSITIONS[idx][0],
-                    PLAYER_START_POSITIONS[idx][1],
-                    Direction.UP, true, idx + 1
-                );
+                double[] pos = GameConstants.getPlayerStartPosition(idx);
+                Tank player = new Tank(pos[0], pos[1], Direction.UP, true, idx + 1);
                 player.giveTemporaryShield();
                 playerTanks.add(player);
                 System.out.println("[*] Added Player " + (idx + 1) + " tank to game");
@@ -193,11 +186,20 @@ public class ServerGameState {
             playerNicknames[playerNumber - 1] = input.nickname;
         }
 
-        // Accept client position (client-authoritative movement)
+        // Accept client position with server-side validation
         if (input.posX >= 0 && input.posY >= 0) {
-            player.setPosition(input.posX, input.posY);
-            if (input.direction >= 0 && input.direction < 4) {
-                player.setDirection(Direction.values()[input.direction]);
+            // Validate position is within map bounds
+            int mapPixelSize = MAP_SIZE * TILE_SIZE;
+            if (input.posX < mapPixelSize - player.getSize() &&
+                input.posY < mapPixelSize - player.getSize()) {
+                // Validate position doesn't collide with walls (unless player has SHIP for water)
+                if (!gameMap.checkTankCollision(input.posX, input.posY, player.getSize(), player.canSwim())) {
+                    player.setPosition(input.posX, input.posY);
+                }
+                // Always accept direction change
+                if (input.direction >= 0 && input.direction < 4) {
+                    player.setDirection(Direction.values()[input.direction]);
+                }
             }
         }
     }
@@ -213,10 +215,8 @@ public class ServerGameState {
             if (teammate.getLives() > 1) {
                 teammate.setLives(teammate.getLives() - 1);
                 deadPlayer.setLives(1);
-                deadPlayer.respawn(
-                    PLAYER_START_POSITIONS[playerIndex][0],
-                    PLAYER_START_POSITIONS[playerIndex][1]
-                );
+                double[] pos = GameConstants.getPlayerStartPosition(playerIndex);
+                deadPlayer.respawn(pos[0], pos[1]);
                 System.out.println("[*] Player " + (playerIndex + 1) + " took life from Player " + (i + 1));
                 break;
             }
@@ -254,11 +254,12 @@ public class ServerGameState {
             enemyTeamSpeedBoostDuration--;
             if (enemyTeamSpeedBoostDuration == 0) {
                 // Remove temporary speed boost from all enemies except the one who picked it up
-                for (Tank enemy : enemyTanks) {
-                    if (enemy != enemyWithPermanentSpeedBoost) {
-                        enemy.removeTempSpeedBoost();
+                for (int i = 0; i < enemyTanks.size(); i++) {
+                    if (i != enemyWithPermanentSpeedBoostIndex) {
+                        enemyTanks.get(i).removeTempSpeedBoost();
                     }
                 }
+                enemyWithPermanentSpeedBoostIndex = -1; // Clear the index
                 System.out.println("[*] Enemy team speed boost expired");
             }
         }
@@ -271,10 +272,8 @@ public class ServerGameState {
         // Apply temporary speed boost to newly spawned enemies if boost is active
         if (enemyTeamSpeedBoostDuration > 0 && enemyTanks.size() > enemyCountBefore) {
             for (int i = enemyCountBefore; i < enemyTanks.size(); i++) {
-                Tank newEnemy = enemyTanks.get(i);
-                if (newEnemy != enemyWithPermanentSpeedBoost) {
-                    newEnemy.applyTempSpeedBoost(ENEMY_TEAM_SPEED_BOOST);
-                }
+                // New enemies always get temp boost (they're not the one who picked up CAR)
+                enemyTanks.get(i).applyTempSpeedBoost(ENEMY_TEAM_SPEED_BOOST);
             }
         }
 
@@ -307,6 +306,12 @@ public class ServerGameState {
 
         // Update power-ups
         updatePowerUps();
+
+        // Update UFO
+        updateUFO();
+
+        // Update Easter egg
+        updateEasterEgg();
 
         // Check victory condition
         if (enemySpawner.allEnemiesSpawned() && enemyTanks.isEmpty()) {
@@ -378,12 +383,7 @@ public class ServerGameState {
                                 if (enemyType < 6) {
                                     playerKillsByType[killer - 1][enemyType]++;
                                 }
-                                int points = switch (enemy.getEnemyType()) {
-                                    case POWER -> 2;
-                                    case HEAVY -> 5;
-                                    case BOSS -> 10;
-                                    default -> 1;
-                                };
+                                int points = GameConstants.getScoreForEnemyType(enemy.getEnemyType());
                                 playerScores[killer - 1] += points;
                             }
                         }
@@ -404,10 +404,8 @@ public class ServerGameState {
                             if (player.getLives() > 0) {
                                 int idx = playerTanks.indexOf(player);
                                 System.out.println("[*] Player " + (idx + 1) + " will respawn in 1 second");
-                                player.respawn(
-                                    PLAYER_START_POSITIONS[idx][0],
-                                    PLAYER_START_POSITIONS[idx][1]
-                                );
+                                double[] pos = GameConstants.getPlayerStartPosition(idx);
+                                player.respawn(pos[0], pos[1]);
                             }
                         }
                         notifyBulletDestroyed(bullet);
@@ -505,6 +503,90 @@ public class ServerGameState {
         }
     }
 
+    private void updateUFO() {
+        // Random chance to spawn UFO if none exists
+        if (ufo == null && Math.random() < UFO_SPAWN_CHANCE) {
+            int mapPixelSize = MAP_SIZE * TILE_SIZE;
+            boolean movingRight = Math.random() < 0.5;
+            double startX = movingRight ? -48 : mapPixelSize;
+            double startY = 50 + Math.random() * (mapPixelSize - 150);
+            ufo = new UFO(startX, startY, movingRight);
+            System.out.println("[*] UFO spawned!");
+        }
+
+        if (ufo != null && ufo.isAlive()) {
+            int mapPixelSize = MAP_SIZE * TILE_SIZE;
+            ufo.update(bullets, mapPixelSize, mapPixelSize, soundManager);
+
+            // Check bullet hits on UFO
+            Iterator<Bullet> iter = bullets.iterator();
+            while (iter.hasNext()) {
+                Bullet bullet = iter.next();
+                if (ufo.collidesWith(bullet)) {
+                    boolean destroyed = ufo.damage();
+                    notifyBulletDestroyed(bullet);
+                    iter.remove();
+                    if (destroyed) {
+                        // Spawn easter egg at UFO position
+                        easterEgg = new EasterEgg(ufo.getX(), ufo.getY());
+                        System.out.println("[*] UFO destroyed! Easter egg spawned.");
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Remove dead/expired UFO
+        if (ufo != null && !ufo.isAlive()) {
+            ufo = null;
+        }
+    }
+
+    private void updateEasterEgg() {
+        if (easterEgg == null) return;
+
+        easterEgg.update();
+
+        if (easterEgg.isExpired()) {
+            easterEgg = null;
+            return;
+        }
+
+        // Check player collection
+        for (Tank player : playerTanks) {
+            if (player.isAlive() && easterEgg.collidesWith(player)) {
+                // Player collects easter egg: transform enemies to POWER, give 3 lives
+                for (Tank enemy : enemyTanks) {
+                    if (enemy.isAlive() && enemy.getEnemyType() != Tank.EnemyType.BOSS) {
+                        enemy.setEnemyType(Tank.EnemyType.POWER);
+                    }
+                }
+                player.setLives(player.getLives() + 3);
+                base.setEasterEggMode(true);
+                easterEgg.collect();
+                easterEgg = null;
+                System.out.println("[*] Player collected Easter egg! Enemies transformed to POWER, +3 lives.");
+                return;
+            }
+        }
+
+        // Check enemy collection
+        for (Tank enemy : enemyTanks) {
+            if (enemy.isAlive() && easterEgg.collidesWith(enemy)) {
+                // Enemy collects easter egg: transform all to HEAVY
+                for (Tank e : enemyTanks) {
+                    if (e.isAlive() && e.getEnemyType() != Tank.EnemyType.BOSS) {
+                        e.setEnemyType(Tank.EnemyType.HEAVY);
+                    }
+                }
+                easterEgg.collect();
+                easterEgg = null;
+                System.out.println("[*] Enemy collected Easter egg! Enemies transformed to HEAVY.");
+                return;
+            }
+        }
+    }
+
     private void applyEnemyPowerUp(PowerUp powerUp, Tank enemy) {
         switch (powerUp.getType()) {
             case SHOVEL -> {
@@ -531,10 +613,8 @@ public class ServerGameState {
                             player.setLives(player.getLives() - 1);
                             if (player.getLives() > 0) {
                                 System.out.println("[*] Player " + (i + 1) + " will respawn in 1 second");
-                                player.respawn(
-                                    PLAYER_START_POSITIONS[i][0],
-                                    PLAYER_START_POSITIONS[i][1]
-                                );
+                                double[] pos = GameConstants.getPlayerStartPosition(i);
+                                player.respawn(pos[0], pos[1]);
                             }
                         }
                     }
@@ -543,11 +623,12 @@ public class ServerGameState {
             case CAR -> {
                 // All enemies get temporary speed boost for 30 seconds
                 powerUp.applyEffect(enemy); // Give permanent boost to this enemy
-                enemyWithPermanentSpeedBoost = enemy;
+                enemyWithPermanentSpeedBoostIndex = enemyTanks.indexOf(enemy);
                 enemyTeamSpeedBoostDuration = ENEMY_SPEED_BOOST_TIME;
                 // Give temporary boost to all other enemies
-                for (Tank otherEnemy : enemyTanks) {
-                    if (otherEnemy != enemy && otherEnemy.isAlive()) {
+                for (int i = 0; i < enemyTanks.size(); i++) {
+                    Tank otherEnemy = enemyTanks.get(i);
+                    if (i != enemyWithPermanentSpeedBoostIndex && otherEnemy.isAlive()) {
                         otherEnemy.applyTempSpeedBoost(ENEMY_TEAM_SPEED_BOOST);
                     }
                 }
@@ -695,6 +776,32 @@ public class ServerGameState {
 
         // Dancing state for game over animation
         state.dancingInitialized = dancingInitialized;
+
+        // UFO state
+        if (ufo != null && ufo.isAlive()) {
+            state.ufoData = new GameState.UFOData(
+                ufo.getX(), ufo.getY(),
+                ufo.getDx(), ufo.getDy(),
+                ufo.isAlive(),
+                ufo.getHealth(),
+                ufo.getLifetime(),
+                ufo.isMovingRight()
+            );
+        } else {
+            state.ufoData = null;
+        }
+
+        // Easter egg state
+        if (easterEgg != null) {
+            state.easterEggData = new GameState.EasterEggData(
+                easterEgg.getX(), easterEgg.getY(), easterEgg.getLifetime()
+            );
+        } else {
+            state.easterEggData = null;
+        }
+
+        // Base easter egg mode
+        state.baseEasterEggMode = base.isEasterEggMode();
 
         // Host settings - use server's GameSettings
         state.hostPlayerSpeed = GameSettings.getPlayerSpeedMultiplier();

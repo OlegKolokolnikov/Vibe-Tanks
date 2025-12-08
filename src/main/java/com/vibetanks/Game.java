@@ -1298,171 +1298,82 @@ public class Game {
         // Push apart overlapping tanks to prevent getting stuck
         pushApartOverlappingTanks(allTanks);
 
-        // Update bullets
+        // Update bullets using ProjectileHandler
         Iterator<Bullet> bulletIterator = bullets.iterator();
         while (bulletIterator.hasNext()) {
             Bullet bullet = bulletIterator.next();
-            bullet.update();
 
-            // Check bullet collisions with map
-            if (gameMap.checkBulletCollision(bullet, soundManager)) {
+            // Use ProjectileHandler for collision detection
+            ProjectileHandler.BulletCollisionResult result = ProjectileHandler.processBullet(
+                    bullet, gameMap, enemyTanks, playerTanks, base, ufo, width, height, soundManager);
+
+            if (result.shouldRemove) {
                 notifyBulletDestroyed(bullet);
                 bulletIterator.remove();
-                continue;
-            }
 
-            // Check bullet out of bounds and handle wraparound through destroyed borders
-            if (bullet.isOutOfBounds(width, height)) {
-                // Try to wrap around if border is destroyed, otherwise remove bullet
-                if (!bullet.handleWraparound(gameMap, width, height)) {
-                    notifyBulletDestroyed(bullet);
-                    bulletIterator.remove();
-                    continue;
-                }
-            }
-
-            // Check bullet collision with tanks
-            boolean bulletRemoved = false;
-
-            // Check collision with UFO (from player bullets)
-            if (!bullet.isFromEnemy() && ufo != null && ufo.isAlive()) {
-                if (ufo.collidesWith(bullet)) {
-                    boolean destroyed = ufo.damage();
-                    if (destroyed) {
-                        soundManager.playExplosion();
-                        // Award 20 points to the player who killed UFO
-                        int killerPlayer = bullet.getOwnerPlayerNumber();
-                        if (killerPlayer >= 1 && killerPlayer <= 4) {
-                            addScore(killerPlayer - 1, 20);
-                            System.out.println("UFO destroyed by Player " + killerPlayer + " - awarded 20 points!");
-                        }
-                        // Spawn easter egg at random position
-                        double[] eggPos = getRandomPowerUpSpawnPosition();
-                        easterEgg = new EasterEgg(eggPos[0], eggPos[1]);
-                        System.out.println("Easter egg spawned at " + eggPos[0] + ", " + eggPos[1]);
-                        ufoWasKilled = true;
-                        ufoKilledMessageTimer = UFO_MESSAGE_DURATION;
-                        System.out.println("Zed is dead!");
-                        ufo = null;
+                // Handle UFO destruction
+                if (result.ufoDestroyed) {
+                    int killerPlayer = result.killerPlayerNumber;
+                    if (killerPlayer >= 1 && killerPlayer <= 4) {
+                        addScore(killerPlayer - 1, 20);
+                        System.out.println("UFO destroyed by Player " + killerPlayer + " - awarded 20 points!");
                     }
-                    notifyBulletDestroyed(bullet);
-                    bulletIterator.remove();
-                    continue;
+                    double[] eggPos = getRandomPowerUpSpawnPosition();
+                    easterEgg = new EasterEgg(eggPos[0], eggPos[1]);
+                    System.out.println("Easter egg spawned at " + eggPos[0] + ", " + eggPos[1]);
+                    ufoWasKilled = true;
+                    ufoKilledMessageTimer = UFO_MESSAGE_DURATION;
+                    System.out.println("Zed is dead!");
+                    ufo = null;
                 }
-            }
 
-            // Check collision with enemy tanks (from player bullets)
-            if (!bullet.isFromEnemy()) {
-                for (Tank enemy : enemyTanks) {
-                    if (enemy.isAlive() && bullet.collidesWith(enemy)) {
-                        boolean dropPowerUp = enemy.damage();
-
-                        // Handle power-up drops (POWER type drops on each hit, others on death with 30% chance)
-                        if (dropPowerUp || (!enemy.isAlive() && Math.random() < 0.3)) {
-                            double[] spawnPos = getRandomPowerUpSpawnPosition();
-                            powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                // Handle enemy killed - track kills and award points
+                if (result.enemyKilled && result.killedEnemy != null) {
+                    int killerPlayer = result.killerPlayerNumber;
+                    Tank enemy = result.killedEnemy;
+                    if (killerPlayer >= 1 && killerPlayer <= 4) {
+                        playerKills[killerPlayer - 1]++;
+                        int enemyTypeOrdinal = enemy.getEnemyType().ordinal();
+                        if (enemyTypeOrdinal < 6) {
+                            playerKillsByType[killerPlayer - 1][enemyTypeOrdinal]++;
                         }
-
-                        if (!enemy.isAlive()) {
-                            soundManager.playExplosion();
-                            // Track kill and score for the player who fired the bullet
-                            int killerPlayer = bullet.getOwnerPlayerNumber();
-                            if (killerPlayer >= 1 && killerPlayer <= 4) {
-                                playerKills[killerPlayer - 1]++;
-
-                                // Track kill by enemy type
-                                int enemyTypeOrdinal = enemy.getEnemyType().ordinal();
-                                if (enemyTypeOrdinal < 6) {
-                                    playerKillsByType[killerPlayer - 1][enemyTypeOrdinal]++;
-                                }
-
-                                // Track machinegun kills for UFO spawn condition
-                                Tank killer = playerTanks.get(killerPlayer - 1);
-                                if (killer.getMachinegunCount() > 0) {
-                                    playerMachinegunKills[killerPlayer - 1]++;
-                                }
-
-                                // Award points based on enemy type
-                                int points = switch (enemy.getEnemyType()) {
-                                    case POWER -> 2;  // Rainbow tank
-                                    case HEAVY -> 5;  // Black tank
-                                    case BOSS -> 10;  // Boss tank
-                                    default -> 1;     // Regular, Armored, Fast
-                                };
-                                addScore(killerPlayer - 1, points);
-
-                                // BOSS kill rewards the player with a random power-up
-                                if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
-                                    System.out.println("BOSS killed by Player " + killerPlayer + " - awarding power-up!");
-                                    bossKillerPlayerIndex = killerPlayer - 1;
-                                    bossKillPowerUpReward = applyRandomPowerUp(killer);
-                                }
-                            }
+                        Tank killer = playerTanks.get(killerPlayer - 1);
+                        if (killer.getMachinegunCount() > 0) {
+                            playerMachinegunKills[killerPlayer - 1]++;
                         }
-                        notifyBulletDestroyed(bullet);
-                        bulletIterator.remove();
-                        bulletRemoved = true;
-                        break;
+                        addScore(killerPlayer - 1, ProjectileHandler.getScoreForKill(enemy.getEnemyType()));
+                        if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
+                            System.out.println("BOSS killed by Player " + killerPlayer + " - awarding power-up!");
+                            bossKillerPlayerIndex = killerPlayer - 1;
+                            bossKillPowerUpReward = applyRandomPowerUp(killer);
+                        }
                     }
                 }
-            } else {
-                // Enemy bullet - check collision with players
-                for (Tank player : playerTanks) {
-                    if (player.isAlive() && bullet.collidesWith(player)) {
-                        if (!player.hasShield() && !player.hasPauseShield()) {
-                            boolean damaged = player.damage();
-                            if (bullet.getSize() > 8) {
-                                System.out.println("BOSS bullet hit player! Damaged: " + damaged + ", Player alive: " + player.isAlive());
-                            }
-                            if (!player.isAlive()) {
-                                soundManager.playPlayerDeath();
-                                String victimName = getPlayerNameForTank(player);
-                                String killerType = bullet.getSize() > 8 ? "BOSS (bullet)" : "Enemy tank (bullet)";
-                                System.out.println("KILL LOG: " + victimName + " was killed by " + killerType);
-                                // Spawn power-up when player dies if more than 2 players
-                                if (playerTanks.size() > 2) {
-                                    double[] spawnPos = getRandomPowerUpSpawnPosition();
-                                    powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
-                                    System.out.println("Power-up spawned for killed player (3+ players mode)");
-                                }
-                            }
-                        } else if (bullet.getSize() > 8) {
-                            System.out.println("BOSS bullet hit player but player has shield!");
-                        }
-                        notifyBulletDestroyed(bullet);
-                        bulletIterator.remove();
-                        bulletRemoved = true;
-                        break;
-                    }
-                }
-            }
 
-            // Check collision with base (all bullets can hit base)
-            if (!bulletRemoved && bullet.collidesWith(base)) {
-                base.destroy();
-                soundManager.playBaseDestroyed();
-                notifyBulletDestroyed(bullet);
-                bulletIterator.remove();
-                bulletRemoved = true;
-                gameOver = true;
+                // Handle power-up drop
+                if (result.shouldDropPowerUp) {
+                    double[] spawnPos = getRandomPowerUpSpawnPosition();
+                    powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                }
+
+                // Handle player killed - spawn power-up in 3+ player mode
+                if (result.playerKilled && playerTanks.size() > 2) {
+                    double[] spawnPos = getRandomPowerUpSpawnPosition();
+                    powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                    System.out.println("Power-up spawned for killed player (3+ players mode)");
+                }
+
+                // Handle base hit
+                if (result.hitBase) {
+                    base.destroy();
+                    soundManager.playBaseDestroyed();
+                    gameOver = true;
+                }
             }
         }
 
-        // Check bullet-to-bullet collisions (bullets annihilate each other)
-        for (int i = 0; i < bullets.size(); i++) {
-            Bullet bullet1 = bullets.get(i);
-            for (int j = i + 1; j < bullets.size(); j++) {
-                Bullet bullet2 = bullets.get(j);
-                if (bullet1.collidesWith(bullet2)) {
-                    notifyBulletDestroyed(bullet1);
-                    notifyBulletDestroyed(bullet2);
-                    bullets.remove(j);
-                    bullets.remove(i);
-                    i--; // Adjust index after removal
-                    break;
-                }
-            }
-        }
+        // Check bullet-to-bullet collisions using ProjectileHandler
+        ProjectileHandler.processBulletToBulletCollisions(bullets, playerTanks);
 
         // Update lasers and check collisions
         Iterator<Laser> laserIterator = lasers.iterator();
@@ -1542,107 +1453,62 @@ public class Game {
             }
         }
 
-        // Update power-ups
+        // Update power-ups using PowerUpHandler
         Iterator<PowerUp> powerUpIterator = powerUps.iterator();
         while (powerUpIterator.hasNext()) {
             PowerUp powerUp = powerUpIterator.next();
             powerUp.update();
 
-            // Check if collected by players
-            boolean collected = false;
-            for (Tank player : playerTanks) {
-                if (player.isAlive() && powerUp.collidesWith(player)) {
-                    // Handle special power-ups that affect game state, not just tank
-                    if (powerUp.getType() == PowerUp.Type.SHOVEL) {
-                        gameMap.setBaseProtection(GameMap.TileType.STEEL);
-                        baseProtectionDuration = BASE_PROTECTION_TIME; // Reset timer to 1 minute
-                        isFlashing = false; // Stop flashing if it was flashing
-                        flashCount = 0;
-                        flashTimer = 0;
-                    } else if (powerUp.getType() == PowerUp.Type.FREEZE) {
-                        // Player takes FREEZE - freeze all enemies for 10 seconds
-                        enemyFreezeDuration = FREEZE_TIME;
-                        System.out.println("FREEZE: Enemies frozen for 10 seconds!");
-                    } else if (powerUp.getType() == PowerUp.Type.BOMB) {
-                        // Player takes BOMB - explode all enemies on screen
-                        for (Tank enemy : enemyTanks) {
-                            if (enemy.isAlive()) {
-                                // Force kill the enemy
-                                while (enemy.isAlive()) {
-                                    enemy.damage();
-                                }
-                                soundManager.playExplosion();
-                            }
-                        }
-                        System.out.println("BOMB: All enemies destroyed!");
-                    } else {
-                        powerUp.applyEffect(player);
-                    }
-                    powerUpIterator.remove();
-                    collected = true;
-                    break;
+            // Check if collected by players using PowerUpHandler
+            PowerUpHandler.PlayerCollectionResult playerResult =
+                    PowerUpHandler.checkPlayerCollection(powerUp, playerTanks);
+
+            if (playerResult.collected) {
+                // Handle game-level effects for special power-ups
+                if (playerResult.activateShovel) {
+                    gameMap.setBaseProtection(GameMap.TileType.STEEL);
+                    baseProtectionDuration = BASE_PROTECTION_TIME;
+                    isFlashing = false;
+                    flashCount = 0;
+                    flashTimer = 0;
+                } else if (playerResult.activateFreeze) {
+                    enemyFreezeDuration = FREEZE_TIME;
+                    System.out.println("FREEZE: Enemies frozen for 10 seconds!");
+                } else if (playerResult.activateBomb) {
+                    PowerUpHandler.applyPlayerBomb(enemyTanks, soundManager);
                 }
+                powerUpIterator.remove();
+                continue;
             }
 
-            // Check if collected by enemies (if not already collected by players)
-            if (!collected) {
-                for (Tank enemy : enemyTanks) {
-                    if (enemy.isAlive() && powerUp.collidesWith(enemy)) {
-                        // Handle special power-ups that affect game state
-                        if (powerUp.getType() == PowerUp.Type.SHOVEL) {
-                            // Enemy takes SHOVEL - remove base protection (make it "naked")
-                            gameMap.setBaseProtection(GameMap.TileType.EMPTY);
-                            baseProtectionDuration = 0; // Stop timer
-                            isFlashing = false; // Stop flashing
-                            flashCount = 0;
-                            flashTimer = 0;
-                        } else if (powerUp.getType() == PowerUp.Type.FREEZE) {
-                            // Enemy takes FREEZE - freeze all players for 10 seconds (but they can still shoot)
-                            playerFreezeDuration = FREEZE_TIME;
-                            System.out.println("FREEZE: Players frozen for 10 seconds! (can still shoot)");
-                        } else if (powerUp.getType() == PowerUp.Type.BOMB) {
-                            // Enemy takes BOMB - explode all players on screen (bypasses shields!)
-                            System.out.println("BOMB collected by enemy - damaging all players!");
-                            for (Tank player : playerTanks) {
-                                if (player.isAlive()) {
-                                    // BOMB bypasses all shields - remove shields first then damage
-                                    player.setShield(false);
-                                    player.setPauseShield(false);
-                                    player.damage();
-                                    if (!player.isAlive()) {
-                                        soundManager.playPlayerDeath();
-                                        String victimName = getPlayerNameForTank(player);
-                                        System.out.println("KILL LOG: " + victimName + " was killed by BOMB (collected by enemy)");
-                                    } else {
-                                        soundManager.playExplosion();
-                                    }
-                                }
-                            }
-                        } else if (powerUp.getType() == PowerUp.Type.CAR) {
-                            // Enemy takes CAR - all enemies get temporary speed boost for 30 seconds
-                            // The enemy who picked it up keeps permanent boost
-                            powerUp.applyEffect(enemy); // Give permanent boost to this enemy
-                            enemyWithPermanentSpeedBoost = enemy;
-                            enemyTeamSpeedBoostDuration = ENEMY_SPEED_BOOST_TIME;
-                            // Give temporary boost to all other enemies
-                            for (Tank otherEnemy : enemyTanks) {
-                                if (otherEnemy != enemy && otherEnemy.isAlive()) {
-                                    otherEnemy.applyTempSpeedBoost(ENEMY_TEAM_SPEED_BOOST);
-                                }
-                            }
-                            System.out.println("CAR: All enemies get speed boost for 30 seconds!");
-                        } else {
-                            powerUp.applyEffect(enemy);
-                        }
-                        powerUpIterator.remove();
-                        collected = true;
-                        break;
-                    }
+            // Check if collected by enemies using PowerUpHandler
+            PowerUpHandler.EnemyCollectionResult enemyResult =
+                    PowerUpHandler.checkEnemyCollection(powerUp, enemyTanks);
+
+            if (enemyResult.collected) {
+                // Handle game-level effects for special power-ups
+                if (enemyResult.removeShovel) {
+                    gameMap.setBaseProtection(GameMap.TileType.EMPTY);
+                    baseProtectionDuration = 0;
+                    isFlashing = false;
+                    flashCount = 0;
+                    flashTimer = 0;
+                } else if (enemyResult.activateFreeze) {
+                    playerFreezeDuration = FREEZE_TIME;
+                    System.out.println("FREEZE: Players frozen for 10 seconds! (can still shoot)");
+                } else if (enemyResult.activateBomb) {
+                    PowerUpHandler.applyEnemyBomb(playerTanks, soundManager);
+                } else if (enemyResult.activateCar) {
+                    enemyWithPermanentSpeedBoost = enemyResult.collectorEnemy;
+                    enemyTeamSpeedBoostDuration = ENEMY_SPEED_BOOST_TIME;
+                    PowerUpHandler.applyEnemyCarSpeedBoost(enemyTanks, enemyResult.collectorEnemy, ENEMY_TEAM_SPEED_BOOST);
                 }
+                powerUpIterator.remove();
+                continue;
             }
 
-            // Remove expired power-ups (only if not already collected)
-            if (!collected && powerUp.isExpired()) {
+            // Remove expired power-ups
+            if (powerUp.isExpired()) {
                 powerUpIterator.remove();
             }
         }

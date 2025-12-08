@@ -1647,68 +1647,41 @@ public class Game {
             }
         }
 
-        // Update easter egg (players and enemies can collect it)
+        // Update easter egg using shared GameLogic
         if (easterEgg != null) {
             easterEgg.update();
 
-            boolean eggCollected = false;
+            int collectionResult = GameLogic.checkEasterEggCollection(easterEgg, playerTanks, enemyTanks);
 
-            // Check if collected by any player
-            for (int i = 0; i < playerTanks.size() && !eggCollected; i++) {
-                Tank player = playerTanks.get(i);
-                if (player.isAlive() && easterEgg.collidesWith(player)) {
-                    // Give collecting player 3 extra lives
-                    for (int j = 0; j < 3; j++) {
-                        player.addLife();
-                    }
-                    System.out.println("Easter egg collected by Player " + (i + 1) + "! +3 lives!");
-
-                    // Turn all enemies (except BOSS) into rainbow/POWER tanks
-                    for (Tank enemy : enemyTanks) {
-                        if (enemy.isAlive() && enemy.getEnemyType() != Tank.EnemyType.BOSS) {
-                            enemy.setEnemyType(Tank.EnemyType.POWER);
-                            System.out.println("Enemy turned into rainbow tank!");
-                        }
-                    }
-
-                    easterEgg.collect();
-                    easterEgg = null;
-                    eggCollected = true;
+            if (collectionResult > 0) {
+                // Player collected (result is playerIndex + 1)
+                int playerIndex = collectionResult - 1;
+                Tank player = playerTanks.get(playerIndex);
+                // Give collecting player 3 extra lives
+                for (int j = 0; j < 3; j++) {
+                    player.addLife();
                 }
-            }
-
-            // Check if collected by any enemy
-            for (Tank enemy : enemyTanks) {
-                if (!eggCollected && easterEgg != null && enemy.isAlive() && easterEgg.collidesWith(enemy)) {
-                    System.out.println("Easter egg collected by enemy! All enemies become HEAVY tanks!");
-
-                    // Turn all enemies (except BOSS) into HEAVY (black) tanks
-                    for (Tank e : enemyTanks) {
-                        if (e.isAlive() && e.getEnemyType() != Tank.EnemyType.BOSS) {
-                            e.setEnemyType(Tank.EnemyType.HEAVY);
-                            System.out.println("Enemy turned into HEAVY (black) tank!");
-                        }
-                    }
-
-                    easterEgg.collect();
-                    easterEgg = null;
-                    eggCollected = true;
-                    break;
-                }
-            }
-
-            // Remove if expired
-            if (easterEgg != null && easterEgg.isExpired()) {
+                System.out.println("Easter egg collected by Player " + (playerIndex + 1) + "! +3 lives!");
+                GameLogic.applyEasterEggEffect(enemyTanks, true);
+                easterEgg.collect();
+                easterEgg = null;
+            } else if (collectionResult < 0) {
+                // Enemy collected
+                System.out.println("Easter egg collected by enemy! All enemies become HEAVY tanks!");
+                GameLogic.applyEasterEggEffect(enemyTanks, false);
+                easterEgg.collect();
+                easterEgg = null;
+            } else if (easterEgg.isExpired()) {
                 System.out.println("Easter egg expired!");
                 easterEgg = null;
             }
         }
 
-        // Remove dead enemy tanks
-        enemyTanks.removeIf(tank -> !tank.isAlive());
+        // Remove dead enemy tanks using shared GameLogic
+        GameLogic.removeDeadEnemies(enemyTanks);
 
-        // Check victory condition with 10 second delay
-        if (enemySpawner.allEnemiesSpawned() && enemyTanks.isEmpty()) {
+        // Check victory condition with delay using shared GameLogic
+        if (GameLogic.checkVictory(enemySpawner, enemyTanks)) {
             if (!victoryConditionMet) {
                 victoryConditionMet = true;
                 victoryDelayTimer = 0;
@@ -1720,9 +1693,8 @@ public class Game {
             }
         }
 
-        // Check game over condition (all players dead with no lives OR base destroyed)
-        boolean allPlayersDead = playerTanks.stream().allMatch(p -> !p.isAlive() && p.getLives() <= 0);
-        if (allPlayersDead || !base.isAlive()) {
+        // Check game over condition using shared GameLogic
+        if (GameLogic.checkGameOver(base, playerTanks)) {
             gameOver = true;
         }
     }

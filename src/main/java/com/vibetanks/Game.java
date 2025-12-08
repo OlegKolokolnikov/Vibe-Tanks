@@ -852,25 +852,8 @@ public class Game {
     }
 
     private double[] getRandomPowerUpSpawnPosition() {
-        int maxAttempts = 100;
-
-        for (int attempt = 0; attempt < maxAttempts; attempt++) {
-            // Random position within playable area (avoiding borders)
-            int col = 2 + GameConstants.RANDOM.nextInt(22); // 2 to 23 (avoid border at 0,1 and 24,25)
-            int row = 2 + GameConstants.RANDOM.nextInt(22);
-
-            double x = col * 32;
-            double y = row * 32;
-
-            // Check if position is clear (not in wall, water, or trees)
-            GameMap.TileType tile = gameMap.getTile(row, col);
-            if (tile == GameMap.TileType.EMPTY) {
-                return new double[]{x, y};
-            }
-        }
-
-        // Fallback to center if no valid position found
-        return new double[]{13 * 32, 13 * 32};
+        // Delegate to shared GameLogic
+        return GameLogic.findPowerUpSpawnPosition(gameMap, 32);
     }
 
     private PowerUp.Type applyRandomPowerUp(Tank player) {
@@ -925,13 +908,8 @@ public class Game {
      * This allows the tank to shoot again immediately.
      */
     private void notifyBulletDestroyed(Bullet bullet) {
-        if (!bullet.isFromEnemy()) {
-            int playerNum = bullet.getOwnerPlayerNumber();
-            if (playerNum >= 1 && playerNum <= playerTanks.size()) {
-                playerTanks.get(playerNum - 1).bulletDestroyed();
-            }
-        }
-        // Enemies don't need this optimization - they have AI cooldowns
+        // Delegate to shared GameLogic
+        GameLogic.notifyBulletDestroyed(bullet, playerTanks);
     }
 
     private void checkAndSpawnUFO() {

@@ -5,6 +5,7 @@ import com.vibetanks.animation.DancingGirl;
 import com.vibetanks.audio.SoundManager;
 import com.vibetanks.core.*;
 import com.vibetanks.rendering.EffectRenderer;
+import com.vibetanks.rendering.IconRenderer;
 import com.vibetanks.network.GameState;
 import com.vibetanks.network.NetworkManager;
 import com.vibetanks.network.PlayerData;
@@ -45,6 +46,7 @@ public class Game {
     private SoundManager soundManager;
     private Base base;
     private EffectRenderer effectRenderer;
+    private IconRenderer iconRenderer;
     private double[][] playerStartPositions; // For respawning
 
     // Fixed start positions - use shared constants
@@ -498,6 +500,9 @@ public class Game {
 
         // Initialize effect renderer
         effectRenderer = new EffectRenderer(gc, width, height);
+
+        // Initialize icon renderer
+        iconRenderer = new IconRenderer(gc);
     }
 
     private void returnToMenu() {
@@ -1825,170 +1830,7 @@ public class Game {
 
     // UFO message rendering, boss health bar, and laughing skull moved to EffectRenderer
 
-    private void renderPowerUpIcon(double x, double y, PowerUp.Type type) {
-        int size = 16;
-
-        // Background with border
-        gc.setFill(Color.WHITE);
-        gc.fillRect(x, y, size, size);
-        gc.setStroke(Color.DARKGRAY);
-        gc.setLineWidth(1);
-        gc.strokeRect(x, y, size, size);
-
-        // Draw icon based on type (scaled down versions of PowerUp icons)
-        switch (type) {
-            case GUN:
-                // Steel wall with crack and bullet
-                gc.setFill(Color.DARKGRAY);
-                gc.fillRect(x + 1, y + 2, 6, 12); // Wall
-                gc.setStroke(Color.LIGHTGRAY);
-                gc.setLineWidth(0.5);
-                gc.strokeRect(x + 2, y + 3, 4, 4);
-                gc.strokeRect(x + 2, y + 9, 4, 4);
-                // Crack
-                gc.setStroke(Color.YELLOW);
-                gc.setLineWidth(1);
-                gc.strokeLine(x + 7, y + 6, x + 9, y + 4);
-                gc.strokeLine(x + 7, y + 6, x + 9, y + 8);
-                gc.strokeLine(x + 7, y + 10, x + 9, y + 9);
-                gc.strokeLine(x + 7, y + 10, x + 9, y + 12);
-                // Bullet
-                gc.setFill(Color.RED);
-                gc.fillOval(x + 10, y + 6, 5, 4);
-                break;
-            case STAR:
-                // Orange star with red border
-                double cx = x + size / 2;
-                double cy = y + size / 2;
-                double outerR = 6;
-                double innerR = 2.5;
-                double[] starX = new double[10];
-                double[] starY = new double[10];
-                for (int i = 0; i < 10; i++) {
-                    double angle = Math.PI / 2 + (Math.PI * i / 5);
-                    double r = (i % 2 == 0) ? outerR : innerR;
-                    starX[i] = cx + r * Math.cos(angle);
-                    starY[i] = cy - r * Math.sin(angle);
-                }
-                // Red border
-                gc.setFill(Color.DARKRED);
-                double[] starXB = new double[10];
-                double[] starYB = new double[10];
-                for (int i = 0; i < 10; i++) {
-                    double angle = Math.PI / 2 + (Math.PI * i / 5);
-                    double r = (i % 2 == 0) ? outerR + 1 : innerR + 0.5;
-                    starXB[i] = cx + r * Math.cos(angle);
-                    starYB[i] = cy - r * Math.sin(angle);
-                }
-                gc.fillPolygon(starXB, starYB, 10);
-                // Orange star
-                gc.setFill(Color.ORANGE);
-                gc.fillPolygon(starX, starY, 10);
-                break;
-            case CAR:
-                // Lightning bolt - speed symbol
-                gc.setFill(Color.YELLOW);
-                gc.fillPolygon(
-                    new double[]{x + 9, x + 5, x + 7, x + 4, x + 10, x + 8, x + 12},
-                    new double[]{y + 1, y + 7, y + 7, y + 15, y + 8, y + 8, y + 1},
-                    7
-                );
-                // Green border
-                gc.setStroke(Color.LIME);
-                gc.setLineWidth(1);
-                gc.strokePolygon(
-                    new double[]{x + 9, x + 5, x + 7, x + 4, x + 10, x + 8, x + 12},
-                    new double[]{y + 1, y + 7, y + 7, y + 15, y + 8, y + 8, y + 1},
-                    7
-                );
-                break;
-            case SHIP:
-                // Boat on water
-                gc.setFill(Color.BLUE);
-                gc.fillRect(x + 1, y + 11, 14, 3); // Water
-                gc.setFill(Color.CYAN);
-                gc.fillPolygon(
-                    new double[]{x + 3, x + 13, x + 12, x + 4},
-                    new double[]{y + 9, y + 9, y + 12, y + 12},
-                    4
-                ); // Hull
-                gc.fillPolygon(
-                    new double[]{x + 8, x + 8, x + 12},
-                    new double[]{y + 3, y + 9, y + 9},
-                    3
-                ); // Sail
-                break;
-            case SAW:
-                // Circular saw
-                gc.setFill(Color.BROWN);
-                gc.fillOval(x + 3, y + 3, 10, 10);
-                gc.setFill(Color.WHITE);
-                gc.fillOval(x + 6, y + 6, 4, 4);
-                break;
-            case SHIELD:
-                // Shield shape
-                gc.setFill(Color.BLUE);
-                gc.fillPolygon(
-                    new double[]{x + 8, x + 3, x + 3, x + 8, x + 13, x + 13},
-                    new double[]{y + 14, y + 10, y + 3, y + 2, y + 3, y + 10},
-                    6
-                );
-                gc.setFill(Color.LIGHTBLUE);
-                gc.fillPolygon(
-                    new double[]{x + 8, x + 5, x + 5, x + 8, x + 11, x + 11},
-                    new double[]{y + 12, y + 9, y + 5, y + 4, y + 5, y + 9},
-                    6
-                );
-                break;
-            case SHOVEL:
-                // Shovel
-                gc.setFill(Color.ORANGE);
-                gc.fillRect(x + 7, y + 2, 2, 7); // Handle
-                gc.fillPolygon(
-                    new double[]{x + 4, x + 12, x + 11, x + 5},
-                    new double[]{y + 9, y + 9, y + 14, y + 14},
-                    4
-                ); // Blade
-                break;
-            case TANK:
-                // Tank with +1
-                gc.setFill(Color.GREEN);
-                gc.fillRect(x + 2, y + 8, 7, 5); // Body
-                gc.fillRect(x + 4, y + 5, 3, 4); // Turret
-                gc.setFill(Color.DARKGREEN);
-                gc.fillRect(x + 11, y + 4, 1, 5); // +
-                gc.fillRect(x + 9, y + 6, 5, 1);
-                gc.fillRect(x + 11, y + 10, 1, 4); // 1
-                break;
-            case MACHINEGUN:
-                // Rapid fire
-                gc.setFill(Color.PURPLE);
-                gc.fillRect(x + 2, y + 7, 6, 3); // Gun
-                gc.setFill(Color.YELLOW);
-                gc.fillOval(x + 9, y + 7, 2, 2);
-                gc.fillOval(x + 11, y + 5, 2, 2);
-                gc.fillOval(x + 11, y + 9, 2, 2);
-                gc.fillOval(x + 13, y + 7, 2, 2);
-                break;
-        }
-    }
-
-    private Color getPowerUpColor(PowerUp.Type type) {
-        return switch (type) {
-            case GUN -> Color.RED;
-            case STAR -> Color.YELLOW;
-            case CAR -> Color.LIME;
-            case SHIP -> Color.CYAN;
-            case SHOVEL -> Color.ORANGE;
-            case SAW -> Color.BROWN;
-            case TANK -> Color.GREEN;
-            case SHIELD -> Color.BLUE;
-            case MACHINEGUN -> Color.PURPLE;
-            case FREEZE -> Color.LIGHTBLUE;
-            case BOMB -> Color.BLACK;
-            case LASER -> Color.RED;
-        };
-    }
+    // Power-up icon rendering and getPowerUpColor moved to IconRenderer
 
     private void initializeDancingCharacters() {
         if (dancingInitialized) return;
@@ -2119,88 +1961,6 @@ public class Game {
         return "Unknown tank";
     }
 
-    // Draw a mini tank icon for statistics table headers (looks like actual game tanks)
-    private void drawMiniTank(GraphicsContext gc, double x, double y, Tank.EnemyType type) {
-        double s = 18; // Mini tank size
-
-        // Get tank color based on type
-        Color bodyColor, turretColor, trackColor;
-        switch (type) {
-            case REGULAR -> { bodyColor = Color.DARKRED; turretColor = Color.RED; trackColor = Color.rgb(80, 40, 40); }
-            case ARMORED -> { bodyColor = Color.rgb(100, 30, 30); turretColor = Color.rgb(140, 50, 50); trackColor = Color.rgb(60, 30, 30); }
-            case FAST -> { bodyColor = Color.rgb(200, 80, 80); turretColor = Color.rgb(255, 120, 120); trackColor = Color.rgb(150, 60, 60); }
-            case POWER -> { bodyColor = Color.PURPLE; turretColor = Color.MAGENTA; trackColor = Color.DARKMAGENTA; }
-            case HEAVY -> { bodyColor = Color.rgb(50, 50, 50); turretColor = Color.DARKGRAY; trackColor = Color.BLACK; }
-            case BOSS -> { bodyColor = Color.rgb(150, 30, 30); turretColor = Color.rgb(220, 50, 50); trackColor = Color.rgb(100, 20, 20); }
-            default -> { bodyColor = Color.DARKRED; turretColor = Color.RED; trackColor = Color.rgb(80, 40, 40); }
-        }
-
-        // Draw tracks (left and right) with track pattern
-        gc.setFill(trackColor);
-        gc.fillRoundRect(x, y + 2, 4, s - 4, 2, 2);
-        gc.fillRoundRect(x + s - 4, y + 2, 4, s - 4, 2, 2);
-
-        // Track details (horizontal lines)
-        gc.setStroke(Color.rgb(40, 40, 40));
-        gc.setLineWidth(1);
-        for (int i = 0; i < 3; i++) {
-            double ty = y + 4 + i * 5;
-            gc.strokeLine(x, ty, x + 4, ty);
-            gc.strokeLine(x + s - 4, ty, x + s, ty);
-        }
-
-        // Draw tank body (between tracks)
-        gc.setFill(bodyColor);
-        gc.fillRect(x + 3, y + 3, s - 6, s - 6);
-
-        // Draw turret (circular, centered)
-        gc.setFill(turretColor);
-        double turretSize = s * 0.5;
-        gc.fillOval(x + s/2 - turretSize/2, y + s/2 - turretSize/2 + 1, turretSize, turretSize);
-
-        // Draw barrel (pointing up)
-        gc.setFill(turretColor);
-        gc.fillRoundRect(x + s/2 - 2, y - 2, 4, s/2 + 2, 1, 1);
-
-        // Barrel tip (darker)
-        gc.setFill(bodyColor);
-        gc.fillRect(x + s/2 - 2, y - 2, 4, 2);
-
-        // Type-specific decorations
-        switch (type) {
-            case ARMORED -> {
-                // Extra armor plate on turret
-                gc.setFill(Color.GRAY);
-                gc.fillRect(x + 5, y + s/2 - 1, s - 10, 3);
-            }
-            case HEAVY -> {
-                // White dot indicator
-                gc.setFill(Color.WHITE);
-                gc.fillOval(x + s/2 - 2, y + s/2 - 1, 4, 4);
-            }
-            case FAST -> {
-                // Speed lines behind
-                gc.setStroke(Color.WHITE);
-                gc.setLineWidth(1);
-                gc.strokeLine(x + 2, y + s - 2, x + s - 2, y + s - 2);
-            }
-            case BOSS -> {
-                // Skull mark (X)
-                gc.setStroke(Color.WHITE);
-                gc.setLineWidth(1.5);
-                double cx = x + s/2, cy = y + s/2;
-                gc.strokeLine(cx - 3, cy - 2, cx + 3, cy + 4);
-                gc.strokeLine(cx + 3, cy - 2, cx - 3, cy + 4);
-            }
-            case POWER -> {
-                // Star sparkle
-                gc.setFill(Color.YELLOW);
-                gc.fillOval(x + s/2 - 1.5, y + s/2 - 0.5, 3, 3);
-            }
-            default -> {}
-        }
-    }
-
     private void renderUI() {
         gc.setFill(Color.WHITE);
         gc.fillText("Level: " + gameMap.getLevelNumber() + "  Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
@@ -2222,35 +1982,35 @@ public class Game {
             yOffset += 10;
 
             if (player.hasGun()) {
-                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.GUN);
+                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.GUN);
                 xOffset += 20;
             }
             if (player.getStarCount() > 0) {
-                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.STAR);
+                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.STAR);
                 gc.setFill(Color.WHITE);
                 gc.fillText("x" + player.getStarCount(), xOffset + 15, yOffset + 12);
                 xOffset += 35;
             }
             if (player.getCarCount() > 0) {
-                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.CAR);
+                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.CAR);
                 gc.setFill(Color.WHITE);
                 gc.fillText("x" + player.getCarCount(), xOffset + 15, yOffset + 12);
                 xOffset += 35;
             }
             if (player.hasShip()) {
-                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SHIP);
+                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SHIP);
                 xOffset += 20;
             }
             if (player.hasSaw()) {
-                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SAW);
+                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SAW);
                 xOffset += 20;
             }
             if (player.hasShield()) {
-                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SHIELD);
+                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SHIELD);
                 xOffset += 20;
             }
             if (player.getMachinegunCount() > 0) {
-                renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.MACHINEGUN);
+                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.MACHINEGUN);
                 gc.setFill(Color.WHITE);
                 gc.fillText("x" + player.getMachinegunCount(), xOffset + 15, yOffset + 12);
                 xOffset += 35;
@@ -2463,7 +2223,7 @@ public class Game {
         Tank.EnemyType[] enemyTypes = {Tank.EnemyType.REGULAR, Tank.EnemyType.ARMORED, Tank.EnemyType.FAST,
                                         Tank.EnemyType.POWER, Tank.EnemyType.HEAVY, Tank.EnemyType.BOSS};
         for (int t = 0; t < 6; t++) {
-            drawMiniTank(gc, xPos + (colWidths[t + 1] - 18) / 2, tableY + 2, enemyTypes[t]);
+            iconRenderer.drawMiniTank(xPos + (colWidths[t + 1] - 18) / 2, tableY + 2, enemyTypes[t]);
             xPos += colWidths[t + 1];
         }
 

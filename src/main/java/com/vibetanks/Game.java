@@ -95,24 +95,8 @@ public class Game {
     private boolean firstStateReceived = false; // Skip sounds on first state to avoid burst
     private int respawnSyncFrames = 0; // Frames to wait after respawn before sending position
 
-    // SHOVEL power-up - base protection with steel (use shared constants)
-    private int baseProtectionDuration = 0;
-    private static final int BASE_PROTECTION_TIME = GameConstants.BASE_PROTECTION_TIME;
-    private boolean isFlashing = false;
-    private int flashCount = 0; // Counts the number of flashes (up to 10 for 5 complete flashes)
-    private int flashTimer = 0; // Timer for each flash state (60 frames = 1 second)
-    private static final int FLASH_DURATION = GameConstants.FLASH_DURATION;
-    private static final int TOTAL_FLASHES = 10; // 5 complete flashes (10 state changes)
-
-    // FREEZE power-up - freeze enemies or players (use shared constants)
-    private int enemyFreezeDuration = 0;
-    private int playerFreezeDuration = 0;
-    private static final int FREEZE_TIME = GameConstants.FREEZE_TIME;
-
-    // Enemy team speed boost (when enemy picks up CAR) - use shared constants
-    private int enemyTeamSpeedBoostDuration = 0;
-    private Tank enemyWithPermanentSpeedBoost = null; // The enemy who picked up CAR keeps the boost
-    private static final int ENEMY_SPEED_BOOST_TIME = GameConstants.ENEMY_SPEED_BOOST_TIME;
+    // Power-up effects manager (base protection, freeze, speed boost)
+    private PowerUpEffectManager powerUpEffectManager = new PowerUpEffectManager();
     private static final double ENEMY_TEAM_SPEED_BOOST = GameConstants.ENEMY_TEAM_SPEED_BOOST;
 
     // Victory dancing anime girl
@@ -688,19 +672,8 @@ public class Game {
         enemyTanks.clear();
         enemySpawner = new EnemySpawner(totalEnemies, 5, gameMap);
 
-        // Reset base protection state
-        baseProtectionDuration = 0;
-        isFlashing = false;
-        flashCount = 0;
-        flashTimer = 0;
-
-        // Reset freeze states
-        enemyFreezeDuration = 0;
-        playerFreezeDuration = 0;
-
-        // Reset enemy team speed boost
-        enemyTeamSpeedBoostDuration = 0;
-        enemyWithPermanentSpeedBoost = null;
+        // Reset power-up effects (base protection, freeze, speed boost)
+        powerUpEffectManager.reset();
 
         // Hide victory image
         if (victoryImageView != null) {
@@ -761,19 +734,8 @@ public class Game {
         enemyTanks.clear();
         enemySpawner = new EnemySpawner(totalEnemies, 5, gameMap);
 
-        // Reset base protection state
-        baseProtectionDuration = 0;
-        isFlashing = false;
-        flashCount = 0;
-        flashTimer = 0;
-
-        // Reset freeze states
-        enemyFreezeDuration = 0;
-        playerFreezeDuration = 0;
-
-        // Reset enemy team speed boost
-        enemyTeamSpeedBoostDuration = 0;
-        enemyWithPermanentSpeedBoost = null;
+        // Reset power-up effects (base protection, freeze, speed boost)
+        powerUpEffectManager.reset();
 
         // Hide game over image
         if (gameOverImageView != null) {
@@ -941,7 +903,7 @@ public class Game {
                 PlayerInput input = inputHandler.capturePlayerInput();
 
                 // Apply movement locally (skip if paused or dead)
-                if (myTank.isAlive() && playerFreezeDuration <= 0 && !playerPaused[myPlayerIndex]) {
+                if (myTank.isAlive() && !powerUpEffectManager.arePlayersFrozen() && !playerPaused[myPlayerIndex]) {
                     List<Tank> allTanks = new ArrayList<>();
                     allTanks.addAll(playerTanks);
                     allTanks.addAll(enemyTanks);
@@ -1105,42 +1067,11 @@ public class Game {
         allTanks.addAll(enemyTanks);
 
         // Handle player input (local or host) - pass freeze state
-        boolean isPlayerFrozen = playerFreezeDuration > 0;
+        boolean isPlayerFrozen = powerUpEffectManager.arePlayersFrozen();
         inputHandler.handleInput(gameMap, bullets, lasers, soundManager, allTanks, base, isPlayerFrozen);
 
-        // Update base protection from SHOVEL power-up
-        if (baseProtectionDuration > 0) {
-            baseProtectionDuration--;
-            if (baseProtectionDuration == 0) {
-                // Start flashing when timer expires
-                isFlashing = true;
-                flashCount = 0;
-                flashTimer = 0;
-                gameMap.setBaseProtection(GameMap.TileType.STEEL); // Start with steel
-            }
-        }
-
-        // Handle flashing after protection expires
-        if (isFlashing) {
-            flashTimer++;
-            if (flashTimer >= FLASH_DURATION) {
-                flashTimer = 0;
-                flashCount++;
-
-                // Toggle between STEEL and BRICK (start with STEEL, then BRICK, etc.)
-                if (flashCount % 2 == 0) {
-                    gameMap.setBaseProtection(GameMap.TileType.STEEL);
-                } else {
-                    gameMap.setBaseProtection(GameMap.TileType.BRICK);
-                }
-
-                // Stop flashing after 5 complete flashes (10 state changes)
-                if (flashCount >= TOTAL_FLASHES) {
-                    isFlashing = false;
-                    gameMap.setBaseProtection(GameMap.TileType.BRICK); // Final state is brick
-                }
-            }
-        }
+        // Update base protection from SHOVEL power-up (via PowerUpEffectManager)
+        powerUpEffectManager.updateBaseProtection(gameMap);
 
         // Update map (burning tiles)
         gameMap.update();
@@ -1149,10 +1080,10 @@ public class Game {
         int enemyCountBefore = enemyTanks.size();
         enemySpawner.update(enemyTanks);
         // Apply temporary speed boost to newly spawned enemies if boost is active
-        if (enemyTeamSpeedBoostDuration > 0 && enemyTanks.size() > enemyCountBefore) {
+        if (powerUpEffectManager.isEnemySpeedBoostActive() && enemyTanks.size() > enemyCountBefore) {
             for (int i = enemyCountBefore; i < enemyTanks.size(); i++) {
                 Tank newEnemy = enemyTanks.get(i);
-                if (newEnemy != enemyWithPermanentSpeedBoost) {
+                if (newEnemy != powerUpEffectManager.getEnemyWithPermanentSpeedBoost()) {
                     newEnemy.applyTempSpeedBoost(ENEMY_TEAM_SPEED_BOOST);
                 }
             }
@@ -1188,33 +1119,27 @@ public class Game {
             }
         }
 
-        // Update freeze durations
-        if (enemyFreezeDuration > 0) {
-            enemyFreezeDuration--;
-        }
-        if (playerFreezeDuration > 0) {
-            playerFreezeDuration--;
-        }
+        // Update freeze durations (via PowerUpEffectManager)
+        powerUpEffectManager.updateFreezeTimers();
 
         // Update enemy team speed boost duration
-        if (enemyTeamSpeedBoostDuration > 0) {
-            enemyTeamSpeedBoostDuration--;
-            if (enemyTeamSpeedBoostDuration == 0) {
-                // Remove temporary speed boost from all enemies except the one who picked it up
-                for (Tank enemy : enemyTanks) {
-                    if (enemy != enemyWithPermanentSpeedBoost) {
-                        enemy.removeTempSpeedBoost();
-                    }
+        boolean wasSpeedBoostActive = powerUpEffectManager.isEnemySpeedBoostActive();
+        powerUpEffectManager.updateEnemySpeedBoost();
+        if (wasSpeedBoostActive && !powerUpEffectManager.isEnemySpeedBoostActive()) {
+            // Speed boost just expired - remove temporary speed boost from all enemies except the one who picked it up
+            for (Tank enemy : enemyTanks) {
+                if (enemy != powerUpEffectManager.getEnemyWithPermanentSpeedBoost()) {
+                    enemy.removeTempSpeedBoost();
                 }
-                System.out.println("Enemy team speed boost expired - only original enemy keeps the speed");
             }
+            System.out.println("Enemy team speed boost expired - only original enemy keeps the speed");
         }
 
         // Update enemy tanks with AI (skip if frozen, except BOSS is unfreezable)
         for (Tank tank : enemyTanks) {
             if (tank.isAlive()) {
                 // BOSS tank is immune to freeze
-                if (enemyFreezeDuration <= 0 || tank.getEnemyType() == Tank.EnemyType.BOSS) {
+                if (!powerUpEffectManager.areEnemiesFrozen() || tank.getEnemyType() == Tank.EnemyType.BOSS) {
                     tank.updateAI(gameMap, bullets, allTanks, base, soundManager);
                 }
             }
@@ -1384,16 +1309,11 @@ public class Game {
                     PowerUpHandler.checkPlayerCollection(powerUp, playerTanks);
 
             if (playerResult.collected) {
-                // Handle game-level effects for special power-ups
+                // Handle game-level effects for special power-ups (via PowerUpEffectManager)
                 if (playerResult.activateShovel) {
-                    gameMap.setBaseProtection(GameMap.TileType.STEEL);
-                    baseProtectionDuration = BASE_PROTECTION_TIME;
-                    isFlashing = false;
-                    flashCount = 0;
-                    flashTimer = 0;
+                    powerUpEffectManager.activateBaseProtection(gameMap);
                 } else if (playerResult.activateFreeze) {
-                    enemyFreezeDuration = FREEZE_TIME;
-                    System.out.println("FREEZE: Enemies frozen for 10 seconds!");
+                    powerUpEffectManager.activateEnemyFreeze();
                 } else if (playerResult.activateBomb) {
                     PowerUpHandler.applyPlayerBomb(enemyTanks, soundManager);
                 }
@@ -1406,21 +1326,15 @@ public class Game {
                     PowerUpHandler.checkEnemyCollection(powerUp, enemyTanks);
 
             if (enemyResult.collected) {
-                // Handle game-level effects for special power-ups
+                // Handle game-level effects for special power-ups (via PowerUpEffectManager)
                 if (enemyResult.removeShovel) {
-                    gameMap.setBaseProtection(GameMap.TileType.EMPTY);
-                    baseProtectionDuration = 0;
-                    isFlashing = false;
-                    flashCount = 0;
-                    flashTimer = 0;
+                    powerUpEffectManager.removeBaseProtection(gameMap);
                 } else if (enemyResult.activateFreeze) {
-                    playerFreezeDuration = FREEZE_TIME;
-                    System.out.println("FREEZE: Players frozen for 10 seconds! (can still shoot)");
+                    powerUpEffectManager.activatePlayerFreeze();
                 } else if (enemyResult.activateBomb) {
                     PowerUpHandler.applyEnemyBomb(playerTanks, soundManager);
                 } else if (enemyResult.activateCar) {
-                    enemyWithPermanentSpeedBoost = enemyResult.collectorEnemy;
-                    enemyTeamSpeedBoostDuration = ENEMY_SPEED_BOOST_TIME;
+                    powerUpEffectManager.activateEnemySpeedBoost(enemyResult.collectorEnemy);
                     PowerUpHandler.applyEnemyCarSpeedBoost(enemyTanks, enemyResult.collectorEnemy, ENEMY_TEAM_SPEED_BOOST);
                 }
                 powerUpIterator.remove();
@@ -1510,7 +1424,7 @@ public class Game {
             if (tank.isAlive()) {
                 tank.render(gc);
                 // Draw ice effect if players are frozen
-                if (playerFreezeDuration > 0) {
+                if (powerUpEffectManager.arePlayersFrozen()) {
                     effectRenderer.renderFreezeEffect(tank);
                 }
             }
@@ -1521,7 +1435,7 @@ public class Game {
             if (tank.isAlive()) {
                 tank.render(gc);
                 // Draw ice effect if enemies are frozen (except BOSS which is immune)
-                if (enemyFreezeDuration > 0 && tank.getEnemyType() != Tank.EnemyType.BOSS) {
+                if (powerUpEffectManager.areEnemiesFrozen() && tank.getEnemyType() != Tank.EnemyType.BOSS) {
                     effectRenderer.renderFreezeEffect(tank);
                 }
             }
@@ -2139,9 +2053,9 @@ public class Game {
         state.baseVictoryFlagHeight = base.getVictoryFlagHeight();
         state.baseEasterEggMode = base.isEasterEggMode();
         state.connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
-        state.enemyFreezeDuration = enemyFreezeDuration;
-        state.playerFreezeDuration = playerFreezeDuration;
-        state.enemyTeamSpeedBoostDuration = enemyTeamSpeedBoostDuration;
+        state.enemyFreezeDuration = powerUpEffectManager.getEnemyFreezeDuration();
+        state.playerFreezeDuration = powerUpEffectManager.getPlayerFreezeDuration();
+        state.enemyTeamSpeedBoostDuration = powerUpEffectManager.getEnemyTeamSpeedBoostDuration();
         state.bossKillerPlayerIndex = bossKillerPlayerIndex;
         state.bossKillPowerUpReward = bossKillPowerUpReward != null ? bossKillPowerUpReward.ordinal() : -1;
 
@@ -2536,10 +2450,10 @@ public class Game {
         bossKillerPlayerIndex = state.bossKillerPlayerIndex;
         bossKillPowerUpReward = state.bossKillPowerUpReward >= 0 ? PowerUp.Type.values()[state.bossKillPowerUpReward] : null;
 
-        // Update freeze state
-        enemyFreezeDuration = state.enemyFreezeDuration;
-        playerFreezeDuration = state.playerFreezeDuration;
-        enemyTeamSpeedBoostDuration = state.enemyTeamSpeedBoostDuration;
+        // Update freeze state (via PowerUpEffectManager)
+        powerUpEffectManager.setEnemyFreezeDuration(state.enemyFreezeDuration);
+        powerUpEffectManager.setPlayerFreezeDuration(state.playerFreezeDuration);
+        powerUpEffectManager.setEnemyTeamSpeedBoostDuration(state.enemyTeamSpeedBoostDuration);
 
         // Update remaining enemies count
         enemySpawner.setRemainingEnemies(state.remainingEnemies);
@@ -2588,7 +2502,7 @@ public class Game {
         allTanks.addAll(enemyTanks);
 
         // Apply movement (only if not frozen)
-        if (playerFreezeDuration <= 0) {
+        if (!powerUpEffectManager.arePlayersFrozen()) {
             if (input.up) {
                 tank.move(Direction.UP, gameMap, allTanks, base);
             } else if (input.down) {

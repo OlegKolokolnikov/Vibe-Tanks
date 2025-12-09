@@ -29,7 +29,7 @@ import javafx.stage.Stage;
 
 import java.util.*;
 
-public class Game implements GameStateApplier.GameContext {
+public class Game implements GameStateApplier.GameContext, LevelTransitionManager.LevelTransitionContext {
     private final Pane root;
     private final Canvas canvas;
     private final GraphicsContext gc;
@@ -634,126 +634,11 @@ public class Game implements GameStateApplier.GameContext {
     }
 
     private void startNextLevel() {
-        // Generate new random level
-        gameMap.nextLevel();
-
-        // Reset game state
-        victory = false;
-        victoryConditionMet = false;
-        victoryDelayTimer = 0;
-        gameOver = false;
-        gameOverSoundPlayed = false;
-        celebrationManager.reset();
-        winnerBonusAwarded = false;
-        bossKillerPlayerIndex = -1;
-        bossKillPowerUpReward = null;
-
-        // Reset kills and level scores for new round (total scores persist)
-        for (int i = 0; i < playerKills.length; i++) {
-            playerKills[i] = 0;
-            playerLevelScores[i] = 0;
-            for (int j = 0; j < 6; j++) {
-                playerKillsByType[i][j] = 0;
-            }
-        }
-
-        // Reset base
-        base = new Base(12 * 32, 24 * 32);
-
-        // Clear bullets, lasers, and power-ups
-        bullets.clear();
-        lasers.clear();
-        powerUps.clear();
-
-        // Reset player tanks (keep power-ups but reset position and give shield)
-        for (int i = 0; i < playerTanks.size(); i++) {
-            Tank player = playerTanks.get(i);
-            player.setPosition(FIXED_START_POSITIONS[i][0], FIXED_START_POSITIONS[i][1]);
-            player.setDirection(Direction.UP);
-            player.giveTemporaryShield(); // Brief spawn protection
-        }
-
-        // Clear enemy tanks and reset spawner
-        enemyTanks.clear();
-        enemySpawner = new EnemySpawner(totalEnemies, 5, gameMap);
-
-        // Reset power-up effects (base protection, freeze, speed boost)
-        powerUpEffectManager.reset();
-
-        // Hide victory image
-        if (victoryImageView != null) {
-            victoryImageView.setVisible(false);
-        }
-
-        // Reset UFO state for new level
-        ufoManager.reset();
-
-        // Play intro sound for new level
-        soundManager.playIntro();
-
-        System.out.println("Starting Level " + gameMap.getLevelNumber());
+        LevelTransitionManager.startNextLevel(this);
     }
 
     private void restartCurrentLevel() {
-        // Regenerate the same level (keep level number) or reload custom level
-        gameMap.regenerateOrReloadLevel();
-
-        // Reset game state
-        victory = false;
-        victoryConditionMet = false;
-        victoryDelayTimer = 0;
-        gameOver = false;
-        gameOverSoundPlayed = false;
-        celebrationManager.reset();
-        winnerBonusAwarded = false;
-        bossKillerPlayerIndex = -1;
-        bossKillPowerUpReward = null;
-
-        // Reset kills and scores for new game after game over
-        for (int i = 0; i < playerKills.length; i++) {
-            playerKills[i] = 0;
-            playerScores[i] = 0;
-            playerLevelScores[i] = 0;
-            for (int j = 0; j < 6; j++) {
-                playerKillsByType[i][j] = 0;
-            }
-        }
-
-        // Reset base
-        base = new Base(12 * 32, 24 * 32);
-
-        // Clear bullets, lasers, and power-ups
-        bullets.clear();
-        lasers.clear();
-        powerUps.clear();
-
-        // Reset player tanks (full reset including lives and power-ups)
-        for (int i = 0; i < playerTanks.size(); i++) {
-            Tank player = playerTanks.get(i);
-            player.setLives(3);
-            player.setLaserDuration(0); // Clear laser power-up on restart
-            player.spawnImmediate(FIXED_START_POSITIONS[i][0], FIXED_START_POSITIONS[i][1]);
-        }
-
-        // Clear enemy tanks and reset spawner
-        enemyTanks.clear();
-        enemySpawner = new EnemySpawner(totalEnemies, 5, gameMap);
-
-        // Reset power-up effects (base protection, freeze, speed boost)
-        powerUpEffectManager.reset();
-
-        // Hide game over image
-        if (gameOverImageView != null) {
-            gameOverImageView.setVisible(false);
-        }
-
-        // Reset UFO state for restart
-        ufoManager.reset();
-
-        // Play intro sound for retry
-        soundManager.playIntro();
-
-        System.out.println("Restarting Level " + gameMap.getLevelNumber());
+        LevelTransitionManager.restartCurrentLevel(this);
     }
 
     public void start() {
@@ -1851,6 +1736,13 @@ public class Game implements GameStateApplier.GameContext {
     @Override public void setGameOverSoundPlayed(boolean value) { gameOverSoundPlayed = value; }
 
     @Override public double[][] getFixedStartPositions() { return FIXED_START_POSITIONS; }
+
+    // ============ LevelTransitionManager.LevelTransitionContext IMPLEMENTATION ============
+    // Note: Most methods are shared with GameStateApplier.GameContext above
+
+    @Override public void setVictoryConditionMet(boolean value) { victoryConditionMet = value; }
+    @Override public void setVictoryDelayTimer(int value) { victoryDelayTimer = value; }
+    @Override public void setWinnerBonusAwarded(boolean value) { winnerBonusAwarded = value; }
 
     private PlayerInput capturePlayerInput(Tank tank) {
         // Capture current keyboard state (arrow keys + space)

@@ -10,6 +10,7 @@ import com.vibetanks.rendering.GameRenderer;
 import com.vibetanks.rendering.IconRenderer;
 import com.vibetanks.rendering.StatsRenderer;
 import com.vibetanks.network.GameState;
+import com.vibetanks.network.GameStateBuilder;
 import com.vibetanks.network.NetworkManager;
 import com.vibetanks.network.PlayerData;
 import com.vibetanks.network.PlayerInput;
@@ -1780,166 +1781,15 @@ public class Game {
     // ============ NETWORK MULTIPLAYER METHODS ============
 
     private GameState buildGameState() {
-        GameState state = new GameState();
-
-        // Build player data using centralized PlayerData entity
-        for (int i = 0; i < playerTanks.size() && i < 4; i++) {
-            Tank tank = playerTanks.get(i);
-            state.players[i].copyFromTank(tank, playerKills[i], playerScores[i], playerLevelScores[i], playerNicknames[i], playerKillsByType[i]);
-        }
-        // Debug: Log scores being sent
-        if (playerScores[0] > 0 || playerScores[1] > 0) {
-            System.out.println("BUILD_STATE: Sending scores P1=" + playerScores[0] + " P2=" + playerScores[1]);
-        }
-
-        // Enemy tanks
-        for (Tank enemy : enemyTanks) {
-            if (enemy != null) {
-                state.enemies.add(new GameState.EnemyData(
-                    enemy.getX(),
-                    enemy.getY(),
-                    enemy.getDirection().ordinal(),
-                    enemy.isAlive(),
-                    enemy.getEnemyType().ordinal(),
-                    enemy.getHealth(),
-                    enemy.getMaxHealth(),
-                    enemy.getTempSpeedBoost(),
-                    enemy.getSpeedMultiplier()
-                ));
-            }
-        }
-
-        // Bullets
-        for (Bullet bullet : bullets) {
-            if (bullet != null) {
-                state.bullets.add(new GameState.BulletData(
-                    bullet.getId(),
-                    bullet.getX(),
-                    bullet.getY(),
-                    bullet.getDirection().ordinal(),
-                    bullet.isFromEnemy(),
-                    bullet.getPower(),
-                    bullet.canDestroyTrees(),
-                    bullet.getOwnerPlayerNumber(),
-                    bullet.getSize()
-                ));
-            }
-        }
-
-        // Power-ups
-        for (PowerUp powerUp : powerUps) {
-            if (powerUp != null) {
-                state.powerUps.add(new GameState.PowerUpData(
-                    powerUp.getId(),
-                    powerUp.getX(),
-                    powerUp.getY(),
-                    powerUp.getType().ordinal(),
-                    powerUp.getLifetime()
-                ));
-            }
-        }
-
-        // Lasers
-        for (Laser laser : lasers) {
-            if (laser != null) {
-                state.lasers.add(new GameState.LaserData(
-                    laser.getId(),
-                    laser.getStartX(),
-                    laser.getStartY(),
-                    laser.getDirection().ordinal(),
-                    laser.isFromEnemy(),
-                    laser.getOwnerPlayerNumber(),
-                    laser.getLifetime(),
-                    laser.getLength()
-                ));
-            }
-        }
-
-        // Game state
-        state.gameOver = gameOver;
-        state.victory = victory;
-        state.remainingEnemies = enemySpawner.getRemainingEnemies();
-        state.levelNumber = gameMap.getLevelNumber();
-        state.baseAlive = base.isAlive();
-        state.baseShowFlag = base.isShowingFlag();
-        state.baseFlagHeight = base.getFlagHeight();
-        state.baseShowVictoryFlag = base.isShowingVictoryFlag();
-        state.baseVictoryFlagHeight = base.getVictoryFlagHeight();
-        state.baseEasterEggMode = base.isEasterEggMode();
-        state.connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
-        state.enemyFreezeDuration = powerUpEffectManager.getEnemyFreezeDuration();
-        state.playerFreezeDuration = powerUpEffectManager.getPlayerFreezeDuration();
-        state.enemyTeamSpeedBoostDuration = powerUpEffectManager.getEnemyTeamSpeedBoostDuration();
-        state.bossKillerPlayerIndex = bossKillerPlayerIndex;
-        state.bossKillPowerUpReward = bossKillPowerUpReward != null ? bossKillPowerUpReward.ordinal() : -1;
-
-        // Full map state for sync
-        state.mapTiles = gameMap.exportTiles();
-
-        // Burning tiles for fire animation sync
-        Map<Integer, Integer> burning = gameMap.exportBurningTiles();
-        for (Map.Entry<Integer, Integer> entry : burning.entrySet()) {
-            int key = entry.getKey();
-            int row = key / 1000;
-            int col = key % 1000;
-            state.burningTiles.add(new GameState.BurningTileData(row, col, entry.getValue()));
-        }
-
-        // Dancing characters for game over animation (via CelebrationManager)
-        state.dancingInitialized = celebrationManager.isDancingInitialized();
-        for (DancingCharacter dancer : celebrationManager.getDancingCharacters()) {
-            state.dancingCharacters.add(new GameState.DancingCharacterData(
-                dancer.getX(), dancer.getY(), dancer.isAlien(), dancer.getAnimFrame(),
-                dancer.getDanceStyle(), dancer.getColorIndex()
-            ));
-        }
-
-        // Victory dancing girls (via CelebrationManager)
-        state.victoryDancingInitialized = celebrationManager.isVictoryDancingInitialized();
-        for (DancingGirl girl : celebrationManager.getVictoryDancingGirls()) {
-            state.victoryDancingGirls.add(new GameState.DancingGirlData(
-                girl.getX(), girl.getY(), girl.getAnimFrame(),
-                girl.getDanceStyle(), girl.getDressColorIndex(), girl.getHairColorIndex()
-            ));
-        }
-
-        // Map changes (legacy, keeping for compatibility)
-        state.tileChanges.addAll(mapChanges);
-        mapChanges.clear(); // Clear after sending
-
-        // UFO data via UFOManager
-        UFO ufo = ufoManager.getUFO();
-        if (ufo != null && ufo.isAlive()) {
-            state.ufoData = new GameState.UFOData(
-                ufo.getX(), ufo.getY(),
-                ufo.getDx(), ufo.getDy(),
-                ufo.isAlive(), ufo.getHealth(),
-                ufo.getLifetime(), ufo.isMovingRight()
-            );
-        } else {
-            state.ufoData = null;
-        }
-
-        // UFO message timers via UFOManager
-        state.ufoLostMessageTimer = ufoManager.getUfoLostMessageTimer();
-        state.ufoKilledMessageTimer = ufoManager.getUfoKilledMessageTimer();
-
-        // Easter egg data via UFOManager
-        EasterEgg easterEgg = ufoManager.getEasterEgg();
-        if (easterEgg != null) {
-            state.easterEggData = new GameState.EasterEggData(
-                easterEgg.getX(), easterEgg.getY(), easterEgg.getLifetime()
-            );
-        } else {
-            state.easterEggData = null;
-        }
-
-        // Send host's game settings to clients
-        state.hostPlayerSpeed = GameSettings.getPlayerSpeedMultiplier();
-        state.hostEnemySpeed = GameSettings.getEnemySpeedMultiplier();
-        state.hostPlayerShootSpeed = GameSettings.getPlayerShootSpeedMultiplier();
-        state.hostEnemyShootSpeed = GameSettings.getEnemyShootSpeedMultiplier();
-
+        int connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
+        GameState state = GameStateBuilder.build(
+            playerTanks, playerKills, playerScores, playerLevelScores, playerNicknames, playerKillsByType,
+            enemyTanks, bullets, lasers, powerUps,
+            gameOver, victory, enemySpawner, gameMap, base, connectedPlayers,
+            powerUpEffectManager, bossKillerPlayerIndex, bossKillPowerUpReward,
+            celebrationManager, mapChanges, ufoManager
+        );
+        mapChanges.clear(); // Clear after building state
         return state;
     }
 

@@ -32,6 +32,7 @@ public class ServerGameState {
 
     // UFO bonus enemy
     private UFO ufo = null;
+    private boolean ufoSpawnedThisLevel = false;
     private static final double UFO_SPAWN_CHANCE = GameConstants.UFO_SPAWN_CHANCE;
 
     // Easter egg collectible (spawns when UFO is killed)
@@ -134,6 +135,7 @@ public class ServerGameState {
         dancingCharacters.clear();
         victoryDancingGirls.clear();
         ufo = null;
+        ufoSpawnedThisLevel = false;
         easterEgg = null;
 
         LOG.info("Game initialized with {} player(s)", playerCount);
@@ -536,14 +538,19 @@ public class ServerGameState {
     }
 
     private void updateUFO() {
-        // Random chance to spawn UFO if none exists
-        if (ufo == null && Math.random() < UFO_SPAWN_CHANCE) {
-            int mapPixelSize = MAP_SIZE * TILE_SIZE;
-            boolean movingRight = Math.random() < 0.5;
-            double startX = movingRight ? -48 : mapPixelSize;
-            double startY = 50 + Math.random() * (mapPixelSize - 150);
-            ufo = new UFO(startX, startY, movingRight);
-            LOG.info("UFO spawned!");
+        // Random chance to spawn UFO if none exists and hasn't spawned this level
+        // Only spawn when 2-10 enemies remaining (same as Game.java)
+        int remaining = enemySpawner.getRemainingEnemies();
+        if (ufo == null && !ufoSpawnedThisLevel && remaining > 1 && remaining <= 10) {
+            if (Math.random() < UFO_SPAWN_CHANCE) {
+                int mapPixelSize = MAP_SIZE * TILE_SIZE;
+                boolean movingRight = Math.random() < 0.5;
+                double startX = movingRight ? -48 : mapPixelSize;
+                double startY = 50 + Math.random() * (mapPixelSize - 150);
+                ufo = new UFO(startX, startY, movingRight);
+                ufoSpawnedThisLevel = true;
+                LOG.info("UFO spawned!");
+            }
         }
 
         if (ufo != null && ufo.isAlive()) {

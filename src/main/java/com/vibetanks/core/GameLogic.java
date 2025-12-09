@@ -402,4 +402,107 @@ public class GameLogic {
     public static int getScoreForKill(Tank.EnemyType enemyType) {
         return GameConstants.getScoreForEnemyType(enemyType);
     }
+
+    /**
+     * Result of tank overlap resolution.
+     */
+    public static class TankOverlapResult {
+        public boolean tank1Killed = false;
+        public boolean tank2Killed = false;
+        public Tank killedTank1 = null;
+        public Tank killedTank2 = null;
+    }
+
+    /**
+     * Push apart overlapping tanks to prevent them from getting stuck.
+     * Also handles BOSS tank contact kills.
+     *
+     * @param allTanks Combined list of player and enemy tanks
+     * @param gameMap Game map for collision checking
+     * @return Result indicating any tanks killed by BOSS contact
+     */
+    public static TankOverlapResult resolveOverlappingTanks(List<Tank> allTanks, GameMap gameMap) {
+        TankOverlapResult result = new TankOverlapResult();
+        final double PUSH_FORCE = 3.0; // Pixels to push per frame
+        final double MIN_GAP = 4.0; // Minimum gap to maintain between tanks
+
+        for (int i = 0; i < allTanks.size(); i++) {
+            Tank tank1 = allTanks.get(i);
+            if (!tank1.isAlive()) continue;
+
+            for (int j = i + 1; j < allTanks.size(); j++) {
+                Tank tank2 = allTanks.get(j);
+                if (!tank2.isAlive()) continue;
+
+                // Calculate distance between tank centers
+                double dx = tank2.getX() - tank1.getX();
+                double dy = tank2.getY() - tank1.getY();
+
+                // Required separation (half sizes + gap)
+                double requiredSepX = (tank1.getSize() + tank2.getSize()) / 2.0 + MIN_GAP;
+                double requiredSepY = (tank1.getSize() + tank2.getSize()) / 2.0 + MIN_GAP;
+
+                // Calculate overlap in each axis
+                double overlapX = requiredSepX - Math.abs(dx);
+                double overlapY = requiredSepY - Math.abs(dy);
+
+                // If overlapping or too close in both dimensions
+                if (overlapX > 0 && overlapY > 0) {
+                    boolean tank1IsBoss = tank1.getEnemyType() == Tank.EnemyType.BOSS;
+                    boolean tank2IsBoss = tank2.getEnemyType() == Tank.EnemyType.BOSS;
+
+                    // BOSS tank kills any tank it touches (except other BOSS)
+                    if (tank1IsBoss && !tank2IsBoss) {
+                        tank2.instantKill();
+                        result.tank2Killed = true;
+                        result.killedTank2 = tank2;
+                        continue; // Don't push, tank is dead
+                    }
+                    if (tank2IsBoss && !tank1IsBoss) {
+                        tank1.instantKill();
+                        result.tank1Killed = true;
+                        result.killedTank1 = tank1;
+                        continue; // Don't push, tank is dead
+                    }
+
+                    // Push along the axis with LESS overlap (faster separation)
+                    double pushX = 0;
+                    double pushY = 0;
+
+                    if (overlapX < overlapY) {
+                        // Push horizontally
+                        pushX = (dx >= 0 ? 1 : -1) * PUSH_FORCE;
+                    } else {
+                        // Push vertically
+                        pushY = (dy >= 0 ? 1 : -1) * PUSH_FORCE;
+                    }
+
+                    // If tanks are exactly aligned, add small perpendicular push
+                    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
+                        pushX = (GameConstants.RANDOM.nextDouble() > 0.5 ? 1 : -1) * PUSH_FORCE;
+                        pushY = (GameConstants.RANDOM.nextDouble() > 0.5 ? 1 : -1) * PUSH_FORCE;
+                    }
+
+                    double tank1Push = tank2IsBoss ? 1.0 : 0.5;
+                    double tank2Push = tank1IsBoss ? 1.0 : 0.5;
+
+                    // Check if new positions are valid before applying
+                    double newX1 = tank1.getX() - pushX * tank1Push;
+                    double newY1 = tank1.getY() - pushY * tank1Push;
+                    double newX2 = tank2.getX() + pushX * tank2Push;
+                    double newY2 = tank2.getY() + pushY * tank2Push;
+
+                    // Apply push only if the new position doesn't collide with walls
+                    if (!gameMap.checkTankCollision(newX1, newY1, tank1.getSize(), tank1.hasShip())) {
+                        tank1.setPosition(newX1, newY1);
+                    }
+                    if (!gameMap.checkTankCollision(newX2, newY2, tank2.getSize(), tank2.hasShip())) {
+                        tank2.setPosition(newX2, newY2);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
 }

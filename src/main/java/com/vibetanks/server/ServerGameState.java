@@ -480,9 +480,10 @@ public class ServerGameState {
                     for (int i = 0; i < 3 && ufo.isAlive(); i++) {
                         boolean destroyed = ufo.damage();
                         if (destroyed) {
-                            // Spawn easter egg at UFO position
-                            easterEgg = new EasterEgg(ufo.getX(), ufo.getY());
-                            LOG.info("UFO destroyed by laser! Easter egg spawned");
+                            // Spawn easter egg at random position
+                            double[] eggPos = GameLogic.findPowerUpSpawnPosition(gameMap, TILE_SIZE);
+                            easterEgg = new EasterEgg(eggPos[0], eggPos[1]);
+                            LOG.info("UFO destroyed by laser! Easter egg spawned at random position");
                             break;
                         }
                     }
@@ -558,9 +559,10 @@ public class ServerGameState {
                     notifyBulletDestroyed(bullet);
                     iter.remove();
                     if (destroyed) {
-                        // Spawn easter egg at UFO position
-                        easterEgg = new EasterEgg(ufo.getX(), ufo.getY());
-                        LOG.info("UFO destroyed! Easter egg spawned");
+                        // Spawn easter egg at random position
+                        double[] eggPos = GameLogic.findPowerUpSpawnPosition(gameMap, TILE_SIZE);
+                        easterEgg = new EasterEgg(eggPos[0], eggPos[1]);
+                        LOG.info("UFO destroyed! Easter egg spawned at random position");
                     }
                     break;
                 }

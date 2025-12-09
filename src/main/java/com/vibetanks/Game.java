@@ -7,6 +7,7 @@ import com.vibetanks.rendering.EffectRenderer;
 import com.vibetanks.rendering.GameRenderer;
 import com.vibetanks.rendering.HUDRenderer;
 import com.vibetanks.rendering.IconRenderer;
+import com.vibetanks.rendering.ImageLoader;
 import com.vibetanks.rendering.StatsRenderer;
 import com.vibetanks.network.GameState;
 import com.vibetanks.network.GameStateApplier;
@@ -20,7 +21,6 @@ import com.vibetanks.ui.MenuScene;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
@@ -181,162 +181,13 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     }
 
     private void loadVictoryImage() {
-        try {
-            Image victoryImage = null;
-
-            // Try to load from local resources first
-            try {
-                java.io.File localFile = new java.io.File("src/main/resources/images/victory.gif");
-                if (localFile.exists()) {
-                    System.out.println("Loading victory image from local file: " + localFile.getPath());
-                    victoryImage = new Image(localFile.toURI().toString());
-                    if (!victoryImage.isError()) {
-                        System.out.println("Successfully loaded victory image from local file!");
-                    }
-                }
-            } catch (Exception e) {
-                System.out.println("Could not load from local file: " + e.getMessage());
-            }
-
-            // If local file failed, try resource path
-            if (victoryImage == null || victoryImage.isError()) {
-                try {
-                    java.net.URL resourceUrl = getClass().getResource("/images/victory.gif");
-                    if (resourceUrl != null) {
-                        System.out.println("Loading victory image from resources");
-                        victoryImage = new Image(resourceUrl.toString());
-                        if (!victoryImage.isError()) {
-                            System.out.println("Successfully loaded victory image from resources!");
-                        }
-                    }
-                } catch (Exception e) {
-                    System.out.println("Could not load from resources: " + e.getMessage());
-                }
-            }
-
-            // If still no image, try URLs as fallback
-            if (victoryImage == null || victoryImage.isError()) {
-                String[] imageUrls = {
-                    "https://i.imgur.com/7kZ8Lrb.gif",
-                    "https://media.tenor.com/fSBeKScbxIkAAAAM/anime-dance.gif",
-                    "https://media.giphy.com/media/nAvSNP8Y3F94hq9Rga/giphy.gif"
-                };
-
-                for (String url : imageUrls) {
-                    try {
-                        System.out.println("Trying to load victory image from URL: " + url);
-                        victoryImage = new Image(url, true);
-                        if (!victoryImage.isError()) {
-                            System.out.println("Successfully loaded victory image from: " + url);
-                            break;
-                        }
-                    } catch (Exception e) {
-                        System.out.println("Failed to load from: " + url);
-                    }
-                }
-            }
-
-            if (victoryImage != null && !victoryImage.isError()) {
-                victoryImageView = new ImageView(victoryImage);
-                victoryImageView.setFitWidth(300);
-                victoryImageView.setFitHeight(300);
-                victoryImageView.setPreserveRatio(true);
-                victoryImageView.setLayoutX(width / 2 - 150);
-                victoryImageView.setLayoutY(height / 2 - 250);
-                victoryImageView.setVisible(false);
-
-                root.getChildren().add(victoryImageView);
-                System.out.println("Victory image view added successfully!");
-            } else {
-                System.out.println("Could not load victory image from any source");
-                System.out.println("Please place a 'victory.gif' file in: src/main/resources/images/");
-                victoryImageView = null;
-            }
-        } catch (Exception e) {
-            System.out.println("Could not load victory image: " + e.getMessage());
-            e.printStackTrace();
-            victoryImageView = null;
-        }
+        ImageLoader.LoadResult result = ImageLoader.loadVictoryImage(root, width, height, getClass());
+        victoryImageView = result.imageView;
     }
 
     private void loadGameOverImage() {
-        try {
-            Image gameOverImage = null;
-
-            // Try to load from local resources first
-            try {
-                java.io.File localFile = new java.io.File("src/main/resources/images/gameover.gif");
-                if (localFile.exists()) {
-                    System.out.println("Loading game over image from local file: " + localFile.getPath());
-                    gameOverImage = new Image(localFile.toURI().toString());
-                    if (!gameOverImage.isError()) {
-                        System.out.println("Successfully loaded game over image from local file!");
-                    }
-                }
-            } catch (Exception e) {
-                System.out.println("Could not load from local file: " + e.getMessage());
-            }
-
-            // If local file failed, try resource path
-            if (gameOverImage == null || gameOverImage.isError()) {
-                try {
-                    java.net.URL resourceUrl = getClass().getResource("/images/gameover.gif");
-                    if (resourceUrl != null) {
-                        System.out.println("Loading game over image from resources");
-                        gameOverImage = new Image(resourceUrl.toString());
-                        if (!gameOverImage.isError()) {
-                            System.out.println("Successfully loaded game over image from resources!");
-                        }
-                    }
-                } catch (Exception e) {
-                    System.out.println("Could not load from resources: " + e.getMessage());
-                }
-            }
-
-            // If still no image, try URLs as fallback
-            if (gameOverImage == null || gameOverImage.isError()) {
-                String[] imageUrls = {
-                    "https://media.tenor.com/wD7yF6gA1XwAAAAM/skeleton-dance.gif",
-                    "https://media.giphy.com/media/3oKIPsx2VAYAgEHC12/giphy.gif",
-                    "https://i.imgur.com/bJPo2.gif",
-                    "https://media1.tenor.com/m/p0wM4WV3XPAAAAAC/skeleton-dancing.gif"
-                };
-
-                for (String url : imageUrls) {
-                    try {
-                        System.out.println("Trying to load game over image from URL: " + url);
-                        gameOverImage = new Image(url, true);
-                        if (!gameOverImage.isError()) {
-                            System.out.println("Successfully loaded game over image from: " + url);
-                            break;
-                        }
-                    } catch (Exception e) {
-                        System.out.println("Failed to load from: " + url);
-                    }
-                }
-            }
-
-            if (gameOverImage != null && !gameOverImage.isError()) {
-                gameOverImageView = new ImageView(gameOverImage);
-                gameOverImageView.setFitWidth(300);
-                gameOverImageView.setFitHeight(300);
-                gameOverImageView.setPreserveRatio(true);
-                gameOverImageView.setLayoutX(width / 2 - 150);
-                gameOverImageView.setLayoutY(height / 2 - 250);
-                gameOverImageView.setVisible(false);
-
-                root.getChildren().add(gameOverImageView);
-                System.out.println("Game over image view added successfully!");
-            } else {
-                System.out.println("Could not load game over image from any source");
-                System.out.println("Please place a 'gameover.gif' file in: src/main/resources/images/");
-                gameOverImageView = null;
-            }
-        } catch (Exception e) {
-            System.out.println("Could not load game over image: " + e.getMessage());
-            e.printStackTrace();
-            gameOverImageView = null;
-        }
+        ImageLoader.LoadResult result = ImageLoader.loadGameOverImage(root, width, height, getClass());
+        gameOverImageView = result.imageView;
     }
 
     private void initialize() {
@@ -1040,7 +891,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         // Check bullet-to-bullet collisions using ProjectileHandler
         ProjectileHandler.processBulletToBulletCollisions(bullets, playerTanks);
 
-        // Update lasers and check collisions
+        // Update lasers and check collisions using ProjectileHandler
         Iterator<Laser> laserIterator = lasers.iterator();
         while (laserIterator.hasNext()) {
             Laser laser = laserIterator.next();
@@ -1052,69 +903,52 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 continue;
             }
 
-            // Laser collisions - damage any tank in the beam's path
-            // Laser passes through everything except tanks and base (dealing 3 damage)
-            if (!laser.isFromEnemy()) {
-                // Player laser - hits enemies
-                for (Tank enemy : enemyTanks) {
-                    if (enemy.isAlive() && laser.collidesWith(enemy)) {
-                        // Deal 3 damage
-                        for (int dmg = 0; dmg < 3 && enemy.isAlive(); dmg++) {
-                            enemy.damage();
-                        }
-                        if (!enemy.isAlive()) {
-                            soundManager.playExplosion();
-                            // Track kill for the player who fired the laser
-                            int killerPlayer = laser.getOwnerPlayerNumber();
-                            if (killerPlayer >= 1 && killerPlayer <= 4) {
-                                playerKills[killerPlayer - 1]++;
-                                int enemyTypeOrdinal = enemy.getEnemyType().ordinal();
-                                if (enemyTypeOrdinal < 6) {
-                                    playerKillsByType[killerPlayer - 1][enemyTypeOrdinal]++;
-                                }
-                                // Award points based on enemy type
-                                int points = switch (enemy.getEnemyType()) {
-                                    case POWER -> 2;
-                                    case HEAVY -> 5;
-                                    case BOSS -> 10;
-                                    default -> 1;
-                                };
-                                addScore(killerPlayer - 1, points);
-                                // BOSS kill rewards
-                                if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
-                                    Tank killer = playerTanks.get(killerPlayer - 1);
-                                    bossKillerPlayerIndex = killerPlayer - 1;
-                                    bossKillPowerUpReward = applyRandomPowerUp(killer);
-                                }
-                            }
-                            // Chance for power-up drop
-                            if (Math.random() < 0.3) {
-                                double[] spawnPos = getRandomPowerUpSpawnPosition();
-                                powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
-                            }
-                        }
+            // Process laser collisions via ProjectileHandler
+            ProjectileHandler.LaserCollisionResult laserResult = ProjectileHandler.processLaser(
+                    laser, enemyTanks, playerTanks, base, ufoManager.getUFO(), soundManager);
+
+            // Handle enemy killed - track kills and award points
+            if (laserResult.enemyKilled && laserResult.killedEnemy != null) {
+                int killerPlayer = laserResult.killerPlayerNumber;
+                Tank enemy = laserResult.killedEnemy;
+                if (killerPlayer >= 1 && killerPlayer <= 4) {
+                    playerKills[killerPlayer - 1]++;
+                    int enemyTypeOrdinal = enemy.getEnemyType().ordinal();
+                    if (enemyTypeOrdinal < 6) {
+                        playerKillsByType[killerPlayer - 1][enemyTypeOrdinal]++;
+                    }
+                    addScore(killerPlayer - 1, ProjectileHandler.getScoreForKill(enemy.getEnemyType()));
+                    // BOSS kill rewards
+                    if (laserResult.isBossKill) {
+                        Tank killer = playerTanks.get(killerPlayer - 1);
+                        bossKillerPlayerIndex = killerPlayer - 1;
+                        bossKillPowerUpReward = applyRandomPowerUp(killer);
                     }
                 }
-                // Player laser can hit base (but shouldn't since it passes through obstacles)
-                // However, if aimed directly at base, it will hit it
-                if (laser.collidesWithBase(base) && base.isAlive()) {
-                    base.destroy();
-                    soundManager.playBaseDestroyed();
-                    gameOver = true;
+            }
+
+            // Handle power-up drop
+            if (laserResult.shouldDropPowerUp) {
+                double[] spawnPos = getRandomPowerUpSpawnPosition();
+                powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+            }
+
+            // Handle UFO destruction
+            if (laserResult.ufoDestroyed) {
+                int killerPlayer = laserResult.killerPlayerNumber;
+                if (killerPlayer >= 1 && killerPlayer <= 4) {
+                    addScore(killerPlayer - 1, 20);
+                    System.out.println("UFO destroyed by laser from Player " + killerPlayer + " - awarded 20 points!");
                 }
-            } else {
-                // Enemy laser (if enemies could have lasers) - hits players
-                for (Tank player : playerTanks) {
-                    if (player.isAlive() && !player.hasShield() && !player.hasPauseShield() && laser.collidesWith(player)) {
-                        // Deal 3 damage
-                        for (int dmg = 0; dmg < 3 && player.isAlive(); dmg++) {
-                            player.damage();
-                        }
-                        if (!player.isAlive()) {
-                            soundManager.playPlayerDeath();
-                        }
-                    }
-                }
+                double[] eggPos = getRandomPowerUpSpawnPosition();
+                ufoManager.handleUFODestroyed(killerPlayer, eggPos[0], eggPos[1]);
+            }
+
+            // Handle base hit
+            if (laserResult.hitBase) {
+                base.destroy();
+                soundManager.playBaseDestroyed();
+                gameOver = true;
             }
         }
 

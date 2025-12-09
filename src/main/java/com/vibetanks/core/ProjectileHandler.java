@@ -40,6 +40,9 @@ public class ProjectileHandler {
         public boolean hitBase = false;
         public boolean hitUfo = false;
         public boolean ufoDestroyed = false;
+        public boolean playerKilled = false;
+        public Tank killedPlayer = null;
+        public boolean isBossKill = false;
     }
 
     /**
@@ -209,6 +212,8 @@ public class ProjectileHandler {
                         player.damage();
                     }
                     if (!player.isAlive()) {
+                        result.playerKilled = true;
+                        result.killedPlayer = player;
                         soundManager.playPlayerDeath();
                     }
                 }
@@ -226,6 +231,11 @@ public class ProjectileHandler {
                         result.killedEnemy = enemy;
                         result.killerPlayerNumber = laser.getOwnerPlayerNumber();
                         soundManager.playExplosion();
+
+                        // Check if it's a BOSS kill
+                        if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
+                            result.isBossKill = true;
+                        }
 
                         // 30% chance for power-up drop
                         if (GameConstants.RANDOM.nextDouble() < 0.3) {

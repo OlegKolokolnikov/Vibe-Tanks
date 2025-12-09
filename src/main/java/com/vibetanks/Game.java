@@ -1,5 +1,6 @@
 package com.vibetanks;
 
+import com.vibetanks.animation.CelebrationManager;
 import com.vibetanks.animation.DancingCharacter;
 import com.vibetanks.animation.DancingGirl;
 import com.vibetanks.audio.SoundManager;
@@ -120,16 +121,11 @@ public class Game {
     private ImageView gameOverImageView;
     private boolean gameOverSoundPlayed = false;
 
-    // Dancing aliens/humans when enemies destroy base
-    private List<DancingCharacter> dancingCharacters = new ArrayList<>();
-    private boolean dancingInitialized = false;
-
     // UFO and Easter egg management (extracted to UFOManager)
     private UFOManager ufoManager = new UFOManager();
 
-    // Victory dancing girls
-    private List<DancingGirl> victoryDancingGirls = new ArrayList<>();
-    private boolean victoryDancingInitialized = false;
+    // Dancing characters and victory celebration (extracted to CelebrationManager)
+    private CelebrationManager celebrationManager = new CelebrationManager();
 
     // Track actual connected players (for network games)
     private int networkConnectedPlayers = 1;
@@ -407,7 +403,7 @@ public class Game {
             if (event.getCode() == KeyCode.ESCAPE) {
                 // ESC on victory/game over screen returns to menu
                 // Check both flags and visual state (for client sync)
-                if (gameOver || victory || victoryDancingInitialized || dancingInitialized) {
+                if (gameOver || victory || celebrationManager.isVictoryDancingInitialized() || celebrationManager.isDancingInitialized()) {
                     returnToMenu();
                 } else {
                     // Toggle pause menu for all game modes
@@ -658,10 +654,7 @@ public class Game {
         victoryDelayTimer = 0;
         gameOver = false;
         gameOverSoundPlayed = false;
-        dancingInitialized = false;
-        dancingCharacters.clear();
-        victoryDancingInitialized = false;
-        victoryDancingGirls.clear();
+        celebrationManager.reset();
         winnerBonusAwarded = false;
         bossKillerPlayerIndex = -1;
         bossKillPowerUpReward = null;
@@ -733,10 +726,7 @@ public class Game {
         victoryDelayTimer = 0;
         gameOver = false;
         gameOverSoundPlayed = false;
-        dancingInitialized = false;
-        dancingCharacters.clear();
-        victoryDancingInitialized = false;
-        victoryDancingGirls.clear();
+        celebrationManager.reset();
         winnerBonusAwarded = false;
         bossKillerPlayerIndex = -1;
         bossKillPowerUpReward = null;
@@ -1564,79 +1554,7 @@ public class Game {
     // UFO message rendering, boss health bar, and laughing skull moved to EffectRenderer
 
     // Power-up icon rendering and getPowerUpColor moved to IconRenderer
-
-    private void initializeDancingCharacters() {
-        if (dancingInitialized) return;
-        dancingInitialized = true;
-
-        // Raise the skull flag on the destroyed base
-        base.raiseFlag();
-
-        // Create dancing aliens/humans from enemy tank positions
-        // If there are enemy tanks, use their positions; otherwise spawn around the destroyed base
-        if (!enemyTanks.isEmpty()) {
-            for (Tank enemy : enemyTanks) {
-                // Each enemy tank spawns 1-2 characters
-                int numCharacters = 1 + GameConstants.RANDOM.nextInt(2);
-                for (int i = 0; i < numCharacters; i++) {
-                    double offsetX = (GameConstants.RANDOM.nextDouble() - 0.5) * 40;
-                    double offsetY = (GameConstants.RANDOM.nextDouble() - 0.5) * 40;
-                    boolean isAlien = GameConstants.RANDOM.nextBoolean();
-                    int danceStyle = GameConstants.RANDOM.nextInt(3);
-                    dancingCharacters.add(new DancingCharacter(
-                        enemy.getX() + 16 + offsetX,
-                        enemy.getY() + 16 + offsetY,
-                        isAlien,
-                        danceStyle
-                    ));
-                }
-            }
-        }
-
-        // Also spawn some around the destroyed base
-        double baseX = base.getX() + 32;
-        double baseY = base.getY() + 32;
-        for (int i = 0; i < 6; i++) {
-            double angle = (Math.PI * 2 * i) / 6;
-            double radius = 60 + GameConstants.RANDOM.nextDouble() * 30;
-            double x = baseX + Math.cos(angle) * radius;
-            double y = baseY + Math.sin(angle) * radius;
-            boolean isAlien = GameConstants.RANDOM.nextBoolean();
-            int danceStyle = GameConstants.RANDOM.nextInt(3);
-            dancingCharacters.add(new DancingCharacter(x, y, isAlien, danceStyle));
-        }
-    }
-
-    private void initializeVictoryCelebration() {
-        if (victoryDancingInitialized) return;
-        victoryDancingInitialized = true;
-
-        // Raise the Soviet victory flag on the base
-        base.raiseVictoryFlag();
-
-        // Get number of active players - use playerTanks.size() directly
-        int activePlayers = playerTanks.size();
-
-        // Spawn dancing girls based on player count (1-2 girls per player)
-        int girlCount = activePlayers + GameConstants.RANDOM.nextInt(activePlayers + 1); // Players to 2x players
-
-        // Position girls around the base
-        double baseX = base.getX() + 16;
-        double baseY = base.getY() - 20; // Above the base
-
-        for (int i = 0; i < girlCount; i++) {
-            // Spread girls in a semi-circle above the base
-            double angle = Math.PI + (Math.PI * (i + 0.5) / girlCount); // Semi-circle above
-            double radius = 80 + GameConstants.RANDOM.nextDouble() * 40;
-            double x = baseX + Math.cos(angle) * radius;
-            double y = baseY + Math.sin(angle) * radius * 0.6; // Flatten the vertical spread
-            int danceStyle = GameConstants.RANDOM.nextInt(4);
-
-            victoryDancingGirls.add(new DancingGirl(x, y, danceStyle));
-        }
-
-        System.out.println("Victory celebration initialized with " + girlCount + " dancing girls for " + activePlayers + " players");
-    }
+    // Dancing character initialization moved to CelebrationManager
 
     /**
      * Get the display name for a player (nickname if set, otherwise "P1", "P2", etc.)
@@ -1751,13 +1669,13 @@ public class Game {
 
         if (gameOver) {
             // Initialize dancing characters when base was destroyed (not when players died)
-            if (!base.isAlive() && !dancingInitialized) {
-                initializeDancingCharacters();
+            if (!base.isAlive() && !celebrationManager.isDancingInitialized()) {
+                celebrationManager.initializeDancingCharacters(base, enemyTanks);
             }
 
             // Update and render dancing characters
-            for (DancingCharacter dancer : dancingCharacters) {
-                dancer.update();
+            celebrationManager.updateDancingCharacters();
+            for (DancingCharacter dancer : celebrationManager.getDancingCharacters()) {
                 dancer.render(gc);
             }
 
@@ -1787,14 +1705,14 @@ public class Game {
             gc.fillText("Press ESC to return to menu", width / 2 - 115, height / 2 + 340);
         } else if (victory) {
             // Initialize victory celebration (Soviet flag + dancing girls)
-            if (!victoryDancingInitialized) {
+            if (!celebrationManager.isVictoryDancingInitialized()) {
                 soundManager.stopGameplaySounds();
-                initializeVictoryCelebration();
+                celebrationManager.initializeVictoryCelebration(base, playerTanks.size());
             }
 
             // Update and render dancing girls
-            for (DancingGirl girl : victoryDancingGirls) {
-                girl.update();
+            celebrationManager.updateVictoryGirls();
+            for (DancingGirl girl : celebrationManager.getVictoryDancingGirls()) {
                 girl.render(gc);
             }
 
@@ -2239,18 +2157,18 @@ public class Game {
             state.burningTiles.add(new GameState.BurningTileData(row, col, entry.getValue()));
         }
 
-        // Dancing characters for game over animation
-        state.dancingInitialized = dancingInitialized;
-        for (DancingCharacter dancer : dancingCharacters) {
+        // Dancing characters for game over animation (via CelebrationManager)
+        state.dancingInitialized = celebrationManager.isDancingInitialized();
+        for (DancingCharacter dancer : celebrationManager.getDancingCharacters()) {
             state.dancingCharacters.add(new GameState.DancingCharacterData(
                 dancer.getX(), dancer.getY(), dancer.isAlien(), dancer.getAnimFrame(),
                 dancer.getDanceStyle(), dancer.getColorIndex()
             ));
         }
 
-        // Victory dancing girls
-        state.victoryDancingInitialized = victoryDancingInitialized;
-        for (DancingGirl girl : victoryDancingGirls) {
+        // Victory dancing girls (via CelebrationManager)
+        state.victoryDancingInitialized = celebrationManager.isVictoryDancingInitialized();
+        for (DancingGirl girl : celebrationManager.getVictoryDancingGirls()) {
             state.victoryDancingGirls.add(new GameState.DancingGirlData(
                 girl.getX(), girl.getY(), girl.getAnimFrame(),
                 girl.getDanceStyle(), girl.getDressColorIndex(), girl.getHairColorIndex()
@@ -2500,27 +2418,27 @@ public class Game {
             gameMap.setBurningTiles(burningData);
         }
 
-        // Sync dancing characters for game over animation
+        // Sync dancing characters for game over animation (via CelebrationManager)
         // For network clients: initialize dancing locally when server signals game over with base destroyed
-        if (state.gameOver && !state.baseAlive && !dancingInitialized) {
-            initializeDancingCharacters();
+        if (state.gameOver && !state.baseAlive && !celebrationManager.isDancingInitialized()) {
+            celebrationManager.initializeDancingCharacters(base, enemyTanks);
         }
         // If server restarted, reset dancing state
         if (!state.gameOver) {
-            dancingInitialized = false;
-            dancingCharacters.clear();
+            celebrationManager.setDancingInitialized(false);
+            celebrationManager.getDancingCharacters().clear();
         }
 
-        // Sync victory dancing girls
+        // Sync victory dancing girls (via CelebrationManager)
         // For network clients: initialize victory celebration locally when server signals victory
-        if (state.victory && !victoryDancingInitialized) {
+        if (state.victory && !celebrationManager.isVictoryDancingInitialized()) {
             soundManager.stopGameplaySounds();
-            initializeVictoryCelebration();
+            celebrationManager.initializeVictoryCelebration(base, playerTanks.size());
         }
         // If server restarted or went to next level, reset victory state
         if (!state.victory) {
-            victoryDancingInitialized = false;
-            victoryDancingGirls.clear();
+            celebrationManager.setVictoryDancingInitialized(false);
+            celebrationManager.getVictoryDancingGirls().clear();
         }
 
         // Sync UFO and easter egg from host via UFOManager
@@ -2582,11 +2500,8 @@ public class Game {
                     playerKillsByType[i][j] = 0;
                 }
             }
-            // Clear visual state
-            dancingInitialized = false;
-            dancingCharacters.clear();
-            victoryDancingInitialized = false;
-            victoryDancingGirls.clear();
+            // Clear visual state via CelebrationManager
+            celebrationManager.reset();
             gameOverSoundPlayed = false;
             // Hide end game images
             if (victoryImageView != null) victoryImageView.setVisible(false);

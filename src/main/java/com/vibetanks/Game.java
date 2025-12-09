@@ -1,12 +1,11 @@
 package com.vibetanks;
 
 import com.vibetanks.animation.CelebrationManager;
-import com.vibetanks.animation.DancingCharacter;
-import com.vibetanks.animation.DancingGirl;
 import com.vibetanks.audio.SoundManager;
 import com.vibetanks.core.*;
 import com.vibetanks.rendering.EffectRenderer;
 import com.vibetanks.rendering.GameRenderer;
+import com.vibetanks.rendering.HUDRenderer;
 import com.vibetanks.rendering.IconRenderer;
 import com.vibetanks.rendering.StatsRenderer;
 import com.vibetanks.network.GameState;
@@ -29,7 +28,8 @@ import javafx.stage.Stage;
 
 import java.util.*;
 
-public class Game implements GameStateApplier.GameContext, LevelTransitionManager.LevelTransitionContext {
+public class Game implements GameStateApplier.GameContext, LevelTransitionManager.LevelTransitionContext,
+        HUDRenderer.PlayerNameProvider, HUDRenderer.EndGameStatsProvider, HUDRenderer.GameOverState {
     private final Pane root;
     private final Canvas canvas;
     private final GraphicsContext gc;
@@ -53,6 +53,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     private EffectRenderer effectRenderer;
     private IconRenderer iconRenderer;
     private StatsRenderer statsRenderer;
+    private HUDRenderer hudRenderer;
     private double[][] playerStartPositions; // For respawning
 
     // Fixed start positions - use shared constants
@@ -481,6 +482,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         effectRenderer = gameRenderer.getEffectRenderer();
         iconRenderer = gameRenderer.getIconRenderer();
         statsRenderer = new StatsRenderer(gc, iconRenderer, width);
+        hudRenderer = new HUDRenderer(gc, iconRenderer, effectRenderer, statsRenderer, width, height);
     }
 
     private void returnToMenu() {
@@ -1365,7 +1367,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
      * For local player: use NicknameManager directly
      * For other players: use synced nicknames from GameState
      */
-    private String getPlayerDisplayName(int playerIndex) {
+    @Override
+    public String getPlayerDisplayName(int playerIndex) {
         // Determine local player index
         int myPlayerIndex = isNetworkGame && network != null ? network.getPlayerNumber() - 1 : 0;
 
@@ -1413,211 +1416,40 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     }
 
     private void renderUI() {
-        gc.setFill(Color.WHITE);
-        gc.fillText("Level: " + gameMap.getLevelNumber() + "  Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
-
-        // Display player info and power-ups - only show connected players
-        int displayCount = getDisplayPlayerCount();
-        for (int i = 0; i < displayCount && i < playerTanks.size(); i++) {
-            Tank player = playerTanks.get(i);
-            String playerName = getPlayerDisplayName(i);
-            double yOffset = 40 + i * 60;
-
-            // Display lives (show remaining respawns, not total lives), kills and score
-            int displayLives = Math.max(0, player.getLives() - 1);
-            gc.setFill(Color.WHITE);
-            gc.fillText(playerName + " Lives: " + displayLives + "  Kills: " + playerKills[i] + "  Score: " + playerScores[i], 10, yOffset);
-
-            // Display power-ups
-            double xOffset = 10;
-            yOffset += 10;
-
-            if (player.hasGun()) {
-                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.GUN);
-                xOffset += 20;
-            }
-            if (player.getStarCount() > 0) {
-                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.STAR);
-                gc.setFill(Color.WHITE);
-                gc.fillText("x" + player.getStarCount(), xOffset + 15, yOffset + 12);
-                xOffset += 35;
-            }
-            if (player.getCarCount() > 0) {
-                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.CAR);
-                gc.setFill(Color.WHITE);
-                gc.fillText("x" + player.getCarCount(), xOffset + 15, yOffset + 12);
-                xOffset += 35;
-            }
-            if (player.hasShip()) {
-                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SHIP);
-                xOffset += 20;
-            }
-            if (player.hasSaw()) {
-                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SAW);
-                xOffset += 20;
-            }
-            if (player.hasShield()) {
-                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.SHIELD);
-                xOffset += 20;
-            }
-            if (player.getMachinegunCount() > 0) {
-                iconRenderer.renderPowerUpIcon(xOffset, yOffset, PowerUp.Type.MACHINEGUN);
-                gc.setFill(Color.WHITE);
-                gc.fillText("x" + player.getMachinegunCount(), xOffset + 15, yOffset + 12);
-                xOffset += 35;
-            }
-        }
+        // Render main HUD (level info, player stats, power-ups)
+        hudRenderer.renderHUD(gameMap.getLevelNumber(), enemySpawner.getRemainingEnemies(),
+                getDisplayPlayerCount(), playerTanks, playerKills, playerScores, this);
 
         // Render BOSS health indicator if BOSS is alive
         effectRenderer.renderBossHealthBar(enemyTanks);
 
         if (gameOver) {
-            // Initialize dancing characters when base was destroyed (not when players died)
-            if (!base.isAlive() && !celebrationManager.isDancingInitialized()) {
-                celebrationManager.initializeDancingCharacters(base, enemyTanks);
-            }
-
-            // Update and render dancing characters
-            celebrationManager.updateDancingCharacters();
-            for (DancingCharacter dancer : celebrationManager.getDancingCharacters()) {
-                dancer.render(gc);
-            }
-
-            // Render laughing skull instead of GIF (synchronized for all players)
-            effectRenderer.renderLaughingSkull(width / 2, height / 2 - 150);
-
-            // Play sad sound once and stop gameplay sounds
-            if (!gameOverSoundPlayed) {
-                soundManager.stopGameplaySounds();
-                soundManager.playSad();
-                gameOverSoundPlayed = true;
-            }
-
-            gc.setFill(Color.RED);
-            gc.setFont(javafx.scene.text.Font.font(40));
-            gc.fillText("GAME OVER", width / 2 - 120, height / 2 + 50);
-
-            // Show statistics
-            renderEndGameStats(height / 2 + 90);
-
-            gc.setFill(Color.YELLOW);
-            gc.setFont(javafx.scene.text.Font.font(22));
-            gc.fillText("Press ENTER to restart", width / 2 - 110, height / 2 + 310);
-
-            gc.setFill(Color.WHITE);
-            gc.setFont(javafx.scene.text.Font.font(18));
-            gc.fillText("Press ESC to return to menu", width / 2 - 115, height / 2 + 340);
+            hudRenderer.renderGameOverScreen(base, celebrationManager, enemyTanks, soundManager, this, this);
         } else if (victory) {
-            // Initialize victory celebration (Soviet flag + dancing girls)
-            if (!celebrationManager.isVictoryDancingInitialized()) {
-                soundManager.stopGameplaySounds();
-                celebrationManager.initializeVictoryCelebration(base, playerTanks.size());
-            }
-
-            // Update and render dancing girls
-            celebrationManager.updateVictoryGirls();
-            for (DancingGirl girl : celebrationManager.getVictoryDancingGirls()) {
-                girl.render(gc);
-            }
-
-            // Show dancing anime girl if available
-            if (victoryImageView != null) {
-                victoryImageView.setVisible(true);
-            }
-
-            gc.setFill(Color.YELLOW);
-            gc.setFont(javafx.scene.text.Font.font(40));
-            gc.fillText("LEVEL " + gameMap.getLevelNumber() + " COMPLETE!", width / 2 - 180, height / 2 + 50);
-
-            // Show statistics
-            renderEndGameStats(height / 2 + 90);
-
-            gc.setFill(Color.LIME);
-            gc.setFont(javafx.scene.text.Font.font(22));
-            gc.fillText("Press ENTER for next level", width / 2 - 130, height / 2 + 310);
-
-            gc.setFill(Color.WHITE);
-            gc.setFont(javafx.scene.text.Font.font(18));
-            gc.fillText("Press ESC to return to menu", width / 2 - 115, height / 2 + 340);
+            hudRenderer.renderVictoryScreen(gameMap.getLevelNumber(), base, celebrationManager,
+                    playerTanks, soundManager, victoryImageView, this);
         } else if (paused) {
-            // Draw pause menu overlay
-            gc.setFill(Color.rgb(0, 0, 0, 0.7));
-            gc.fillRect(0, 0, width, height);
-
-            gc.setFill(Color.WHITE);
-            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 50));
-            gc.fillText("PAUSED", width / 2 - 100, height / 2 - 80);
-
-            gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 30));
-
-            // Resume option
-            if (pauseMenuSelection == 0) {
-                gc.setFill(Color.YELLOW);
-                gc.fillText("> RESUME <", width / 2 - 80, height / 2);
-            } else {
-                gc.setFill(Color.WHITE);
-                gc.fillText("  RESUME  ", width / 2 - 80, height / 2);
-            }
-
-            // Exit option
-            if (pauseMenuSelection == 1) {
-                gc.setFill(Color.YELLOW);
-                gc.fillText("> EXIT <", width / 2 - 60, height / 2 + 50);
-            } else {
-                gc.setFill(Color.WHITE);
-                gc.fillText("  EXIT  ", width / 2 - 60, height / 2 + 50);
-            }
-
-            gc.setFill(Color.GRAY);
-            gc.setFont(javafx.scene.text.Font.font(16));
-            gc.fillText("Use UP/DOWN to select, ENTER to confirm", width / 2 - 150, height / 2 + 120);
+            hudRenderer.renderPauseMenu(pauseMenuSelection);
         } else {
             // Hide images when not in end state
-            if (victoryImageView != null) {
-                victoryImageView.setVisible(false);
-            }
-            if (gameOverImageView != null) {
-                gameOverImageView.setVisible(false);
-            }
+            hudRenderer.hideEndGameImages(victoryImageView, gameOverImageView);
 
             // Show hint to take life if player is dead and teammate has lives
             int myPlayerIndex = isNetworkGame && network != null && !network.isHost()
                 ? network.getPlayerNumber() - 1 : 0;
-            if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
-                Tank myTank = playerTanks.get(myPlayerIndex);
-                if (!myTank.isAlive() && myTank.getLives() <= 0) {
-                    // Check if any teammate has spare lives
-                    boolean canTakeLife = false;
-                    for (int i = 0; i < playerTanks.size(); i++) {
-                        if (i != myPlayerIndex && playerTanks.get(i).getLives() > 1) {
-                            canTakeLife = true;
-                            break;
-                        }
-                    }
-                    if (canTakeLife) {
-                        gc.setFill(Color.YELLOW);
-                        gc.setFont(javafx.scene.text.Font.font(20));
-                        gc.fillText("Press ENTER to take life from teammate", width / 2 - 180, height / 2);
-                    }
-                }
-            }
+            hudRenderer.renderTakeLifeHint(playerTanks, myPlayerIndex);
 
             // Show pause indicator for multiplayer
             if (isNetworkGame) {
                 int pausePlayerIndex = network != null && !network.isHost()
                     ? network.getPlayerNumber() - 1 : 0;
-                if (pausePlayerIndex >= 0 && pausePlayerIndex < playerTanks.size() && playerPaused[pausePlayerIndex]) {
-                    gc.setFill(Color.rgb(0, 0, 0, 0.5));
-                    gc.fillRect(0, 0, width, 60);
-                    gc.setFill(Color.YELLOW);
-                    gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 30));
-                    gc.fillText("PAUSED - Press ESC to resume", width / 2 - 200, 40);
-                }
+                hudRenderer.renderMultiplayerPauseIndicator(playerPaused, pausePlayerIndex);
             }
         }
     }
 
-    private void renderEndGameStats(double startY) {
+    @Override
+    public void renderEndGameStats(double startY) {
         int activePlayers = getDisplayPlayerCount();
         if (activePlayers == 0) return;
 
@@ -1743,6 +1575,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     @Override public void setVictoryConditionMet(boolean value) { victoryConditionMet = value; }
     @Override public void setVictoryDelayTimer(int value) { victoryDelayTimer = value; }
     @Override public void setWinnerBonusAwarded(boolean value) { winnerBonusAwarded = value; }
+
+    // ============ HUDRenderer.GameOverState IMPLEMENTATION ============
+
+    @Override public boolean isGameOverSoundPlayed() { return gameOverSoundPlayed; }
+    // setGameOverSoundPlayed is already implemented above
 
     private PlayerInput capturePlayerInput(Tank tank) {
         // Capture current keyboard state (arrow keys + space)

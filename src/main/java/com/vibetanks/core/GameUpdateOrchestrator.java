@@ -36,7 +36,6 @@ public class GameUpdateOrchestrator {
         UFO getUFO();
         EasterEgg getEasterEgg();
         void handleUFODestroyed(int killerPlayer, double eggX, double eggY);
-        void recordMachinegunKill(int playerIndex);
         boolean isUfoSpawnedThisLevel();
 
         // Scoring and stats
@@ -361,16 +360,11 @@ public class GameUpdateOrchestrator {
 
         if (killerPlayer >= 1 && killerPlayer <= 4) {
             ctx.recordKill(killerPlayer - 1, enemy.getEnemyType());
-
-            Tank killer = playerTanks.get(killerPlayer - 1);
-            if (killer.getMachinegunCount() > 0) {
-                ctx.recordMachinegunKill(killerPlayer - 1);
-            }
-
             ctx.addScore(killerPlayer - 1, GameConstants.getScoreForEnemyType(enemy.getEnemyType()));
 
             if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
                 LOG.info("BOSS killed by Player {}", killerPlayer);
+                Tank killer = playerTanks.get(killerPlayer - 1);
                 PowerUp.Type reward = applyRandomPowerUp(killer);
                 ctx.setBossKillReward(killerPlayer - 1, reward);
             }

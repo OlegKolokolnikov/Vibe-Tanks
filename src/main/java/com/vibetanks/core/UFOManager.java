@@ -20,8 +20,6 @@ public class UFOManager {
     private int ufoLostMessageTimer = 0;
     private int ufoKilledMessageTimer = 0;
 
-    // Track machinegun kills for UFO spawn condition
-    private int[] playerMachinegunKills = new int[4];
 
     /**
      * Result of UFO update containing events that occurred.
@@ -48,24 +46,26 @@ public class UFOManager {
         ufoWasKilled = false;
         ufoLostMessageTimer = 0;
         ufoKilledMessageTimer = 0;
-        for (int i = 0; i < playerMachinegunKills.length; i++) {
-            playerMachinegunKills[i] = 0;
-        }
     }
 
     /**
      * Check if UFO should spawn and spawn it if conditions are met.
+     * @param playerTanks list of player tanks
+     * @param playerKills array of total kills per player (index 0-3)
+     * @param mapWidth map width in pixels
+     * @param mapHeight map height in pixels
      */
-    public void checkAndSpawnUFO(List<Tank> playerTanks, int mapWidth, int mapHeight) {
+    public void checkAndSpawnUFO(List<Tank> playerTanks, int[] playerKills, int mapWidth, int mapHeight) {
         if (ufoSpawnedThisLevel || ufo != null) {
             return;
         }
 
-        // UFO only spawns when a player has machinegun AND has killed 5+ enemies with it
+        // UFO spawns when a player has machinegun AND has 5+ total kills
         for (int i = 0; i < playerTanks.size() && i < 4; i++) {
             Tank player = playerTanks.get(i);
-            if (player.getMachinegunCount() > 0 && playerMachinegunKills[i] >= 5) {
-                LOG.info("UFO spawn triggered! Player {} killed {} enemies with machinegun!", i + 1, playerMachinegunKills[i]);
+            int totalKills = (playerKills != null && i < playerKills.length) ? playerKills[i] : 0;
+            if (player.getMachinegunCount() > 0 && totalKills >= 5) {
+                LOG.info("UFO spawn triggered! Player {} has machinegun and {} total kills", i + 1, totalKills);
                 spawnUFO(mapWidth, mapHeight);
                 return;
             }
@@ -162,15 +162,6 @@ public class UFOManager {
         return result;
     }
 
-    /**
-     * Record a machinegun kill for potential UFO spawn.
-     */
-    public void recordMachinegunKill(int playerIndex) {
-        if (playerIndex >= 0 && playerIndex < playerMachinegunKills.length) {
-            playerMachinegunKills[playerIndex]++;
-        }
-    }
-
     // Getters for rendering and network sync
     public UFO getUFO() { return ufo; }
     public EasterEgg getEasterEgg() { return easterEgg; }
@@ -178,7 +169,6 @@ public class UFOManager {
     public boolean isUfoWasKilled() { return ufoWasKilled; }
     public int getUfoLostMessageTimer() { return ufoLostMessageTimer; }
     public int getUfoKilledMessageTimer() { return ufoKilledMessageTimer; }
-    public int[] getPlayerMachinegunKills() { return playerMachinegunKills; }
 
     // Setters for network sync (client receiving state from host)
     public void setUFO(UFO ufo) { this.ufo = ufo; }

@@ -498,8 +498,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             return; // Not in the right enemy count range
         }
 
-        // Delegate to UFOManager
-        ufoManager.checkAndSpawnUFO(playerTanks, width, height);
+        // Delegate to UFOManager (pass total kills per player)
+        ufoManager.checkAndSpawnUFO(playerTanks, playerKills, width, height);
     }
 
     // Debug: count updates per second
@@ -679,9 +679,6 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                             playerKillsByType[killerPlayer - 1][enemyTypeOrdinal]++;
                         }
                         Tank killer = playerTanks.get(killerPlayer - 1);
-                        if (killer.getMachinegunCount() > 0) {
-                            ufoManager.recordMachinegunKill(killerPlayer - 1);
-                        }
                         addScore(killerPlayer - 1, GameConstants.getScoreForEnemyType(enemy.getEnemyType()));
                         if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
                             LOG.info("BOSS killed by Player {} - awarding power-up!", killerPlayer);

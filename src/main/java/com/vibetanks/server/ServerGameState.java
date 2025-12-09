@@ -34,9 +34,6 @@ public class ServerGameState {
     private UFO ufo = null;
     private boolean ufoSpawnedThisLevel = false;
 
-    // Track machinegun kills for UFO spawn condition (need machinegun + 5 kills)
-    private int[] playerMachinegunKills = new int[4];
-
     // Easter egg collectible (spawns when UFO is killed)
     private EasterEgg easterEgg = null;
 
@@ -139,9 +136,6 @@ public class ServerGameState {
         ufo = null;
         ufoSpawnedThisLevel = false;
         easterEgg = null;
-        for (int i = 0; i < playerMachinegunKills.length; i++) {
-            playerMachinegunKills[i] = 0;
-        }
 
         LOG.info("Game initialized with {} player(s)", playerCount);
     }
@@ -410,13 +404,7 @@ public class ServerGameState {
                         if (!enemy.isAlive()) {
                             int killer = bullet.getOwnerPlayerNumber();
                             if (killer >= 1 && killer <= 4) {
-                                int killerIndex = killer - 1;
-                                playerStats.recordKill(killerIndex, enemy.getEnemyType());
-                                // Track machinegun kills for UFO spawn condition
-                                Tank killerTank = playerTanks.get(killerIndex);
-                                if (killerTank.getMachinegunCount() > 0) {
-                                    playerMachinegunKills[killerIndex]++;
-                                }
+                                playerStats.recordKill(killer - 1, enemy.getEnemyType());
                             }
                         }
                         notifyBulletDestroyed(bullet);
@@ -549,20 +537,21 @@ public class ServerGameState {
     }
 
     private void updateUFO() {
-        // UFO only spawns when a player has machinegun AND has killed 5+ enemies with it
+        // UFO spawns when a player has machinegun AND has 5+ total kills
         // Also requires 2-10 enemies remaining
         int remaining = enemySpawner.getRemainingEnemies();
         if (ufo == null && !ufoSpawnedThisLevel && remaining > 1 && remaining <= 10) {
             for (int i = 0; i < playerTanks.size() && i < 4; i++) {
                 Tank player = playerTanks.get(i);
-                if (player.getMachinegunCount() > 0 && playerMachinegunKills[i] >= 5) {
+                int totalKills = playerStats.getKills(i);
+                if (player.getMachinegunCount() > 0 && totalKills >= 5) {
                     int mapPixelSize = MAP_SIZE * TILE_SIZE;
                     boolean movingRight = Math.random() < 0.5;
                     double startX = movingRight ? -48 : mapPixelSize;
                     double startY = 50 + Math.random() * (mapPixelSize - 150);
                     ufo = new UFO(startX, startY, movingRight);
                     ufoSpawnedThisLevel = true;
-                    LOG.info("UFO spawn triggered! Player {} killed {} enemies with machinegun!", i + 1, playerMachinegunKills[i]);
+                    LOG.info("UFO spawn triggered! Player {} has machinegun and {} total kills", i + 1, totalKills);
                     break;
                 }
             }

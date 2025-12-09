@@ -122,19 +122,10 @@ public class Game {
 
     // Dancing aliens/humans when enemies destroy base
     private List<DancingCharacter> dancingCharacters = new ArrayList<>();
-
-    // UFO bonus enemy
-    private UFO ufo;
-    private boolean ufoSpawnedThisLevel = false;
-    private int[] playerMachinegunKills = new int[4]; // Kills while player had machinegun
-    private boolean ufoWasKilled = false; // Track if UFO was killed vs escaped
-    private int ufoLostMessageTimer = 0; // Timer for "Lost it!" message (3 seconds = 180 frames)
-    private int ufoKilledMessageTimer = 0; // Timer for "Zed is dead!" message (3 seconds = 180 frames)
-    private static final int UFO_MESSAGE_DURATION = GameConstants.UFO_MESSAGE_DURATION;
     private boolean dancingInitialized = false;
 
-    // Easter egg collectible (spawns when UFO is killed)
-    private EasterEgg easterEgg = null;
+    // UFO and Easter egg management (extracted to UFOManager)
+    private UFOManager ufoManager = new UFOManager();
 
     // Victory dancing girls
     private List<DancingGirl> victoryDancingGirls = new ArrayList<>();
@@ -724,15 +715,7 @@ public class Game {
         }
 
         // Reset UFO state for new level
-        ufo = null;
-        ufoSpawnedThisLevel = false;
-        ufoWasKilled = false;
-        ufoLostMessageTimer = 0;
-        ufoKilledMessageTimer = 0;
-        easterEgg = null;
-        for (int i = 0; i < playerMachinegunKills.length; i++) {
-            playerMachinegunKills[i] = 0;
-        }
+        ufoManager.reset();
 
         // Play intro sound for new level
         soundManager.playIntro();
@@ -808,15 +791,7 @@ public class Game {
         }
 
         // Reset UFO state for restart
-        ufo = null;
-        ufoSpawnedThisLevel = false;
-        ufoWasKilled = false;
-        ufoLostMessageTimer = 0;
-        ufoKilledMessageTimer = 0;
-        easterEgg = null;
-        for (int i = 0; i < playerMachinegunKills.length; i++) {
-            playerMachinegunKills[i] = 0;
-        }
+        ufoManager.reset();
 
         // Play intro sound for retry
         soundManager.playIntro();
@@ -921,28 +896,8 @@ public class Game {
             return; // Not in the right enemy count range
         }
 
-        // Check if any player qualifies (has machinegun and 5+ machinegun kills)
-        boolean qualified = false;
-        for (int i = 0; i < playerTanks.size(); i++) {
-            Tank player = playerTanks.get(i);
-            if (player.getMachinegunCount() > 0 && playerMachinegunKills[i] >= 5) {
-                qualified = true;
-                break;
-            }
-        }
-
-        if (!qualified) {
-            return;
-        }
-
-        // Spawn UFO from random side
-        boolean fromRight = GameConstants.RANDOM.nextBoolean();
-        double startX = fromRight ? width + 10 : -58;
-        double startY = 100 + GameConstants.RANDOM.nextInt(height - 300);
-
-        ufo = new UFO(startX, startY, !fromRight); // Moving opposite to start side
-        ufoSpawnedThisLevel = true;
-        System.out.println("UFO spawned! From " + (fromRight ? "right" : "left") + " side");
+        // Delegate to UFOManager
+        ufoManager.checkAndSpawnUFO(playerTanks, width, height);
     }
 
     // Debug: count updates per second
@@ -1214,32 +1169,12 @@ public class Game {
         }
 
         // Check UFO spawn conditions (only host spawns UFO)
-        if (!ufoSpawnedThisLevel && ufo == null) {
+        if (!ufoManager.isUfoSpawnedThisLevel() && ufoManager.getUFO() == null) {
             checkAndSpawnUFO();
         }
 
-        // Update UFO if exists (but not during victory delay - stop shooting)
-        if (ufo != null && ufo.isAlive() && !victoryConditionMet) {
-            ufo.update(bullets, width, height, soundManager);
-            if (!ufo.isAlive()) {
-                // UFO escaped (wasn't killed by player)
-                if (!ufoWasKilled) {
-                    ufoLostMessageTimer = UFO_MESSAGE_DURATION;
-                    System.out.println("UFO escaped! Lost it!");
-                }
-                ufo = null;
-            }
-        }
-
-        // Update "Lost it!" message timer
-        if (ufoLostMessageTimer > 0) {
-            ufoLostMessageTimer--;
-        }
-
-        // Update "Zed is dead!" message timer
-        if (ufoKilledMessageTimer > 0) {
-            ufoKilledMessageTimer--;
-        }
+        // Update UFO and message timers via UFOManager
+        ufoManager.updateUFO(bullets, width, height, soundManager, victoryConditionMet);
 
         // Update player tanks and handle respawn
         for (int i = 0; i < playerTanks.size(); i++) {
@@ -1305,7 +1240,7 @@ public class Game {
 
             // Use ProjectileHandler for collision detection
             ProjectileHandler.BulletCollisionResult result = ProjectileHandler.processBullet(
-                    bullet, gameMap, enemyTanks, playerTanks, base, ufo, width, height, soundManager);
+                    bullet, gameMap, enemyTanks, playerTanks, base, ufoManager.getUFO(), width, height, soundManager);
 
             if (result.shouldRemove) {
                 notifyBulletDestroyed(bullet);
@@ -1319,12 +1254,7 @@ public class Game {
                         System.out.println("UFO destroyed by Player " + killerPlayer + " - awarded 20 points!");
                     }
                     double[] eggPos = getRandomPowerUpSpawnPosition();
-                    easterEgg = new EasterEgg(eggPos[0], eggPos[1]);
-                    System.out.println("Easter egg spawned at " + eggPos[0] + ", " + eggPos[1]);
-                    ufoWasKilled = true;
-                    ufoKilledMessageTimer = UFO_MESSAGE_DURATION;
-                    System.out.println("Zed is dead!");
-                    ufo = null;
+                    ufoManager.handleUFODestroyed(killerPlayer, eggPos[0], eggPos[1]);
                 }
 
                 // Handle enemy killed - track kills and award points
@@ -1339,7 +1269,7 @@ public class Game {
                         }
                         Tank killer = playerTanks.get(killerPlayer - 1);
                         if (killer.getMachinegunCount() > 0) {
-                            playerMachinegunKills[killerPlayer - 1]++;
+                            ufoManager.recordMachinegunKill(killerPlayer - 1);
                         }
                         addScore(killerPlayer - 1, ProjectileHandler.getScoreForKill(enemy.getEnemyType()));
                         if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
@@ -1513,34 +1443,22 @@ public class Game {
             }
         }
 
-        // Update easter egg using shared GameLogic
-        if (easterEgg != null) {
-            easterEgg.update();
-
-            int collectionResult = GameLogic.checkEasterEggCollection(easterEgg, playerTanks, enemyTanks);
-
-            if (collectionResult > 0) {
-                // Player collected (result is playerIndex + 1)
-                int playerIndex = collectionResult - 1;
-                Tank player = playerTanks.get(playerIndex);
-                // Give collecting player 3 extra lives
-                for (int j = 0; j < 3; j++) {
-                    player.addLife();
-                }
-                System.out.println("Easter egg collected by Player " + (playerIndex + 1) + "! +3 lives!");
-                GameLogic.applyEasterEggEffect(enemyTanks, true);
-                easterEgg.collect();
-                easterEgg = null;
-            } else if (collectionResult < 0) {
-                // Enemy collected
-                System.out.println("Easter egg collected by enemy! All enemies become HEAVY tanks!");
-                GameLogic.applyEasterEggEffect(enemyTanks, false);
-                easterEgg.collect();
-                easterEgg = null;
-            } else if (easterEgg.isExpired()) {
-                System.out.println("Easter egg expired!");
-                easterEgg = null;
+        // Update easter egg via UFOManager
+        UFOManager.UpdateResult eggResult = ufoManager.updateEasterEgg(playerTanks, enemyTanks);
+        if (eggResult.easterEggCollectedByPlayer) {
+            int playerIndex = eggResult.easterEggCollectorIndex;
+            Tank player = playerTanks.get(playerIndex);
+            // Give collecting player 3 extra lives
+            for (int j = 0; j < 3; j++) {
+                player.addLife();
             }
+            System.out.println("Easter egg collected by Player " + (playerIndex + 1) + "! +3 lives!");
+            GameLogic.applyEasterEggEffect(enemyTanks, true);
+        } else if (eggResult.easterEggCollectedByEnemy) {
+            System.out.println("Easter egg collected by enemy! All enemies become HEAVY tanks!");
+            GameLogic.applyEasterEggEffect(enemyTanks, false);
+        } else if (eggResult.easterEggExpired) {
+            System.out.println("Easter egg expired!");
         }
 
         // Remove dead enemy tanks using shared GameLogic
@@ -1582,6 +1500,7 @@ public class Game {
         }
 
         // Render easter egg
+        EasterEgg easterEgg = ufoManager.getEasterEgg();
         if (easterEgg != null) {
             easterEgg.render(gc);
         }
@@ -1619,18 +1538,17 @@ public class Game {
         }
 
         // Render UFO (above tanks, below trees)
+        UFO ufo = ufoManager.getUFO();
         if (ufo != null && ufo.isAlive()) {
             ufo.render(gc);
         }
 
-        // Render "Lost it!" message when UFO escapes
-        if (ufoLostMessageTimer > 0) {
-            effectRenderer.renderUfoLostMessage(ufoLostMessageTimer);
+        // Render UFO messages via UFOManager
+        if (ufoManager.getUfoLostMessageTimer() > 0) {
+            effectRenderer.renderUfoLostMessage(ufoManager.getUfoLostMessageTimer());
         }
-
-        // Render "Zed is dead!" message when UFO is killed
-        if (ufoKilledMessageTimer > 0) {
-            effectRenderer.renderUfoKilledMessage(ufoKilledMessageTimer);
+        if (ufoManager.getUfoKilledMessageTimer() > 0) {
+            effectRenderer.renderUfoKilledMessage(ufoManager.getUfoKilledMessageTimer());
         }
 
         // Render trees ON TOP of tanks to make tanks partially visible in forest
@@ -2343,7 +2261,8 @@ public class Game {
         state.tileChanges.addAll(mapChanges);
         mapChanges.clear(); // Clear after sending
 
-        // UFO data
+        // UFO data via UFOManager
+        UFO ufo = ufoManager.getUFO();
         if (ufo != null && ufo.isAlive()) {
             state.ufoData = new GameState.UFOData(
                 ufo.getX(), ufo.getY(),
@@ -2355,11 +2274,12 @@ public class Game {
             state.ufoData = null;
         }
 
-        // UFO message timers
-        state.ufoLostMessageTimer = ufoLostMessageTimer;
-        state.ufoKilledMessageTimer = ufoKilledMessageTimer;
+        // UFO message timers via UFOManager
+        state.ufoLostMessageTimer = ufoManager.getUfoLostMessageTimer();
+        state.ufoKilledMessageTimer = ufoManager.getUfoKilledMessageTimer();
 
-        // Easter egg data
+        // Easter egg data via UFOManager
+        EasterEgg easterEgg = ufoManager.getEasterEgg();
         if (easterEgg != null) {
             state.easterEggData = new GameState.EasterEggData(
                 easterEgg.getX(), easterEgg.getY(), easterEgg.getLifetime()
@@ -2603,36 +2523,32 @@ public class Game {
             victoryDancingGirls.clear();
         }
 
-        // Sync UFO from host
+        // Sync UFO and easter egg from host via UFOManager
+        UFO syncedUfo = null;
         if (state.ufoData != null && state.ufoData.alive) {
-            if (ufo == null) {
-                ufo = new UFO(state.ufoData.x, state.ufoData.y, state.ufoData.movingRight);
+            syncedUfo = ufoManager.getUFO();
+            if (syncedUfo == null) {
+                syncedUfo = new UFO(state.ufoData.x, state.ufoData.y, state.ufoData.movingRight);
             }
-            ufo.setX(state.ufoData.x);
-            ufo.setY(state.ufoData.y);
-            ufo.setDx(state.ufoData.dx);
-            ufo.setDy(state.ufoData.dy);
-            ufo.setHealth(state.ufoData.health);
-            ufo.setLifetime(state.ufoData.lifetime);
-            ufo.setAlive(state.ufoData.alive);
-        } else {
-            ufo = null;
+            syncedUfo.setX(state.ufoData.x);
+            syncedUfo.setY(state.ufoData.y);
+            syncedUfo.setDx(state.ufoData.dx);
+            syncedUfo.setDy(state.ufoData.dy);
+            syncedUfo.setHealth(state.ufoData.health);
+            syncedUfo.setLifetime(state.ufoData.lifetime);
+            syncedUfo.setAlive(state.ufoData.alive);
         }
-
-        // Sync UFO message timers
-        ufoLostMessageTimer = state.ufoLostMessageTimer;
-        ufoKilledMessageTimer = state.ufoKilledMessageTimer;
-
-        // Sync easter egg from host
+        EasterEgg syncedEgg = null;
         if (state.easterEggData != null) {
-            if (easterEgg == null) {
-                easterEgg = new EasterEgg(state.easterEggData.x, state.easterEggData.y);
+            syncedEgg = ufoManager.getEasterEgg();
+            if (syncedEgg == null) {
+                syncedEgg = new EasterEgg(state.easterEggData.x, state.easterEggData.y);
             }
-            easterEgg.setPosition(state.easterEggData.x, state.easterEggData.y);
-            easterEgg.setLifetime(state.easterEggData.lifetime);
-        } else {
-            easterEgg = null;
+            syncedEgg.setPosition(state.easterEggData.x, state.easterEggData.y);
+            syncedEgg.setLifetime(state.easterEggData.lifetime);
         }
+        ufoManager.applyNetworkState(syncedUfo, syncedEgg,
+            state.ufoLostMessageTimer, state.ufoKilledMessageTimer);
 
         // Check if level changed (host went to next level)
         boolean levelChanged = state.levelNumber != gameMap.getLevelNumber();
@@ -2691,10 +2607,8 @@ public class Game {
             enemyTanks.clear();
             // Reset spawner with proper enemy count
             enemySpawner = new EnemySpawner(totalEnemies, 5, gameMap);
-            // Reset UFO state
-            ufo = null;
-            ufoLostMessageTimer = 0;
-            ufoKilledMessageTimer = 0;
+            // Reset UFO state via UFOManager
+            ufoManager.reset();
             // Play intro sound
             soundManager.playIntro();
         }

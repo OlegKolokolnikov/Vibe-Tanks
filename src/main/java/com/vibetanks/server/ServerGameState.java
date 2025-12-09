@@ -421,12 +421,11 @@ public class ServerGameState {
                         player.damage();
                         if (!player.isAlive() && !player.isWaitingToRespawn() && player.getLives() > 0) {
                             player.setLives(player.getLives() - 1);
-                            if (player.getLives() > 0) {
-                                int idx = playerTanks.indexOf(player);
-                                LOG.info("Player {} will respawn in 1 second", idx + 1);
-                                double[] pos = GameConstants.getPlayerStartPosition(idx);
-                                player.respawn(pos[0], pos[1]);
-                            }
+                            // Respawn even when lives becomes 0 (last life with 0 displayed)
+                            int idx = playerTanks.indexOf(player);
+                            LOG.info("Player {} will respawn in 1 second (lives: {})", idx + 1, player.getLives());
+                            double[] pos = GameConstants.getPlayerStartPosition(idx);
+                            player.respawn(pos[0], pos[1]);
                         }
                         notifyBulletDestroyed(bullet);
                         iter.remove();
@@ -646,11 +645,10 @@ public class ServerGameState {
                         // Handle life decrement and respawn after bomb damage
                         if (!player.isAlive() && !player.isWaitingToRespawn() && player.getLives() > 0) {
                             player.setLives(player.getLives() - 1);
-                            if (player.getLives() > 0) {
-                                LOG.info("Player {} will respawn in 1 second", i + 1);
-                                double[] pos = GameConstants.getPlayerStartPosition(i);
-                                player.respawn(pos[0], pos[1]);
-                            }
+                            // Respawn even when lives becomes 0 (last life with 0 displayed)
+                            LOG.info("Player {} will respawn in 1 second (lives: {})", i + 1, player.getLives());
+                            double[] pos = GameConstants.getPlayerStartPosition(i);
+                            player.respawn(pos[0], pos[1]);
                         }
                     }
                 }

@@ -609,10 +609,14 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     i + 1, respawnX, respawnY, player.getLives());
                 player.respawn(respawnX, respawnY); // This now starts the timer
             } else if (player.getLives() == 1) {
-                // Player died on last life - decrement to 0 so game over check works
+                // Player on last displayed life (internal=1) - decrement and respawn one more time
                 player.setLives(0);
-                LOG.info("Player {} lost their last life!", i + 1);
+                double respawnX = FIXED_START_POSITIONS[i][0];
+                double respawnY = FIXED_START_POSITIONS[i][1];
+                LOG.info("Player {} on last life, respawning at: {}, {}", i + 1, respawnX, respawnY);
+                player.respawn(respawnX, respawnY);
             }
+            // When lives == 0 and player dies, they stay dead (game over check handles this)
         }
 
         // Update freeze durations (via PowerUpEffectManager)

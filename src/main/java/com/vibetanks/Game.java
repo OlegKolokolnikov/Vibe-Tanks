@@ -31,7 +31,7 @@ import java.util.*;
 
 public class Game implements GameStateApplier.GameContext, LevelTransitionManager.LevelTransitionContext,
         HUDRenderer.PlayerNameProvider, HUDRenderer.EndGameStatsProvider, HUDRenderer.GameOverState,
-        NetworkGameHandler.HostContext {
+        NetworkGameHandler.HostContext, NetworkGameHandler.ClientContext {
     private final Pane root;
     private final Canvas canvas;
     private final GraphicsContext gc;
@@ -548,91 +548,12 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             }
         }
 
-        // Network clients must always receive game state to detect level/game transitions
-        // even during victory/gameOver screens
+        // Network clients: delegate to NetworkGameHandler
         if (isNetworkGame && network != null && !network.isHost()) {
-            // CLIENT: Always receive and apply game state from host
-            GameState state = network.getLatestGameState();
-            if (state != null) {
-                applyGameState(state);
-            }
-
-            // CLIENT: Handle game over/victory - send restart/next level requests
-            if (gameOver || victory) {
-                // Check if ENTER is pressed to request restart or next level
-                if (inputHandler.isEnterPressed()) {
-                    PlayerInput input = new PlayerInput();
-                    input.requestNextLevel = victory;
-                    input.requestRestart = gameOver;
-                    input.nickname = NicknameManager.getNickname();
-                    network.sendInput(input);
-                }
+            NetworkGameHandler.ClientUpdateResult clientResult = NetworkGameHandler.handleClientUpdate(this);
+            if (clientResult.skipMainUpdate) {
                 return;
             }
-
-            if (paused) {
-                return;
-            }
-
-            // CLIENT: Move locally and send position to host
-            int myPlayerIndex = network.getPlayerNumber() - 1;
-            if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
-                Tank myTank = playerTanks.get(myPlayerIndex);
-
-                // Capture input
-                PlayerInput input = inputHandler.capturePlayerInput();
-
-                // Apply movement locally (skip if paused or dead)
-                if (myTank.isAlive() && !powerUpEffectManager.arePlayersFrozen() && !playerPaused[myPlayerIndex]) {
-                    List<Tank> allTanks = new ArrayList<>();
-                    allTanks.addAll(playerTanks);
-                    allTanks.addAll(enemyTanks);
-
-                    if (input.up) {
-                        myTank.move(Direction.UP, gameMap, allTanks, base);
-                    } else if (input.down) {
-                        myTank.move(Direction.DOWN, gameMap, allTanks, base);
-                    } else if (input.left) {
-                        myTank.move(Direction.LEFT, gameMap, allTanks, base);
-                    } else if (input.right) {
-                        myTank.move(Direction.RIGHT, gameMap, allTanks, base);
-                    }
-                }
-
-                // Shoot locally for sound (skip if paused)
-                if (myTank.isAlive() && input.shoot && !playerPaused[myPlayerIndex]) {
-                    if (myTank.hasLaser()) {
-                        Laser laser = myTank.shootLaser(soundManager);
-                        if (laser != null) {
-                            lasers.add(laser);
-                        }
-                    } else {
-                        myTank.shoot(bullets, soundManager);
-                    }
-                }
-
-                // Send position and nickname to host (only if alive and we've received initial state from host)
-                // This prevents sending our local init position before receiving the host's authoritative position
-                // Also wait a few frames after respawn to ensure we have the correct position from server
-                if (respawnSyncFrames > 0) {
-                    respawnSyncFrames--;
-                }
-                if (myTank.isAlive() && firstStateReceived && respawnSyncFrames == 0) {
-                    input.posX = myTank.getX();
-                    input.posY = myTank.getY();
-                    input.direction = myTank.getDirection().ordinal();
-                } else {
-                    // When dead, not yet synced, or just respawned - send invalid position so host knows not to use it
-                    input.posX = -1;
-                    input.posY = -1;
-                    input.direction = 0;
-                }
-                // Always send local nickname from NicknameManager (not from array which may not be set yet)
-                input.nickname = NicknameManager.getNickname();
-                network.sendInput(input);
-            }
-            // Client skips rest of game logic
-            return;
         }
 
         // HOST: Send game state and handle client requests via NetworkGameHandler
@@ -1249,7 +1170,10 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     @Override public boolean isVictory() { return victory; }
     @Override public void setVictory(boolean value) { victory = value; }
     @Override public void setNetworkConnectedPlayers(int count) { networkConnectedPlayers = count; }
+    @Override public int getRespawnSyncFrames() { return respawnSyncFrames; }
     @Override public void setRespawnSyncFrames(int frames) { respawnSyncFrames = frames; }
+    // isFirstStateReceived() is already implemented below
+    @Override public boolean[] getPlayerPaused() { return playerPaused; }
     @Override public void setPlayerStartPositions(double[][] positions) { playerStartPositions = positions; }
     @Override public void setBossKillerPlayerIndex(int index) { bossKillerPlayerIndex = index; }
     @Override public void setBossKillPowerUpReward(PowerUp.Type type) { bossKillPowerUpReward = type; }
@@ -1283,6 +1207,20 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     @Override public long getLastNetworkUpdate() { return lastNetworkUpdate; }
     @Override public void setLastNetworkUpdate(long time) { lastNetworkUpdate = time; }
     @Override public long getNetworkUpdateInterval() { return NETWORK_UPDATE_INTERVAL; }
+
+    // ============ NetworkGameHandler.ClientContext IMPLEMENTATION ============
+    // Note: Many methods are already implemented via other interfaces
+
+    @Override
+    public GameStateApplier.GameContext getGameStateContext() { return this; }
+
+    @Override
+    public boolean isEnterPressed() { return inputHandler.isEnterPressed(); }
+
+    @Override
+    public PlayerInput capturePlayerInput() {
+        return inputHandler.capturePlayerInput();
+    }
 
     private PlayerInput capturePlayerInput(Tank tank) {
         // Capture current keyboard state (arrow keys + space)

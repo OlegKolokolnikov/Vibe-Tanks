@@ -56,6 +56,7 @@ public class NetworkGameHandler {
         int getRespawnSyncFrames();
         void setRespawnSyncFrames(int frames);
         boolean isEnterPressed();
+        PlayerInput capturePlayerInput();
     }
 
     /**
@@ -114,20 +115,42 @@ public class NetworkGameHandler {
         // Move locally and send position to host
         int myPlayerIndex = network.getPlayerNumber() - 1;
         List<Tank> playerTanks = ctx.getPlayerTanks();
+        boolean[] playerPaused = ctx.getPlayerPaused();
 
         if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
             Tank myTank = playerTanks.get(myPlayerIndex);
-            PlayerInput input = new PlayerInput();
 
-            // Capture movement from keyboard
-            // Note: Movement is handled by InputHandler in Game.java, we just capture for sending
-            input.up = false;
-            input.down = false;
-            input.left = false;
-            input.right = false;
-            input.shoot = false;
+            // Capture input from InputHandler
+            PlayerInput input = ctx.capturePlayerInput();
 
-            // Apply movement locally (handled separately in Game.java before calling this)
+            // Apply movement locally (skip if paused or dead)
+            if (myTank.isAlive() && !ctx.getPowerUpEffectManager().arePlayersFrozen() && !playerPaused[myPlayerIndex]) {
+                List<Tank> allTanks = new ArrayList<>();
+                allTanks.addAll(playerTanks);
+                allTanks.addAll(ctx.getEnemyTanks());
+
+                if (input.up) {
+                    myTank.move(Direction.UP, ctx.getGameMap(), allTanks, ctx.getBase());
+                } else if (input.down) {
+                    myTank.move(Direction.DOWN, ctx.getGameMap(), allTanks, ctx.getBase());
+                } else if (input.left) {
+                    myTank.move(Direction.LEFT, ctx.getGameMap(), allTanks, ctx.getBase());
+                } else if (input.right) {
+                    myTank.move(Direction.RIGHT, ctx.getGameMap(), allTanks, ctx.getBase());
+                }
+            }
+
+            // Shoot locally for sound (skip if paused)
+            if (myTank.isAlive() && input.shoot && !playerPaused[myPlayerIndex]) {
+                if (myTank.hasLaser()) {
+                    Laser laser = myTank.shootLaser(ctx.getSoundManager());
+                    if (laser != null) {
+                        ctx.getLasers().add(laser);
+                    }
+                } else {
+                    myTank.shoot(ctx.getBullets(), ctx.getSoundManager());
+                }
+            }
 
             // Send position and nickname to host
             int respawnSyncFrames = ctx.getRespawnSyncFrames();
@@ -140,6 +163,7 @@ public class NetworkGameHandler {
                 input.posY = myTank.getY();
                 input.direction = myTank.getDirection().ordinal();
             } else {
+                // When dead, not yet synced, or just respawned - send invalid position
                 input.posX = -1;
                 input.posY = -1;
                 input.direction = 0;

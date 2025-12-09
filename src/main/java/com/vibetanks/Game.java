@@ -11,6 +11,7 @@ import com.vibetanks.rendering.StatsRenderer;
 import com.vibetanks.network.GameState;
 import com.vibetanks.network.GameStateApplier;
 import com.vibetanks.network.GameStateBuilder;
+import com.vibetanks.network.NetworkGameHandler;
 import com.vibetanks.network.NetworkManager;
 import com.vibetanks.network.PlayerData;
 import com.vibetanks.network.PlayerInput;
@@ -29,7 +30,8 @@ import javafx.stage.Stage;
 import java.util.*;
 
 public class Game implements GameStateApplier.GameContext, LevelTransitionManager.LevelTransitionContext,
-        HUDRenderer.PlayerNameProvider, HUDRenderer.EndGameStatsProvider, HUDRenderer.GameOverState {
+        HUDRenderer.PlayerNameProvider, HUDRenderer.EndGameStatsProvider, HUDRenderer.GameOverState,
+        NetworkGameHandler.HostContext {
     private final Pane root;
     private final Canvas canvas;
     private final GraphicsContext gc;
@@ -611,7 +613,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         tryTakeLifeFromTeammate(myPlayerIndex);
     }
 
-    private void tryTakeLifeFromTeammate(int requestingPlayerIndex) {
+    @Override
+    public void tryTakeLifeFromTeammate(int requestingPlayerIndex) {
         if (requestingPlayerIndex < 0 || requestingPlayerIndex >= playerTanks.size()) return;
 
         Tank myTank = playerTanks.get(requestingPlayerIndex);
@@ -635,11 +638,13 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         }
     }
 
-    private void startNextLevel() {
+    @Override
+    public void startNextLevel() {
         LevelTransitionManager.startNextLevel(this);
     }
 
-    private void restartCurrentLevel() {
+    @Override
+    public void restartCurrentLevel() {
         LevelTransitionManager.restartCurrentLevel(this);
     }
 
@@ -847,33 +852,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             return;
         }
 
-        // HOST: Send game state to clients (do this BEFORE early return for gameOver/victory/paused)
-        // This ensures clients receive end-game state (dancing characters, victory girls, etc.)
+        // HOST: Send game state and handle client requests via NetworkGameHandler
         if (isNetworkGame && network != null && network.isHost()) {
-            long now = System.nanoTime();
-            if (now - lastNetworkUpdate >= NETWORK_UPDATE_INTERVAL) {
-                GameState state = buildGameState();
-                network.sendGameState(state);
-                lastNetworkUpdate = now;
-            }
-
-            // HOST: Check for client requests for next level/restart (during game over/victory)
-            if (gameOver || victory) {
-                for (int i = 2; i <= Math.min(playerTanks.size(), network.getConnectedPlayerCount()); i++) {
-                    PlayerInput clientInput = network.getPlayerInput(i);
-                    if (clientInput != null) {
-                        if (clientInput.requestNextLevel && victory) {
-                            System.out.println("HOST: Client " + i + " requested next level");
-                            startNextLevel();
-                            return;
-                        }
-                        if (clientInput.requestRestart && gameOver) {
-                            System.out.println("HOST: Client " + i + " requested restart");
-                            restartCurrentLevel();
-                            return;
-                        }
-                    }
-                }
+            NetworkGameHandler.HostUpdateResult hostResult = NetworkGameHandler.handleHostUpdate(this);
+            if (hostResult.skipMainUpdate) {
+                return;
             }
         }
 
@@ -891,64 +874,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             }
 
             if (network.isHost()) {
-                // HOST: Add new player tanks if more players connected
-                int connectedCount = network.getConnectedPlayerCount();
-                while (playerTanks.size() < connectedCount && playerTanks.size() < 4) {
-                    int playerNum = playerTanks.size() + 1;
-                    double x, y;
-                    switch (playerNum) {
-                        case 2 -> { x = 16 * 32; y = 24 * 32; }
-                        case 3 -> { x = 9 * 32; y = 24 * 32; }
-                        case 4 -> { x = 15 * 32; y = 24 * 32; }
-                        default -> { x = 8 * 32; y = 24 * 32; }
-                    }
-                    System.out.println("HOST: Adding Player " + playerNum + " tank (new player connected)");
-                    Tank newPlayer = new Tank(x, y, Direction.UP, true, playerNum);
-                    newPlayer.giveTemporaryShield(); // Give spawn protection
-                    playerTanks.add(newPlayer);
-
-                    // Update playerStartPositions array
-                    double[][] newStartPositions = new double[playerTanks.size()][2];
-                    for (int j = 0; j < playerStartPositions.length; j++) {
-                        newStartPositions[j] = playerStartPositions[j];
-                    }
-                    newStartPositions[playerNum - 1] = new double[]{x, y};
-                    playerStartPositions = newStartPositions;
-                    System.out.println("HOST: Updated playerStartPositions for Player " + playerNum +
-                        " to: " + x + ", " + y + " (array size: " + playerStartPositions.length + ")");
-                }
-
-                // HOST: Receive client positions and apply them (client-authoritative movement)
-                for (int i = 2; i <= playerTanks.size(); i++) {
-                    PlayerInput clientInput = network.getPlayerInput(i);
-                    if (clientInput != null) {
-                        Tank clientTank = playerTanks.get(i - 1);
-                        // Accept client's position directly (only if valid - client sends -1,-1 when dead)
-                        if (clientTank.isAlive() && clientInput.posX >= 0 && clientInput.posY >= 0) {
-                            clientTank.setPosition(clientInput.posX, clientInput.posY);
-                            clientTank.setDirection(Direction.values()[clientInput.direction]);
-                        }
-                        // Handle shooting on host (for bullet sync)
-                        if (clientInput.shoot && clientTank.isAlive()) {
-                            if (clientTank.hasLaser()) {
-                                Laser laser = clientTank.shootLaser(soundManager);
-                                if (laser != null) {
-                                    lasers.add(laser);
-                                }
-                            } else {
-                                clientTank.shoot(bullets, soundManager);
-                            }
-                        }
-                        // Check if client is requesting a life transfer
-                        if (clientInput.requestLife) {
-                            tryTakeLifeFromTeammate(i - 1);
-                        }
-                        // Update client's nickname
-                        if (clientInput.nickname != null) {
-                            playerNicknames[i - 1] = clientInput.nickname;
-                        }
-                    }
-                }
+                // HOST: Add new player tanks and receive client inputs via NetworkGameHandler
+                NetworkGameHandler.handleNewPlayerConnections(this);
+                NetworkGameHandler.receiveClientInputs(this);
                 // Host runs full game logic below
             }
         }
@@ -1498,7 +1426,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
 
     // ============ NETWORK MULTIPLAYER METHODS ============
 
-    private GameState buildGameState() {
+    @Override
+    public GameState buildGameState() {
         int connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
         GameState state = GameStateBuilder.build(
             playerTanks, playerKills, playerScores, playerLevelScores, playerNicknames, playerKillsByType,
@@ -1580,6 +1509,14 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
 
     @Override public boolean isGameOverSoundPlayed() { return gameOverSoundPlayed; }
     // setGameOverSoundPlayed is already implemented above
+
+    // ============ NetworkGameHandler.HostContext IMPLEMENTATION ============
+    // Note: getNetwork() is already implemented in GameStateApplier.GameContext above
+
+    @Override public boolean isPaused() { return paused; }
+    @Override public long getLastNetworkUpdate() { return lastNetworkUpdate; }
+    @Override public void setLastNetworkUpdate(long time) { lastNetworkUpdate = time; }
+    @Override public long getNetworkUpdateInterval() { return NETWORK_UPDATE_INTERVAL; }
 
     private PlayerInput capturePlayerInput(Tank tank) {
         // Capture current keyboard state (arrow keys + space)

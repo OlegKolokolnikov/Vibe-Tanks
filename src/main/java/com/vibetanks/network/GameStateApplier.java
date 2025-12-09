@@ -171,7 +171,7 @@ public class GameStateApplier {
         Base base = ctx.getBase();
         base.setFlagState(state.baseShowFlag, state.baseFlagHeight);
         base.setVictoryFlagState(state.baseShowVictoryFlag, state.baseVictoryFlagHeight);
-        base.setEasterEggMode(state.baseEasterEggMode);
+        base.setCatMode(state.baseCatMode);
 
         // Play explosion sound when enemy dies
         int currentEnemyCount = ctx.getEnemyTanks().size();

@@ -154,30 +154,30 @@ class BaseTest {
     }
 
     @Nested
-    @DisplayName("Easter Egg Mode Tests")
-    class EasterEggModeTests {
+    @DisplayName("Cat Mode Tests")
+    class CatModeTests {
 
         @Test
-        @DisplayName("Easter egg mode should be off by default")
-        void easterEggModeOffByDefault() {
-            assertFalse(base.isEasterEggMode());
+        @DisplayName("Cat mode should be off by default")
+        void catModeOffByDefault() {
+            assertFalse(base.isCatMode());
         }
 
         @Test
-        @DisplayName("setEasterEggMode should enable easter egg mode")
-        void setEasterEggModeShouldEnable() {
-            base.setEasterEggMode(true);
+        @DisplayName("setCatMode should enable cat mode")
+        void setCatModeShouldEnable() {
+            base.setCatMode(true);
 
-            assertTrue(base.isEasterEggMode());
+            assertTrue(base.isCatMode());
         }
 
         @Test
-        @DisplayName("setEasterEggMode should disable easter egg mode")
-        void setEasterEggModeShouldDisable() {
-            base.setEasterEggMode(true);
-            base.setEasterEggMode(false);
+        @DisplayName("setCatMode should disable cat mode")
+        void setCatModeShouldDisable() {
+            base.setCatMode(true);
+            base.setCatMode(false);
 
-            assertFalse(base.isEasterEggMode());
+            assertFalse(base.isCatMode());
         }
     }
 
@@ -229,9 +229,9 @@ class BaseTest {
         }
 
         @Test
-        @DisplayName("Easter egg mode doesn't affect alive status")
-        void easterEggModeDoesntAffectAliveStatus() {
-            base.setEasterEggMode(true);
+        @DisplayName("Cat mode doesn't affect alive status")
+        void catModeDoesntAffectAliveStatus() {
+            base.setCatMode(true);
 
             assertTrue(base.isAlive());
         }

@@ -22,9 +22,9 @@ public class Base {
     private double victoryFlagHeight = 0;
     private int victoryFlagWaveFrame = 0;
 
-    // Easter egg mode (when UFO is killed)
-    private boolean easterEggMode = false;
-    private int easterEggAnimFrame = 0;
+    // Cat mode (when player collects easter egg after boss spawned)
+    private boolean catMode = false;
+    private int catAnimFrame = 0;
 
     public Base(double x, double y) {
         this.x = x;
@@ -72,10 +72,10 @@ public class Base {
 
     public void render(GraphicsContext gc) {
         if (alive) {
-            if (easterEggMode) {
-                // Draw colorful Easter egg instead of eagle
-                easterEggAnimFrame++;
-                renderEasterEgg(gc);
+            if (catMode) {
+                // Draw cute cat instead of eagle
+                catAnimFrame++;
+                renderCat(gc);
             } else {
                 // Draw base as classic eagle symbol
                 // Background
@@ -274,86 +274,110 @@ public class Base {
         }
     }
 
-    private void renderEasterEgg(GraphicsContext gc) {
-        // Colorful background
-        gc.setFill(Color.rgb(200, 255, 200)); // Light green grass
+    private void renderCat(GraphicsContext gc) {
+        // Warm background
+        gc.setFill(Color.rgb(255, 240, 220)); // Cream background
         gc.fillRect(x, y, SIZE, SIZE);
 
-        // Easter egg - oval shape
-        double eggX = x + 4;
-        double eggY = y + 2;
-        double eggWidth = 24;
-        double eggHeight = 28;
+        // Tail animation
+        double tailWave = Math.sin(catAnimFrame * 0.1) * 3;
 
-        // Color cycling based on animation frame
-        int colorIndex = (easterEggAnimFrame / 30) % 6;
-        Color baseColor = switch (colorIndex) {
-            case 0 -> Color.rgb(255, 182, 193); // Pink
-            case 1 -> Color.rgb(173, 216, 230); // Light blue
-            case 2 -> Color.rgb(144, 238, 144); // Light green
-            case 3 -> Color.rgb(255, 255, 153); // Light yellow
-            case 4 -> Color.rgb(221, 160, 221); // Plum
-            default -> Color.rgb(255, 218, 185); // Peach
-        };
+        // Tail (behind body)
+        gc.setFill(Color.rgb(255, 165, 0)); // Orange
+        gc.fillOval(x + 22 + tailWave, y + 18, 8, 6);
+        gc.fillOval(x + 26 + tailWave * 1.5, y + 14, 6, 8);
 
-        // Egg base color
-        gc.setFill(baseColor);
-        gc.fillOval(eggX, eggY, eggWidth, eggHeight);
+        // Body
+        gc.setFill(Color.rgb(255, 165, 0)); // Orange cat
+        gc.fillOval(x + 6, y + 14, 20, 16);
 
-        // Egg outline
-        gc.setStroke(Color.rgb(139, 90, 43)); // Brown outline
-        gc.setLineWidth(2);
-        gc.strokeOval(eggX, eggY, eggWidth, eggHeight);
+        // Head
+        gc.fillOval(x + 4, y + 4, 18, 16);
 
-        // Decorative zigzag band across middle
-        gc.setStroke(Color.GOLD);
-        gc.setLineWidth(2);
-        double bandY = eggY + eggHeight / 2 - 2;
+        // Ears
+        double earTwitch = Math.sin(catAnimFrame * 0.15) * 1;
+        // Left ear
         gc.beginPath();
-        gc.moveTo(eggX + 2, bandY);
-        for (int i = 0; i < 6; i++) {
-            double px = eggX + 4 + i * 3.5;
-            double py = bandY + ((i % 2 == 0) ? -3 : 3);
-            gc.lineTo(px, py);
+        gc.moveTo(x + 4, y + 8);
+        gc.lineTo(x + 2 + earTwitch, y - 2);
+        gc.lineTo(x + 10, y + 4);
+        gc.closePath();
+        gc.fill();
+        // Right ear
+        gc.beginPath();
+        gc.moveTo(x + 16, y + 4);
+        gc.lineTo(x + 22 - earTwitch, y - 2);
+        gc.lineTo(x + 22, y + 8);
+        gc.closePath();
+        gc.fill();
+
+        // Inner ears (pink)
+        gc.setFill(Color.rgb(255, 182, 193));
+        gc.beginPath();
+        gc.moveTo(x + 5, y + 6);
+        gc.lineTo(x + 4 + earTwitch, y + 1);
+        gc.lineTo(x + 9, y + 5);
+        gc.closePath();
+        gc.fill();
+        gc.beginPath();
+        gc.moveTo(x + 17, y + 5);
+        gc.lineTo(x + 20 - earTwitch, y + 1);
+        gc.lineTo(x + 21, y + 6);
+        gc.closePath();
+        gc.fill();
+
+        // Eyes - blinking animation
+        boolean blinking = (catAnimFrame % 120) < 8;
+        gc.setFill(Color.rgb(50, 205, 50)); // Green eyes
+        if (blinking) {
+            gc.fillRect(x + 7, y + 10, 4, 1);
+            gc.fillRect(x + 15, y + 10, 4, 1);
+        } else {
+            gc.fillOval(x + 7, y + 8, 5, 5);
+            gc.fillOval(x + 14, y + 8, 5, 5);
+            // Pupils
+            gc.setFill(Color.BLACK);
+            gc.fillOval(x + 9, y + 9, 2, 3);
+            gc.fillOval(x + 16, y + 9, 2, 3);
         }
-        gc.stroke();
 
-        // Decorative dots
-        gc.setFill(Color.MAGENTA);
-        gc.fillOval(eggX + 6, eggY + 6, 4, 4);
-        gc.fillOval(eggX + 14, eggY + 6, 4, 4);
+        // Nose
+        gc.setFill(Color.rgb(255, 105, 180)); // Pink nose
+        gc.beginPath();
+        gc.moveTo(x + 13, y + 13);
+        gc.lineTo(x + 11, y + 15);
+        gc.lineTo(x + 15, y + 15);
+        gc.closePath();
+        gc.fill();
 
-        gc.setFill(Color.CYAN);
-        gc.fillOval(eggX + 10, eggY + 20, 4, 4);
+        // Whiskers
+        gc.setStroke(Color.rgb(80, 80, 80));
+        gc.setLineWidth(1);
+        // Left whiskers
+        gc.strokeLine(x + 4, y + 14, x - 2, y + 12);
+        gc.strokeLine(x + 4, y + 16, x - 2, y + 16);
+        gc.strokeLine(x + 4, y + 18, x - 2, y + 20);
+        // Right whiskers
+        gc.strokeLine(x + 22, y + 14, x + 28, y + 12);
+        gc.strokeLine(x + 22, y + 16, x + 28, y + 16);
+        gc.strokeLine(x + 22, y + 18, x + 28, y + 20);
 
-        gc.setFill(Color.ORANGE);
-        gc.fillOval(eggX + 5, eggY + 18, 3, 3);
-        gc.fillOval(eggX + 16, eggY + 18, 3, 3);
+        // Mouth
+        gc.setStroke(Color.rgb(80, 80, 80));
+        gc.strokeLine(x + 13, y + 15, x + 13, y + 17);
+        gc.strokeArc(x + 10, y + 15, 4, 4, 180, 90, javafx.scene.shape.ArcType.OPEN);
+        gc.strokeArc(x + 12, y + 15, 4, 4, 270, 90, javafx.scene.shape.ArcType.OPEN);
 
-        // Star on top
-        gc.setFill(Color.GOLD);
-        double starX = eggX + eggWidth / 2;
-        double starY = eggY + 4;
-        double starSize = 4;
-        double[] starXPoints = new double[10];
-        double[] starYPoints = new double[10];
-        for (int i = 0; i < 10; i++) {
-            double angle = Math.PI / 2 + (Math.PI * i / 5);
-            double r = (i % 2 == 0) ? starSize : starSize * 0.4;
-            starXPoints[i] = starX + r * Math.cos(angle);
-            starYPoints[i] = starY - r * Math.sin(angle);
-        }
-        gc.fillPolygon(starXPoints, starYPoints, 10);
+        // Paws
+        gc.setFill(Color.rgb(255, 165, 0));
+        gc.fillOval(x + 6, y + 26, 6, 5);
+        gc.fillOval(x + 14, y + 26, 6, 5);
 
-        // Sparkle effect (rotating)
-        double sparkleAngle = (easterEggAnimFrame * 0.1) % (2 * Math.PI);
-        gc.setFill(Color.WHITE);
-        for (int i = 0; i < 4; i++) {
-            double angle = sparkleAngle + (i * Math.PI / 2);
-            double sx = x + SIZE / 2 + Math.cos(angle) * 18;
-            double sy = y + SIZE / 2 + Math.sin(angle) * 14;
-            gc.fillOval(sx - 2, sy - 2, 4, 4);
-        }
+        // Stripes on forehead
+        gc.setFill(Color.rgb(200, 120, 0)); // Darker orange
+        gc.fillRect(x + 12, y + 2, 2, 4);
+        gc.fillRect(x + 9, y + 3, 2, 3);
+        gc.fillRect(x + 15, y + 3, 2, 3);
     }
 
     public double getX() { return x; }
@@ -361,13 +385,13 @@ public class Base {
     public int getSize() { return SIZE; }
     public boolean isAlive() { return alive; }
 
-    // Easter egg mode
-    public void setEasterEggMode(boolean easterEgg) {
-        this.easterEggMode = easterEgg;
+    // Cat mode (when player collects easter egg after boss spawned)
+    public void setCatMode(boolean catMode) {
+        this.catMode = catMode;
     }
 
-    public boolean isEasterEggMode() {
-        return easterEggMode;
+    public boolean isCatMode() {
+        return catMode;
     }
 
     /**
@@ -381,7 +405,7 @@ public class Base {
         this.showVictoryFlag = false;
         this.victoryFlagHeight = 0;
         this.victoryFlagWaveFrame = 0;
-        this.easterEggMode = false;
-        this.easterEggAnimFrame = 0;
+        this.catMode = false;
+        this.catAnimFrame = 0;
     }
 }

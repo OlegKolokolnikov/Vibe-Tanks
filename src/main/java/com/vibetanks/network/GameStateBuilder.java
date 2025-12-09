@@ -176,7 +176,7 @@ public class GameStateBuilder {
         state.baseFlagHeight = base.getFlagHeight();
         state.baseShowVictoryFlag = base.isShowingVictoryFlag();
         state.baseVictoryFlagHeight = base.getVictoryFlagHeight();
-        state.baseEasterEggMode = base.isEasterEggMode();
+        state.baseCatMode = base.isCatMode();
     }
 
     private static void buildMapData(GameState state, GameMap gameMap, List<GameState.TileChange> mapChanges) {

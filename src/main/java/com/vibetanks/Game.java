@@ -834,6 +834,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             }
             LOG.info("Easter egg collected by Player {}! +3 lives!", playerIndex + 1);
             GameLogic.applyEasterEggEffect(enemyTanks, true);
+            // Turn base into cat if boss has spawned (remaining == 0 means boss was the last spawned)
+            if (enemySpawner.getRemainingEnemies() == 0) {
+                base.setCatMode(true);
+                LOG.info("Base transformed to cat!");
+            }
         } else if (eggResult.easterEggCollectedByEnemy) {
             LOG.info("Easter egg collected by enemy! All enemies become HEAVY tanks!");
             GameLogic.applyEasterEggEffect(enemyTanks, false);

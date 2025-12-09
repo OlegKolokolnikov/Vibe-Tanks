@@ -605,7 +605,11 @@ public class ServerGameState {
             Tank player = playerTanks.get(playerIndex);
             GameLogic.applyEasterEggEffect(enemyTanks, true);
             player.setLives(player.getLives() + 3);
-            base.setEasterEggMode(true);
+            // Turn base into cat if boss has spawned (remaining == 0 means boss was the last spawned)
+            if (enemySpawner.getRemainingEnemies() == 0) {
+                base.setCatMode(true);
+                LOG.info("Player collected Easter egg after boss spawn! Base transformed to cat!");
+            }
             easterEgg.collect();
             easterEgg = null;
             LOG.info("Player collected Easter egg! Enemies transformed to POWER, +3 lives.");
@@ -825,8 +829,8 @@ public class ServerGameState {
             state.easterEggData = null;
         }
 
-        // Base easter egg mode
-        state.baseEasterEggMode = base.isEasterEggMode();
+        // Base cat mode (when player collects easter egg after boss spawned)
+        state.baseCatMode = base.isCatMode();
 
         // Host settings - use server's GameSettings
         state.hostPlayerSpeed = GameSettings.getPlayerSpeedMultiplier();

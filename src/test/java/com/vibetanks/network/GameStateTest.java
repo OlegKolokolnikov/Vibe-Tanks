@@ -337,14 +337,14 @@ class GameStateTest {
             gameState.baseFlagHeight = 25.5;
             gameState.baseShowVictoryFlag = true;
             gameState.baseVictoryFlagHeight = 30.0;
-            gameState.baseEasterEggMode = true;
+            gameState.baseCatMode = true;
 
             assertFalse(gameState.baseAlive);
             assertTrue(gameState.baseShowFlag);
             assertEquals(25.5, gameState.baseFlagHeight);
             assertTrue(gameState.baseShowVictoryFlag);
             assertEquals(30.0, gameState.baseVictoryFlagHeight);
-            assertTrue(gameState.baseEasterEggMode);
+            assertTrue(gameState.baseCatMode);
         }
     }
 

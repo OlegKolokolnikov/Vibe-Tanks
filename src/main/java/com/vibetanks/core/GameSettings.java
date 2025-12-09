@@ -101,6 +101,7 @@ public class GameSettings {
     public static String getPlayerNickname() { return playerNickname; }
     public static void setPlayerNickname(String nickname) {
         playerNickname = nickname != null ? nickname.trim() : "";
+        saveSettings();
     }
 
     // Enemy count

@@ -6,6 +6,7 @@ import com.vibetanks.core.GameSettings;
 import com.vibetanks.core.NicknameManager;
 import com.vibetanks.network.IPHistoryManager;
 import com.vibetanks.network.NetworkManager;
+import com.vibetanks.util.ButtonStyler;
 import com.vibetanks.util.GameLogger;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -64,105 +65,25 @@ public class MenuScene {
         // Host Game button (Online Multiplayer)
         Button hostButton = new Button("HOST GAME (ONLINE)");
         styleButton(hostButton);
-        hostButton.setStyle(
-            "-fx-background-color: #2a5a2a;" +
-            "-fx-text-fill: lightgreen;" +
-            "-fx-border-color: lightgreen;" +
-            "-fx-border-width: 2px;" +
-            "-fx-cursor: hand;"
-        );
-        hostButton.setOnMouseEntered(e -> hostButton.setStyle(
-            "-fx-background-color: #3a7a3a;" +
-            "-fx-text-fill: lightgreen;" +
-            "-fx-border-color: lightgreen;" +
-            "-fx-border-width: 3px;" +
-            "-fx-cursor: hand;"
-        ));
-        hostButton.setOnMouseExited(e -> hostButton.setStyle(
-            "-fx-background-color: #2a5a2a;" +
-            "-fx-text-fill: lightgreen;" +
-            "-fx-border-color: lightgreen;" +
-            "-fx-border-width: 2px;" +
-            "-fx-cursor: hand;"
-        ));
+        ButtonStyler.applyGreenTheme(hostButton);
         hostButton.setOnAction(e -> hostGame());
 
         // Join Game button (Online Multiplayer)
         Button joinButton = new Button("JOIN GAME (ONLINE)");
         styleButton(joinButton);
-        joinButton.setStyle(
-            "-fx-background-color: #2a2a5a;" +
-            "-fx-text-fill: lightblue;" +
-            "-fx-border-color: lightblue;" +
-            "-fx-border-width: 2px;" +
-            "-fx-cursor: hand;"
-        );
-        joinButton.setOnMouseEntered(e -> joinButton.setStyle(
-            "-fx-background-color: #3a3a7a;" +
-            "-fx-text-fill: lightblue;" +
-            "-fx-border-color: lightblue;" +
-            "-fx-border-width: 3px;" +
-            "-fx-cursor: hand;"
-        ));
-        joinButton.setOnMouseExited(e -> joinButton.setStyle(
-            "-fx-background-color: #2a2a5a;" +
-            "-fx-text-fill: lightblue;" +
-            "-fx-border-color: lightblue;" +
-            "-fx-border-width: 2px;" +
-            "-fx-cursor: hand;"
-        ));
+        ButtonStyler.applyBlueTheme(joinButton);
         joinButton.setOnAction(e -> joinGame());
 
         // Level Editor button
         Button editorButton = new Button("LEVEL EDITOR");
         styleButton(editorButton);
-        editorButton.setStyle(
-            "-fx-background-color: #5a2a5a;" +
-            "-fx-text-fill: #ff99ff;" +
-            "-fx-border-color: #ff99ff;" +
-            "-fx-border-width: 2px;" +
-            "-fx-cursor: hand;"
-        );
-        editorButton.setOnMouseEntered(e -> editorButton.setStyle(
-            "-fx-background-color: #7a3a7a;" +
-            "-fx-text-fill: #ff99ff;" +
-            "-fx-border-color: #ff99ff;" +
-            "-fx-border-width: 3px;" +
-            "-fx-cursor: hand;"
-        ));
-        editorButton.setOnMouseExited(e -> editorButton.setStyle(
-            "-fx-background-color: #5a2a5a;" +
-            "-fx-text-fill: #ff99ff;" +
-            "-fx-border-color: #ff99ff;" +
-            "-fx-border-width: 2px;" +
-            "-fx-cursor: hand;"
-        ));
+        ButtonStyler.applyPurpleTheme(editorButton);
         editorButton.setOnAction(e -> showLevelEditor());
 
         // Options button
         Button optionsButton = new Button("OPTIONS");
         styleButton(optionsButton);
-        optionsButton.setStyle(
-            "-fx-background-color: #4a3a2a;" +
-            "-fx-text-fill: #ffcc66;" +
-            "-fx-border-color: #ffcc66;" +
-            "-fx-border-width: 2px;" +
-            "-fx-cursor: hand;"
-        );
-        optionsButton.setOnMouseEntered(e -> optionsButton.setStyle(
-            "-fx-background-color: #6a5a3a;" +
-            "-fx-text-fill: #ffcc66;" +
-            "-fx-border-color: #ffcc66;" +
-            "-fx-border-width: 3px;" +
-            "-fx-cursor: hand;"
-        ));
-        optionsButton.setOnMouseExited(e -> optionsButton.setStyle(
-            "-fx-background-color: #4a3a2a;" +
-            "-fx-text-fill: #ffcc66;" +
-            "-fx-border-color: #ffcc66;" +
-            "-fx-border-width: 2px;" +
-            "-fx-cursor: hand;"
-        ));
+        ButtonStyler.applyOrangeTheme(optionsButton);
         optionsButton.setOnAction(e -> showOptions());
 
         // Explanation button

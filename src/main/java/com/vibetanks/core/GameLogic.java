@@ -277,6 +277,19 @@ public class GameLogic {
      * @return Array containing [x, y] position in pixels
      */
     public static double[] findPowerUpSpawnPosition(GameMap gameMap, int tileSize) {
+        double[] result = new double[2];
+        findPowerUpSpawnPosition(gameMap, tileSize, result);
+        return result;
+    }
+
+    /**
+     * Find a random empty position for spawning a power-up (allocation-free version).
+     *
+     * @param gameMap The game map
+     * @param tileSize Size of each tile in pixels
+     * @param result Array to store [x, y] position in pixels (must be length >= 2)
+     */
+    public static void findPowerUpSpawnPosition(GameMap gameMap, int tileSize, double[] result) {
         int maxAttempts = 100;
 
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
@@ -287,12 +300,15 @@ public class GameLogic {
             // Check if position is clear (only spawn on empty tiles)
             GameMap.TileType tile = gameMap.getTile(row, col);
             if (tile == GameMap.TileType.EMPTY) {
-                return new double[]{col * tileSize, row * tileSize};
+                result[0] = col * tileSize;
+                result[1] = row * tileSize;
+                return;
             }
         }
 
         // Fallback to center if no valid position found
-        return new double[]{13 * tileSize, 13 * tileSize};
+        result[0] = 13 * tileSize;
+        result[1] = 13 * tileSize;
     }
 
     /**

@@ -48,6 +48,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     private List<Tank> playerTanks;
     private List<Tank> enemyTanks;
     private List<Tank> allTanksCache = new ArrayList<>(); // Reusable list for collision detection
+    private double[] spawnPositionCache = new double[2]; // Reusable for power-up spawn positions
     private List<Bullet> bullets;
     private List<Laser> lasers;
     private List<PowerUp> powerUps;
@@ -463,8 +464,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     }
 
     private double[] getRandomPowerUpSpawnPosition() {
-        // Delegate to shared GameLogic
-        return GameLogic.findPowerUpSpawnPosition(gameMap, 32);
+        // Delegate to shared GameLogic, reuse cached array
+        GameLogic.findPowerUpSpawnPosition(gameMap, 32, spawnPositionCache);
+        return spawnPositionCache;
     }
 
     private PowerUp.Type applyRandomPowerUp(Tank player) {

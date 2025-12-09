@@ -1,8 +1,8 @@
 package com.vibetanks.core;
 
+import com.vibetanks.rendering.TileRenderer;
 import com.vibetanks.util.GameLogger;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -825,51 +825,7 @@ public class GameMap {
                 TileType tile = tiles[row][col];
                 double x = col * TILE_SIZE;
                 double y = row * TILE_SIZE;
-
-                switch (tile) {
-                    case BRICK:
-                        gc.setFill(Color.rgb(139, 69, 19));
-                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                        gc.setStroke(Color.rgb(100, 50, 10));
-                        gc.strokeRect(x, y, TILE_SIZE / 2, TILE_SIZE / 2);
-                        gc.strokeRect(x + TILE_SIZE / 2, y, TILE_SIZE / 2, TILE_SIZE / 2);
-                        gc.strokeRect(x, y + TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2);
-                        gc.strokeRect(x + TILE_SIZE / 2, y + TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2);
-                        break;
-                    case STEEL:
-                        gc.setFill(Color.DARKGRAY);
-                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                        gc.setStroke(Color.LIGHTGRAY);
-                        gc.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-                        break;
-                    case WATER:
-                        gc.setFill(Color.BLUE);
-                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                        gc.setFill(Color.LIGHTBLUE);
-                        gc.fillOval(x + 8, y + 8, 8, 8);
-                        gc.fillOval(x + 18, y + 18, 6, 6);
-                        break;
-                    case TREES:
-                        gc.setFill(Color.DARKGREEN);
-                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                        gc.setFill(Color.GREEN);
-                        gc.fillOval(x + 4, y + 4, 10, 10);
-                        gc.fillOval(x + 18, y + 8, 10, 10);
-                        gc.fillOval(x + 8, y + 18, 10, 10);
-                        break;
-                    case ICE:
-                        gc.setFill(Color.rgb(200, 230, 255));
-                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                        gc.setStroke(Color.rgb(150, 200, 255));
-                        gc.setLineWidth(2);
-                        // Draw diagonal lines to represent ice texture
-                        gc.strokeLine(x, y, x + TILE_SIZE, y + TILE_SIZE);
-                        gc.strokeLine(x + TILE_SIZE, y, x, y + TILE_SIZE);
-                        break;
-                    default:
-                        // Empty tile - already black background
-                        break;
-                }
+                TileRenderer.renderTile(gc, tile, x, y);
             }
         }
     }
@@ -879,47 +835,9 @@ public class GameMap {
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
                 TileType tile = tiles[row][col];
-                if (tile == TileType.TREES) {
-                    continue; // Skip trees - they'll be rendered later on top
-                }
-
                 double x = col * TILE_SIZE;
                 double y = row * TILE_SIZE;
-
-                switch (tile) {
-                    case BRICK:
-                        gc.setFill(Color.rgb(139, 69, 19));
-                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                        gc.setStroke(Color.rgb(100, 50, 10));
-                        gc.strokeRect(x, y, TILE_SIZE / 2, TILE_SIZE / 2);
-                        gc.strokeRect(x + TILE_SIZE / 2, y, TILE_SIZE / 2, TILE_SIZE / 2);
-                        gc.strokeRect(x, y + TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2);
-                        gc.strokeRect(x + TILE_SIZE / 2, y + TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2);
-                        break;
-                    case STEEL:
-                        gc.setFill(Color.DARKGRAY);
-                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                        gc.setStroke(Color.LIGHTGRAY);
-                        gc.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-                        break;
-                    case WATER:
-                        gc.setFill(Color.BLUE);
-                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                        gc.setFill(Color.LIGHTBLUE);
-                        gc.fillOval(x + 8, y + 8, 8, 8);
-                        gc.fillOval(x + 18, y + 18, 6, 6);
-                        break;
-                    case ICE:
-                        gc.setFill(Color.rgb(200, 230, 255));
-                        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                        gc.setStroke(Color.rgb(150, 200, 255));
-                        gc.setLineWidth(2);
-                        gc.strokeLine(x, y, x + TILE_SIZE, y + TILE_SIZE);
-                        gc.strokeLine(x + TILE_SIZE, y, x, y + TILE_SIZE);
-                        break;
-                    default:
-                        break;
-                }
+                TileRenderer.renderTile(gc, tile, x, y, true);
             }
         }
     }
@@ -928,17 +846,10 @@ public class GameMap {
     public void renderTrees(GraphicsContext gc) {
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
-                TileType tile = tiles[row][col];
-                if (tile == TileType.TREES) {
+                if (tiles[row][col] == TileType.TREES) {
                     double x = col * TILE_SIZE;
                     double y = row * TILE_SIZE;
-
-                    gc.setFill(Color.DARKGREEN);
-                    gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-                    gc.setFill(Color.GREEN);
-                    gc.fillOval(x + 4, y + 4, 10, 10);
-                    gc.fillOval(x + 18, y + 8, 10, 10);
-                    gc.fillOval(x + 8, y + 18, 10, 10);
+                    TileRenderer.renderTrees(gc, x, y);
                 }
             }
         }
@@ -972,38 +883,7 @@ public class GameMap {
             int col = key % 1000;
             double x = col * TILE_SIZE;
             double y = row * TILE_SIZE;
-
-            // Draw tree underneath
-            gc.setFill(Color.DARKGREEN);
-            gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-            gc.setFill(Color.GREEN);
-            gc.fillOval(x + 4, y + 4, 10, 10);
-            gc.fillOval(x + 18, y + 8, 10, 10);
-            gc.fillOval(x + 8, y + 18, 10, 10);
-
-            // Draw animated fire on top
-            int animFrame = (int)(time / 100) % 3;
-
-            // Fire base (orange/red)
-            gc.setFill(Color.ORANGE);
-            gc.fillOval(x + 4, y + 12 - animFrame, 12, 16 + animFrame);
-            gc.fillOval(x + 16, y + 14 - animFrame, 10, 14 + animFrame);
-
-            // Fire middle (yellow)
-            gc.setFill(Color.YELLOW);
-            gc.fillOval(x + 6, y + 14 - animFrame * 2, 8, 12 + animFrame);
-            gc.fillOval(x + 18, y + 16 - animFrame * 2, 6, 10 + animFrame);
-
-            // Fire tips (bright yellow/white)
-            gc.setFill(Color.rgb(255, 255, 200));
-            gc.fillOval(x + 8, y + 10 - animFrame * 2, 4, 8);
-            gc.fillOval(x + 19, y + 14 - animFrame * 2, 3, 6);
-
-            // Smoke particles
-            gc.setFill(Color.rgb(80, 80, 80, 0.6));
-            int smokeOffset = (int)(time / 50) % 10;
-            gc.fillOval(x + 10, y - smokeOffset, 6, 6);
-            gc.fillOval(x + 18, y + 2 - smokeOffset, 4, 4);
+            TileRenderer.renderBurningTree(gc, x, y, time);
         }
     }
 

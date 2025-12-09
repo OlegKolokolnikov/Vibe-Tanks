@@ -283,17 +283,24 @@ public class DedicatedServer {
                     }
                 }
             } else {
-                // Sleep for approximately the remaining time until next frame
+                // Sleep for the remaining time until next frame
+                // Use nanosecond precision to maintain accurate 60 FPS
                 long remainingNs = FRAME_TIME_NS - elapsed;
-                long sleepMs = remainingNs / 1_000_000;
-                try {
-                    if (sleepMs > 1) {
-                        Thread.sleep(sleepMs - 1); // Sleep slightly less to avoid overshooting
-                    } else {
-                        Thread.yield(); // Give other threads a chance
+                if (remainingNs > 1_000_000) { // More than 1ms remaining
+                    try {
+                        // Sleep with nanosecond precision
+                        long sleepMs = remainingNs / 1_000_000;
+                        int sleepNs = (int) (remainingNs % 1_000_000);
+                        Thread.sleep(sleepMs, sleepNs);
+                    } catch (InterruptedException e) {
+                        break;
                     }
-                } catch (InterruptedException e) {
-                    break;
+                } else if (remainingNs > 0) {
+                    // Less than 1ms - busy wait for precision
+                    long waitUntil = lastFrameTime + FRAME_TIME_NS;
+                    while (System.nanoTime() < waitUntil) {
+                        Thread.yield();
+                    }
                 }
             }
         }

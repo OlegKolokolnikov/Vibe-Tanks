@@ -500,9 +500,15 @@ public class GameLogic {
                 Tank tank2 = allTanks.get(j);
                 if (!tank2.isAlive()) continue;
 
+                // Calculate center positions (getX/getY return top-left corner)
+                double center1X = tank1.getX() + tank1.getSize() / 2.0;
+                double center1Y = tank1.getY() + tank1.getSize() / 2.0;
+                double center2X = tank2.getX() + tank2.getSize() / 2.0;
+                double center2Y = tank2.getY() + tank2.getSize() / 2.0;
+
                 // Calculate distance between tank centers
-                double dx = tank2.getX() - tank1.getX();
-                double dy = tank2.getY() - tank1.getY();
+                double dx = center2X - center1X;
+                double dy = center2Y - center1Y;
 
                 // Required separation (half sizes + gap)
                 double requiredSepX = (tank1.getSize() + tank2.getSize()) / 2.0 + MIN_GAP;

@@ -182,4 +182,35 @@ public class PowerUpHandler {
         }
         System.out.println("Enemy team speed boost expired - only original enemy keeps the speed");
     }
+
+    /**
+     * Types of power-ups that can be awarded as BOSS kill rewards.
+     * Excludes BOMB and FREEZE which affect game state.
+     */
+    private static final PowerUp.Type[] BOSS_REWARD_TYPES = {
+        PowerUp.Type.GUN,
+        PowerUp.Type.STAR,
+        PowerUp.Type.CAR,
+        PowerUp.Type.SHIP,
+        PowerUp.Type.SAW,
+        PowerUp.Type.TANK,
+        PowerUp.Type.SHIELD,
+        PowerUp.Type.MACHINEGUN
+    };
+
+    /**
+     * Apply a random power-up directly to a player as a BOSS kill reward.
+     *
+     * @param player The player tank to receive the power-up
+     * @return The type of power-up that was applied
+     */
+    public static PowerUp.Type applyRandomBossReward(Tank player) {
+        PowerUp.Type type = BOSS_REWARD_TYPES[GameConstants.RANDOM.nextInt(BOSS_REWARD_TYPES.length)];
+
+        // Apply the power-up effect directly to the player
+        PowerUp tempPowerUp = new PowerUp(0, 0, type);
+        tempPowerUp.applyEffect(player);
+        System.out.println("BOSS KILL REWARD: Player received " + type + "!");
+        return type;
+    }
 }

@@ -464,50 +464,14 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     }
 
     private PowerUp.Type applyRandomPowerUp(Tank player) {
-        // Choose a random power-up type (excluding BOMB and FREEZE which affect game state)
-        PowerUp.Type[] goodTypes = {
-            PowerUp.Type.GUN,
-            PowerUp.Type.STAR,
-            PowerUp.Type.CAR,
-            PowerUp.Type.SHIP,
-            PowerUp.Type.SAW,
-            PowerUp.Type.TANK,
-            PowerUp.Type.SHIELD,
-            PowerUp.Type.MACHINEGUN
-        };
-        PowerUp.Type type = goodTypes[GameConstants.RANDOM.nextInt(goodTypes.length)];
-
-        // Apply the power-up effect directly to the player
-        PowerUp tempPowerUp = new PowerUp(0, 0, type);
-        tempPowerUp.applyEffect(player);
-        System.out.println("BOSS KILL REWARD: Player received " + type + "!");
-        return type;
+        return PowerUpHandler.applyRandomBossReward(player);
     }
 
     /**
      * Add points to a player's score and award extra life for every 100 points.
      */
     private void addScore(int playerIndex, int points) {
-        if (playerIndex < 0 || playerIndex >= 4) return;
-
-        int oldScore = playerScores[playerIndex];
-        int newScore = oldScore + points;
-        playerScores[playerIndex] = newScore;
-        playerLevelScores[playerIndex] += points; // Also track level score
-        System.out.println("SCORE: Player " + (playerIndex + 1) + " score: " + oldScore + " -> " + newScore + " (+" + points + ")");
-
-        // Check if crossed a 100-point threshold (e.g., 0->100, 95->105, 199->201)
-        int oldHundreds = oldScore / 100;
-        int newHundreds = newScore / 100;
-
-        if (newHundreds > oldHundreds && playerIndex < playerTanks.size()) {
-            Tank player = playerTanks.get(playerIndex);
-            int livesAwarded = newHundreds - oldHundreds;
-            for (int i = 0; i < livesAwarded; i++) {
-                player.addLife();
-            }
-            System.out.println("Player " + (playerIndex + 1) + " earned " + livesAwarded + " extra life(s) for reaching " + (newHundreds * 100) + " points!");
-        }
+        GameLogic.addScore(playerIndex, points, playerScores, playerLevelScores, playerTanks);
     }
 
     /**

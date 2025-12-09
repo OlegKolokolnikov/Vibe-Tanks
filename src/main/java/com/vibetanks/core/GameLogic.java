@@ -404,6 +404,55 @@ public class GameLogic {
     }
 
     /**
+     * Result of adding score to a player.
+     */
+    public static class ScoreResult {
+        public int oldScore;
+        public int newScore;
+        public int livesAwarded = 0;
+    }
+
+    /**
+     * Add points to a player's score and calculate extra lives for crossing 100-point thresholds.
+     *
+     * @param playerIndex Index of the player (0-3)
+     * @param points Points to add
+     * @param playerScores Array of player total scores
+     * @param playerLevelScores Array of player level scores
+     * @param playerTanks List of player tanks (for awarding lives)
+     * @return ScoreResult with old/new score and lives awarded
+     */
+    public static ScoreResult addScore(int playerIndex, int points, int[] playerScores,
+                                        int[] playerLevelScores, List<Tank> playerTanks) {
+        ScoreResult result = new ScoreResult();
+        if (playerIndex < 0 || playerIndex >= 4) return result;
+
+        result.oldScore = playerScores[playerIndex];
+        result.newScore = result.oldScore + points;
+        playerScores[playerIndex] = result.newScore;
+        playerLevelScores[playerIndex] += points;
+
+        System.out.println("SCORE: Player " + (playerIndex + 1) + " score: " + result.oldScore +
+                          " -> " + result.newScore + " (+" + points + ")");
+
+        // Check if crossed a 100-point threshold (e.g., 0->100, 95->105, 199->201)
+        int oldHundreds = result.oldScore / 100;
+        int newHundreds = result.newScore / 100;
+
+        if (newHundreds > oldHundreds && playerIndex < playerTanks.size()) {
+            Tank player = playerTanks.get(playerIndex);
+            result.livesAwarded = newHundreds - oldHundreds;
+            for (int i = 0; i < result.livesAwarded; i++) {
+                player.addLife();
+            }
+            System.out.println("Player " + (playerIndex + 1) + " earned " + result.livesAwarded +
+                              " extra life(s) for reaching " + (newHundreds * 100) + " points!");
+        }
+
+        return result;
+    }
+
+    /**
      * Result of tank overlap resolution.
      */
     public static class TankOverlapResult {

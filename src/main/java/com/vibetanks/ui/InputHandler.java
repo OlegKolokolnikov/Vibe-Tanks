@@ -59,6 +59,14 @@ public class InputHandler {
         // Request focus so key events work
         pane.setFocusTraversable(true);
         pane.requestFocus();
+
+        // Clear any lingering keys when focus is gained
+        pane.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (isFocused) {
+                pressedKeys.clear();
+                directionKeyOrder.clear();
+            }
+        });
     }
 
     public void handleInput(GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base) {

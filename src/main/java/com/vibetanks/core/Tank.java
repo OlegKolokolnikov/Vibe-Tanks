@@ -51,16 +51,9 @@ public class Tank {
     private int laserDuration; // LASER power-up duration (30 seconds = 1800 frames at 60 FPS)
     private static final int LASER_COOLDOWN = 10; // Very fast shooting (6 shots per second)
 
-    // AI variables
-    private int aiMoveCooldown;
-    private int aiShootCooldown;
-    private double lastX, lastY; // Track position to detect stuck
-    private int stuckCounter; // Count frames stuck
-
-    // Ice sliding variables
-    private boolean isSliding;
-    private Direction slidingDirection;
-    private double slideDistance;
+    // Extracted components for better separation of concerns
+    private final TankPhysics physics;
+    private TankAI ai; // Only initialized for enemy tanks
 
     // Respawn delay (1 second = 60 frames at 60 FPS)
     private int respawnTimer = 0;
@@ -70,7 +63,6 @@ public class Tank {
     // Track animation
     private int trackAnimationFrame;
     private boolean isMoving;
-    private static final double SLIDE_DISTANCE = 32.0; // One tile
 
     public Tank(double x, double y, Direction direction, boolean isPlayer, int playerNumber) {
         this(x, y, direction, isPlayer, playerNumber, EnemyType.REGULAR);
@@ -86,6 +78,14 @@ public class Tank {
         this.alive = true;
         this.lives = isPlayer ? 3 : 1;
         this.speedMultiplier = 1.0; // Default speed for all tanks
+
+        // Initialize physics component
+        this.physics = new TankPhysics();
+
+        // Initialize AI for enemy tanks only
+        if (!isPlayer) {
+            this.ai = new TankAI(x, y);
+        }
 
         // Set health and speed based on enemy type
         if (!isPlayer) {
@@ -133,13 +133,6 @@ public class Tank {
         }
         this.machinegunCount = 0;
         this.shootCooldownReduction = 0;
-        this.aiMoveCooldown = 60;
-        this.aiShootCooldown = 90;
-        this.lastX = x;
-        this.lastY = y;
-        this.stuckCounter = 0;
-        this.isSliding = false;
-        this.slideDistance = 0;
     }
 
     public void update(GameMap map, List<Bullet> bullets, SoundManager soundManager, List<Tank> allTanks, Base base) {
@@ -155,276 +148,27 @@ public class Tank {
             laserDuration--;
         }
 
-        // Handle ice sliding
-        if (isSliding && slideDistance > 0) {
-            double globalSpeedMult = isPlayer ? GameSettings.getEffectivePlayerSpeed() : GameSettings.getEffectiveEnemySpeed();
-            double slideSpeed = SPEED * (speedMultiplier + tempSpeedBoost) * globalSpeedMult * 2.0; // Same speed as moving on ice
-            double slideStep = Math.min(slideSpeed, slideDistance);
-
-            double newX = x + slidingDirection.getDx() * slideStep;
-            double newY = y + slidingDirection.getDy() * slideStep;
-
-            // Check boundaries and handle wraparound during sliding
-            int mapWidth = map.getWidth() * 32;
-            int mapHeight = map.getHeight() * 32;
-            boolean canSlide = true;
-
-            // Left edge wraparound
-            if (newX < 0) {
-                int row = (int)((y + size/2) / 32);
-                if (map.getTile(row, 0) == GameMap.TileType.EMPTY) {
-                    newX = mapWidth - size;
-                } else {
-                    canSlide = false;
-                }
-            }
-
-            // Right edge wraparound
-            if (newX + size > mapWidth) {
-                int row = (int)((y + size/2) / 32);
-                if (map.getTile(row, map.getWidth() - 1) == GameMap.TileType.EMPTY) {
-                    newX = 0;
-                } else {
-                    canSlide = false;
-                }
-            }
-
-            // Top edge wraparound
-            if (newY < 0) {
-                int col = (int)((x + size/2) / 32);
-                if (map.getTile(0, col) == GameMap.TileType.EMPTY) {
-                    newY = mapHeight - size;
-                } else {
-                    canSlide = false;
-                }
-            }
-
-            // Bottom edge wraparound
-            if (newY + size > mapHeight) {
-                int col = (int)((x + size/2) / 32);
-                if (map.getTile(map.getHeight() - 1, col) == GameMap.TileType.EMPTY) {
-                    newY = 0;
-                } else {
-                    canSlide = false;
-                }
-            }
-
-            // Check collision with other tanks
-            if (canSlide) {
-                for (Tank other : allTanks) {
-                    if (other != this && other.isAlive()) {
-                        if (checkCollision(newX, newY, other.x, other.y, size, other.size)) {
-                            canSlide = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Check collision with base
-            if (canSlide && base.isAlive()) {
-                if (checkCollision(newX, newY, base.getX(), base.getY(), size, 32)) {
-                    canSlide = false;
-                }
-            }
-
-            // Check collision with map tiles
-            if (canSlide && map.checkTankCollision(newX, newY, size, canSwim)) {
-                canSlide = false;
-            }
-
-            if (canSlide) {
-                x = newX;
-                y = newY;
-                slideDistance -= slideStep;
-            } else {
-                // Stop sliding if hit obstacle
-                isSliding = false;
-                slideDistance = 0;
-            }
-
-            if (slideDistance <= 0) {
-                isSliding = false;
-            }
-        }
+        // Handle ice sliding via physics component
+        physics.updateSliding(this, map, allTanks, base);
     }
 
     public void move(Direction newDirection, GameMap map, List<Tank> otherTanks, Base base) {
         if (!alive) return;
 
         this.direction = newDirection;
-        double speed = SPEED * (speedMultiplier + tempSpeedBoost);
-
-        // Apply global speed settings (use effective settings which respect host's settings in multiplayer)
-        if (isPlayer) {
-            speed *= GameSettings.getEffectivePlayerSpeed();
-        } else {
-            speed *= GameSettings.getEffectiveEnemySpeed();
+        boolean moved = physics.move(this, direction, map, otherTanks, base);
+        if (moved) {
+            isMoving = true;
+            trackAnimationFrame++;
         }
-
-        // Apply 2x speed when on ice
-        if (isOnIce(map)) {
-            speed *= 2.0;
-        }
-
-        double newX = x + direction.getDx() * speed;
-        double newY = y + direction.getDy() * speed;
-
-        // Check map boundaries and handle wraparound through destroyed borders
-        int mapWidth = map.getWidth() * 32;
-        int mapHeight = map.getHeight() * 32;
-
-        // Left edge wraparound
-        if (newX < 0) {
-            // Check if left border column (col 0) is destroyed at tank's row
-            int row = (int)((y + size/2) / 32);
-            if (map.getTile(row, 0) == GameMap.TileType.EMPTY) {
-                newX = mapWidth - size; // Wrap to right edge
-            } else {
-                return; // Can't move through intact border
-            }
-        }
-
-        // Right edge wraparound
-        if (newX + size > mapWidth) {
-            // Check if right border column (col 25) is destroyed at tank's row
-            int row = (int)((y + size/2) / 32);
-            if (map.getTile(row, map.getWidth() - 1) == GameMap.TileType.EMPTY) {
-                newX = 0; // Wrap to left edge
-            } else {
-                return; // Can't move through intact border
-            }
-        }
-
-        // Top edge wraparound
-        if (newY < 0) {
-            // Check if top border row (row 0) is destroyed at tank's column
-            int col = (int)((x + size/2) / 32);
-            if (map.getTile(0, col) == GameMap.TileType.EMPTY) {
-                newY = mapHeight - size; // Wrap to bottom edge
-            } else {
-                return; // Can't move through intact border
-            }
-        }
-
-        // Bottom edge wraparound
-        if (newY + size > mapHeight) {
-            // Check if bottom border row (row 25) is destroyed at tank's column
-            int col = (int)((x + size/2) / 32);
-            if (map.getTile(map.getHeight() - 1, col) == GameMap.TileType.EMPTY) {
-                newY = 0; // Wrap to top edge
-            } else {
-                return; // Can't move through intact border
-            }
-        }
-
-        // Check collision with other tanks
-        for (Tank other : otherTanks) {
-            if (other != this && other.isAlive()) {
-                if (checkCollision(newX, newY, other.x, other.y, size, other.size)) {
-                    // BOSS instantly kills any tank it touches (ignores shields)
-                    if (enemyType == EnemyType.BOSS) {
-                        other.instantKill();
-                        // Continue moving - BOSS doesn't stop for tanks
-                    } else {
-                        return; // Can't move through other tanks
-                    }
-                }
-            }
-        }
-
-        // Check collision with base (only if base is still alive)
-        if (base.isAlive()) {
-            if (checkCollision(newX, newY, base.getX(), base.getY(), size, 32)) {
-                // BOSS destroys the base on contact
-                if (enemyType == EnemyType.BOSS) {
-                    base.destroy();
-                    // Continue moving
-                } else {
-                    return; // Can't move through base
-                }
-            }
-        }
-
-        // BOSS tank destroys brick/trees but is blocked by steel
-        if (enemyType == EnemyType.BOSS) {
-            // Check if steel is in the way
-            if (!hasBlockingSteel(map, newX, newY)) {
-                destroyTilesInPath(map, newX, newY);
-                x = newX;
-                y = newY;
-                isMoving = true;
-                trackAnimationFrame++;
-            }
-        } else {
-            // Check collision with map tiles (pass canSwim for SHIP power-up)
-            if (!map.checkTankCollision(newX, newY, size, canSwim)) {
-                x = newX;
-                y = newY;
-                // Animate tracks when moving
-                isMoving = true;
-                trackAnimationFrame++;
-            }
-        }
-    }
-
-    // Check if steel blocks the path for BOSS tank
-    private boolean hasBlockingSteel(GameMap map, double newX, double newY) {
-        int startCol = (int) newX / 32;
-        int endCol = (int) (newX + size - 1) / 32;
-        int startRow = (int) newY / 32;
-        int endRow = (int) (newY + size - 1) / 32;
-
-        for (int row = startRow; row <= endRow; row++) {
-            for (int col = startCol; col <= endCol; col++) {
-                if (map.getTile(row, col) == GameMap.TileType.STEEL) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    // BOSS tank destroys brick and trees it touches (not steel)
-    private void destroyTilesInPath(GameMap map, double newX, double newY) {
-        int startCol = (int) newX / 32;
-        int endCol = (int) (newX + size - 1) / 32;
-        int startRow = (int) newY / 32;
-        int endRow = (int) (newY + size - 1) / 32;
-
-        for (int row = startRow; row <= endRow; row++) {
-            for (int col = startCol; col <= endCol; col++) {
-                GameMap.TileType tile = map.getTile(row, col);
-                // Destroy brick and trees (not steel)
-                if (tile == GameMap.TileType.BRICK ||
-                    tile == GameMap.TileType.TREES) {
-                    map.setTile(row, col, GameMap.TileType.EMPTY);
-                }
-            }
-        }
-    }
-
-    private boolean checkCollision(double x1, double y1, double x2, double y2, int size1, int size2) {
-        return x1 < x2 + size2 &&
-               x1 + size1 > x2 &&
-               y1 < y2 + size2 &&
-               y1 + size1 > y2;
-    }
-
-    private boolean isOnIce(GameMap map) {
-        // Check if center of tank is on ice
-        int centerX = (int) ((x + size / 2) / 32);
-        int centerY = (int) ((y + size / 2) / 32);
-        return map.getTile(centerY, centerX) == GameMap.TileType.ICE;
     }
 
     public void startSliding(Direction direction, GameMap map) {
-        // Start sliding only if on ice
-        if (isOnIce(map)) {
-            isSliding = true;
-            slidingDirection = direction;
-            slideDistance = SLIDE_DISTANCE;
-        }
+        physics.startSliding(direction, map, x, y, size);
+    }
+
+    public boolean isOnIce(GameMap map) {
+        return physics.isOnIce(map, x, y, size);
     }
 
     public void shoot(List<Bullet> bullets, SoundManager soundManager) {
@@ -512,69 +256,19 @@ public class Tank {
     }
 
     public void updateAI(GameMap map, List<Bullet> bullets, List<Tank> allTanks, Base base, SoundManager soundManager) {
-        if (!alive) return;
+        if (!alive || ai == null) return;
 
+        // Update cooldowns and sliding first
         update(map, bullets, soundManager, allTanks, base);
 
-        // Detect if stuck (position hasn't changed)
-        if (Math.abs(x - lastX) < 0.1 && Math.abs(y - lastY) < 0.1) {
-            stuckCounter++;
-            if (stuckCounter > 3) { // Stuck for 3 frames - change direction immediately
-                // Try different directions until one works
-                Direction[] directions = Direction.values();
-                Direction originalDirection = direction;
-                for (int i = 0; i < 4; i++) {
-                    direction = directions[GameConstants.RANDOM.nextInt(4)];
-                    if (direction != originalDirection) {
-                        break;
-                    }
-                }
-                stuckCounter = 0;
-                aiMoveCooldown = 60 + GameConstants.RANDOM.nextInt(120); // Commit to new direction longer
-            }
-        } else {
-            stuckCounter = 0;
-        }
-        lastX = x;
-        lastY = y;
-
-        // Decrease AI cooldowns
-        aiMoveCooldown--;
-        aiShootCooldown--;
-
-        // Randomly shoot
-        if (aiShootCooldown <= 0) {
-            shoot(bullets, soundManager);
-            aiShootCooldown = 60 + GameConstants.RANDOM.nextInt(60);
-        }
-
-        // Change direction occasionally
-        if (aiMoveCooldown <= 0) {
-            // 70% move towards base, 30% random
-            if (GameConstants.RANDOM.nextDouble() < 0.7) {
-                moveTowardsBase(base);
-            } else {
-                direction = Direction.values()[GameConstants.RANDOM.nextInt(4)];
-            }
-            aiMoveCooldown = 30 + GameConstants.RANDOM.nextInt(90);
-        }
-
-        // Move in current direction
-        move(direction, map, allTanks, base);
+        // Delegate AI behavior to TankAI component
+        ai.update(this, physics, map, bullets, allTanks, base, soundManager);
     }
 
-    private void moveTowardsBase(Base base) {
-        double baseX = base.getX();
-        double baseY = base.getY();
-
-        double dx = baseX - x;
-        double dy = baseY - y;
-
-        if (Math.abs(dx) > Math.abs(dy)) {
-            direction = dx > 0 ? Direction.RIGHT : Direction.LEFT;
-        } else {
-            direction = dy > 0 ? Direction.DOWN : Direction.UP;
-        }
+    // Helper method for TankAI to increment track animation
+    public void incrementTrackAnimation() {
+        isMoving = true;
+        trackAnimationFrame++;
     }
 
     public boolean damage() {

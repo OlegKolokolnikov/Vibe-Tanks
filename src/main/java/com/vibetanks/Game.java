@@ -10,6 +10,7 @@ import com.vibetanks.rendering.GameRenderer;
 import com.vibetanks.rendering.IconRenderer;
 import com.vibetanks.rendering.StatsRenderer;
 import com.vibetanks.network.GameState;
+import com.vibetanks.network.GameStateApplier;
 import com.vibetanks.network.GameStateBuilder;
 import com.vibetanks.network.NetworkManager;
 import com.vibetanks.network.PlayerData;
@@ -28,7 +29,7 @@ import javafx.stage.Stage;
 
 import java.util.*;
 
-public class Game {
+public class Game implements GameStateApplier.GameContext {
     private final Pane root;
     private final Canvas canvas;
     private final GraphicsContext gc;
@@ -1794,364 +1795,62 @@ public class Game {
     }
 
     private void applyGameState(GameState state) {
-        // Apply host's game settings (client uses host's settings in multiplayer)
-        // Debug: Log if settings differ from expected 1.0
-        if (state.hostPlayerSpeed != 1.0 || state.hostEnemySpeed != 1.0) {
-            System.out.println("[DEBUG] Received host settings: playerSpeed=" + state.hostPlayerSpeed +
-                ", enemySpeed=" + state.hostEnemySpeed);
-        }
-        GameSettings.setHostSettings(
-            state.hostPlayerSpeed,
-            state.hostEnemySpeed,
-            state.hostPlayerShootSpeed,
-            state.hostEnemyShootSpeed
-        );
-
-        // Track connected players from server
-        networkConnectedPlayers = state.connectedPlayers;
-
-        // Dynamically add tanks if more players connected
-        while (playerTanks.size() < state.connectedPlayers && playerTanks.size() < 4) {
-            int playerNum = playerTanks.size() + 1;
-            double x, y;
-            switch (playerNum) {
-                case 2 -> { x = 16 * 32; y = 24 * 32; }
-                case 3 -> { x = 9 * 32; y = 24 * 32; }
-                case 4 -> { x = 15 * 32; y = 24 * 32; }
-                default -> { x = 8 * 32; y = 24 * 32; }
-            }
-            System.out.println("Adding Player " + playerNum + " tank (new player connected)");
-            playerTanks.add(new Tank(x, y, Direction.UP, true, playerNum));
-
-            // Update playerStartPositions array for respawn
-            double[][] newStartPositions = new double[playerTanks.size()][2];
-            for (int j = 0; j < playerStartPositions.length; j++) {
-                newStartPositions[j] = playerStartPositions[j];
-            }
-            newStartPositions[playerNum - 1] = new double[]{x, y};
-            playerStartPositions = newStartPositions;
-        }
-
-        // Get local player index - skip position updates for local player (they control their own position)
-        int myPlayerIndex = network != null ? network.getPlayerNumber() - 1 : -1;
-
-        // Update all players using centralized PlayerData
-        for (int i = 0; i < playerTanks.size() && i < 4; i++) {
-            Tank tank = playerTanks.get(i);
-            PlayerData pData = state.players[i];
-
-            // Skip position update for local player (client-authoritative movement)
-            // EXCEPT when:
-            // 1. First state received - need to sync initial position from host
-            // 2. Respawning (was dead, now alive) - accept respawn position from host
-            boolean isLocalPlayer = (i == myPlayerIndex);
-            boolean isFirstSync = isLocalPlayer && !firstStateReceived;
-            boolean justRespawned = isLocalPlayer && !tank.isAlive() && pData.alive;
-            boolean justDied = tank.isAlive() && !pData.alive;
-            boolean skipPosition = isLocalPlayer && !isFirstSync && !justRespawned;
-
-            if (isFirstSync) {
-                System.out.println("Client first sync - accepting host position: " + pData.x + ", " + pData.y);
-                respawnSyncFrames = 5; // Wait a few frames before sending position
-            } else if (justRespawned) {
-                System.out.println("Client respawning at host position: " + pData.x + ", " + pData.y);
-                respawnSyncFrames = 5; // Wait a few frames before sending position
-            }
-
-            // Play player death sound when a player dies
-            if (justDied && firstStateReceived) {
-                soundManager.playPlayerDeath();
-            }
-
-            pData.applyToTank(tank, skipPosition);
-
-            // Update kills, scores, and nicknames
-            playerKills[i] = pData.kills;
-            int oldScore = playerScores[i];
-            playerScores[i] = pData.score;
-            playerLevelScores[i] = pData.levelScore;
-            if (pData.score != oldScore) {
-                System.out.println("APPLY_STATE: Player " + (i + 1) + " score updated: " + oldScore + " -> " + pData.score);
-            }
-            // Update kills by type
-            if (pData.killsByType != null) {
-                System.arraycopy(pData.killsByType, 0, playerKillsByType[i], 0, Math.min(6, pData.killsByType.length));
-            }
-            // Don't overwrite local player's nickname
-            if (i != myPlayerIndex && pData.nickname != null) {
-                playerNicknames[i] = pData.nickname;
-            }
-        }
-
-        // Update enemy tanks - reuse existing tanks to preserve animation state
-        // First, resize the list to match state
-        while (enemyTanks.size() > state.enemies.size()) {
-            enemyTanks.remove(enemyTanks.size() - 1);
-        }
-        while (enemyTanks.size() < state.enemies.size()) {
-            enemyTanks.add(new Tank(0, 0, Direction.UP, false, 0, Tank.EnemyType.REGULAR));
-        }
-        // Update each enemy tank's state
-        for (int i = 0; i < state.enemies.size(); i++) {
-            GameState.EnemyData eData = state.enemies.get(i);
-            Tank enemy = enemyTanks.get(i);
-            enemy.setAlive(eData.alive);
-            enemy.setEnemyType(Tank.EnemyType.values()[eData.enemyType]);
-            enemy.setHealth(eData.health);
-            enemy.setMaxHealth(eData.maxHealth);
-            enemy.applyTempSpeedBoost(eData.tempSpeedBoost);
-            enemy.setSpeedMultiplier(eData.speedMultiplier);
-            if (eData.alive) {
-                enemy.setPosition(eData.x, eData.y);
-                enemy.setDirection(Direction.values()[eData.direction]);
-            }
-        }
-
-        // Update bullets (recreate from state) and detect new bullets for sound
-        Set<Long> currentBulletIds = new HashSet<>();
-        bullets.clear();
-        int localPlayerNum = network != null ? network.getPlayerNumber() : 1;
-        for (GameState.BulletData bData : state.bullets) {
-            currentBulletIds.add(bData.id);
-            // Play shoot sound for bullets we haven't seen before
-            // Skip on first state to avoid sound burst when joining mid-game
-            // Skip for local player's bullets - they already played sound when shooting locally
-            if (firstStateReceived && !seenBulletIds.contains(bData.id) && bData.ownerPlayerNumber != localPlayerNum) {
-                soundManager.playShoot();
-            }
-            Bullet bullet = new Bullet(
-                bData.id,
-                bData.x, bData.y,
-                Direction.values()[bData.direction],
-                bData.fromEnemy,
-                bData.power,
-                bData.canDestroyTrees,
-                bData.ownerPlayerNumber,
-                bData.size
-            );
-            bullets.add(bullet);
-        }
-        // Update seen bullets - keep only current bullets to prevent memory leak
-        seenBulletIds = currentBulletIds;
-
-        // Update lasers (recreate from state)
-        Set<Long> currentLaserIds = new HashSet<>();
-        lasers.clear();
-        if (state.lasers != null) {
-            for (GameState.LaserData lData : state.lasers) {
-                currentLaserIds.add(lData.id);
-                // Play laser sound for lasers we haven't seen before
-                // Skip on first state to avoid sound burst when joining mid-game
-                // Skip for local player's lasers - they already played sound when shooting locally
-                if (firstStateReceived && !seenLaserIds.contains(lData.id) && lData.ownerPlayerNumber != localPlayerNum) {
-                    soundManager.playLaser();
-                }
-                Laser laser = new Laser(
-                    lData.startX, lData.startY,
-                    Direction.values()[lData.direction],
-                    lData.fromEnemy,
-                    lData.ownerPlayerNumber
-                );
-                laser.setId(lData.id);
-                lasers.add(laser);
-            }
-        }
-        // Update seen lasers - keep only current lasers to prevent memory leak
-        seenLaserIds = currentLaserIds;
-
-        // Mark first state as received
-        if (!firstStateReceived) {
-            firstStateReceived = true;
-        }
-
-        // Update power-ups (recreate from state)
-        powerUps.clear();
-        for (GameState.PowerUpData pData : state.powerUps) {
-            PowerUp powerUp = new PowerUp(
-                pData.x, pData.y,
-                PowerUp.Type.values()[pData.type]
-            );
-            powerUps.add(powerUp);
-        }
-
-        // Sync full map state from host
-        if (state.mapTiles != null) {
-            gameMap.importTiles(state.mapTiles);
-        }
-
-        // Sync burning tiles for fire animation
-        if (state.burningTiles != null) {
-            Set<Integer> currentBurningKeys = new HashSet<>();
-            List<int[]> burningData = new ArrayList<>();
-            for (GameState.BurningTileData bt : state.burningTiles) {
-                int key = bt.row * 1000 + bt.col;
-                currentBurningKeys.add(key);
-                // Play tree burn sound for new burning tiles
-                if (firstStateReceived && !seenBurningTileKeys.contains(key)) {
-                    soundManager.playTreeBurn();
-                }
-                burningData.add(new int[]{bt.row, bt.col, bt.framesRemaining});
-            }
-            seenBurningTileKeys = currentBurningKeys;
-            gameMap.setBurningTiles(burningData);
-        }
-
-        // Sync dancing characters for game over animation (via CelebrationManager)
-        // For network clients: initialize dancing locally when server signals game over with base destroyed
-        if (state.gameOver && !state.baseAlive && !celebrationManager.isDancingInitialized()) {
-            celebrationManager.initializeDancingCharacters(base, enemyTanks);
-        }
-        // If server restarted, reset dancing state
-        if (!state.gameOver) {
-            celebrationManager.setDancingInitialized(false);
-            celebrationManager.getDancingCharacters().clear();
-        }
-
-        // Sync victory dancing girls (via CelebrationManager)
-        // For network clients: initialize victory celebration locally when server signals victory
-        if (state.victory && !celebrationManager.isVictoryDancingInitialized()) {
-            soundManager.stopGameplaySounds();
-            celebrationManager.initializeVictoryCelebration(base, playerTanks.size());
-        }
-        // If server restarted or went to next level, reset victory state
-        if (!state.victory) {
-            celebrationManager.setVictoryDancingInitialized(false);
-            celebrationManager.getVictoryDancingGirls().clear();
-        }
-
-        // Sync UFO and easter egg from host via UFOManager
-        UFO syncedUfo = null;
-        if (state.ufoData != null && state.ufoData.alive) {
-            syncedUfo = ufoManager.getUFO();
-            if (syncedUfo == null) {
-                syncedUfo = new UFO(state.ufoData.x, state.ufoData.y, state.ufoData.movingRight);
-            }
-            syncedUfo.setX(state.ufoData.x);
-            syncedUfo.setY(state.ufoData.y);
-            syncedUfo.setDx(state.ufoData.dx);
-            syncedUfo.setDy(state.ufoData.dy);
-            syncedUfo.setHealth(state.ufoData.health);
-            syncedUfo.setLifetime(state.ufoData.lifetime);
-            syncedUfo.setAlive(state.ufoData.alive);
-        }
-        EasterEgg syncedEgg = null;
-        if (state.easterEggData != null) {
-            syncedEgg = ufoManager.getEasterEgg();
-            if (syncedEgg == null) {
-                syncedEgg = new EasterEgg(state.easterEggData.x, state.easterEggData.y);
-            }
-            syncedEgg.setPosition(state.easterEggData.x, state.easterEggData.y);
-            syncedEgg.setLifetime(state.easterEggData.lifetime);
-        }
-        ufoManager.applyNetworkState(syncedUfo, syncedEgg,
-            state.ufoLostMessageTimer, state.ufoKilledMessageTimer);
-
-        // Check if level changed (host went to next level)
-        boolean levelChanged = state.levelNumber != gameMap.getLevelNumber();
-        // Check if game was restarted (gameOver went from true to false)
-        boolean gameRestarted = gameOver && !state.gameOver && !state.victory;
-        // Check if next level started (victory went from true to false)
-        boolean nextLevelStarted = victory && !state.victory && !state.gameOver;
-
-        if (levelChanged || gameRestarted || nextLevelStarted) {
-            if (levelChanged) {
-                System.out.println("Level changed from " + gameMap.getLevelNumber() + " to " + state.levelNumber);
-            }
-            if (gameRestarted) {
-                System.out.println("Game restarted by host - resetting client state");
-            }
-            if (nextLevelStarted) {
-                System.out.println("Next level started by host - resetting client state");
-            }
-            // Reset client state for new level or restart
-            if (state.levelNumber == 1 && gameMap.getLevelNumber() > 1) {
-                // Game was restarted to level 1 - reset scores
-                for (int i = 0; i < playerScores.length; i++) {
-                    playerScores[i] = 0;
-                }
-            }
-            // Reset kills and level scores for new level/restart
-            for (int i = 0; i < playerKills.length; i++) {
-                playerKills[i] = 0;
-                playerLevelScores[i] = 0;
-                for (int j = 0; j < 6; j++) {
-                    playerKillsByType[i][j] = 0;
-                }
-            }
-            // Clear visual state via CelebrationManager
-            celebrationManager.reset();
-            gameOverSoundPlayed = false;
-            // Hide end game images
-            if (victoryImageView != null) victoryImageView.setVisible(false);
-            if (gameOverImageView != null) gameOverImageView.setVisible(false);
-            // Reset local player tank position to FIXED start position
-            int localPlayerIdx = network != null ? network.getPlayerNumber() - 1 : -1;
-            if (localPlayerIdx >= 0 && localPlayerIdx < playerTanks.size()) {
-                Tank myTank = playerTanks.get(localPlayerIdx);
-                myTank.setPosition(FIXED_START_POSITIONS[localPlayerIdx][0], FIXED_START_POSITIONS[localPlayerIdx][1]);
-                myTank.setDirection(Direction.UP);
-                myTank.giveTemporaryShield();
-            }
-            // Clear bullets, lasers, and power-ups for clean state
-            bullets.clear();
-            lasers.clear();
-            powerUps.clear();
-            // Clear enemy tanks - will be recreated from state
-            enemyTanks.clear();
-            // Reset spawner with proper enemy count
-            enemySpawner = new EnemySpawner(totalEnemies, 5, gameMap);
-            // Reset UFO state via UFOManager
-            ufoManager.reset();
-            // Play intro sound
-            soundManager.playIntro();
-        }
-
-        // Update game state
-        gameOver = state.gameOver;
-        victory = state.victory;
-
-        // Sync boss kill info for victory screen
-        bossKillerPlayerIndex = state.bossKillerPlayerIndex;
-        bossKillPowerUpReward = state.bossKillPowerUpReward >= 0 ? PowerUp.Type.values()[state.bossKillPowerUpReward] : null;
-
-        // Update freeze state (via PowerUpEffectManager)
-        powerUpEffectManager.setEnemyFreezeDuration(state.enemyFreezeDuration);
-        powerUpEffectManager.setPlayerFreezeDuration(state.playerFreezeDuration);
-        powerUpEffectManager.setEnemyTeamSpeedBoostDuration(state.enemyTeamSpeedBoostDuration);
-
-        // Update remaining enemies count
-        enemySpawner.setRemainingEnemies(state.remainingEnemies);
-
-        // Update base - recreate if level changed, game restarted, next level, or if state differs
-        if (levelChanged || gameRestarted || nextLevelStarted || (state.baseAlive && !base.isAlive())) {
-            base = new Base(12 * 32, 24 * 32);
-        } else if (!state.baseAlive && base.isAlive()) {
-            base.destroy();
-            soundManager.playBaseDestroyed();
-        }
-
-        // Update level number after base check
-        while (gameMap.getLevelNumber() < state.levelNumber) {
-            gameMap.nextLevel();
-        }
-        if (gameMap.getLevelNumber() > state.levelNumber) {
-            gameMap.resetToLevel1();
-        }
-
-        // Sync flag state (skull flag for game over)
-        base.setFlagState(state.baseShowFlag, state.baseFlagHeight);
-        // Sync victory flag state
-        base.setVictoryFlagState(state.baseShowVictoryFlag, state.baseVictoryFlagHeight);
-        // Sync easter egg mode
-        base.setEasterEggMode(state.baseEasterEggMode);
-
-        // Play explosion sound when enemy dies
-        int currentEnemyCount = enemyTanks.size();
-        if (currentEnemyCount < prevEnemyCount) {
-            soundManager.playExplosion();
-        }
-        prevEnemyCount = currentEnemyCount;
+        GameStateApplier.apply(state, this);
     }
+
+    // ============ GameStateApplier.GameContext IMPLEMENTATION ============
+
+    @Override public List<Tank> getPlayerTanks() { return playerTanks; }
+    @Override public List<Tank> getEnemyTanks() { return enemyTanks; }
+    @Override public List<Bullet> getBullets() { return bullets; }
+    @Override public List<Laser> getLasers() { return lasers; }
+    @Override public List<PowerUp> getPowerUps() { return powerUps; }
+    @Override public GameMap getGameMap() { return gameMap; }
+    @Override public Base getBase() { return base; }
+    @Override public EnemySpawner getEnemySpawner() { return enemySpawner; }
+    @Override public CelebrationManager getCelebrationManager() { return celebrationManager; }
+    @Override public UFOManager getUFOManager() { return ufoManager; }
+    @Override public PowerUpEffectManager getPowerUpEffectManager() { return powerUpEffectManager; }
+    @Override public SoundManager getSoundManager() { return soundManager; }
+    @Override public NetworkManager getNetwork() { return network; }
+
+    @Override public int[] getPlayerKills() { return playerKills; }
+    @Override public int[] getPlayerScores() { return playerScores; }
+    @Override public int[] getPlayerLevelScores() { return playerLevelScores; }
+    @Override public int[][] getPlayerKillsByType() { return playerKillsByType; }
+    @Override public String[] getPlayerNicknames() { return playerNicknames; }
+    @Override public double[][] getPlayerStartPositions() { return playerStartPositions; }
+
+    @Override public boolean isFirstStateReceived() { return firstStateReceived; }
+    @Override public void setFirstStateReceived(boolean value) { firstStateReceived = value; }
+    @Override public Set<Long> getSeenBulletIds() { return seenBulletIds; }
+    @Override public void setSeenBulletIds(Set<Long> ids) { seenBulletIds = ids; }
+    @Override public Set<Long> getSeenLaserIds() { return seenLaserIds; }
+    @Override public void setSeenLaserIds(Set<Long> ids) { seenLaserIds = ids; }
+    @Override public Set<Integer> getSeenBurningTileKeys() { return seenBurningTileKeys; }
+    @Override public void setSeenBurningTileKeys(Set<Integer> keys) { seenBurningTileKeys = keys; }
+    @Override public int getPrevEnemyCount() { return prevEnemyCount; }
+    @Override public void setPrevEnemyCount(int count) { prevEnemyCount = count; }
+
+    @Override public boolean isGameOver() { return gameOver; }
+    @Override public void setGameOver(boolean value) { gameOver = value; }
+    @Override public boolean isVictory() { return victory; }
+    @Override public void setVictory(boolean value) { victory = value; }
+    @Override public void setNetworkConnectedPlayers(int count) { networkConnectedPlayers = count; }
+    @Override public void setRespawnSyncFrames(int frames) { respawnSyncFrames = frames; }
+    @Override public void setPlayerStartPositions(double[][] positions) { playerStartPositions = positions; }
+    @Override public void setBossKillerPlayerIndex(int index) { bossKillerPlayerIndex = index; }
+    @Override public void setBossKillPowerUpReward(PowerUp.Type type) { bossKillPowerUpReward = type; }
+
+    @Override public void setBase(Base newBase) { base = newBase; }
+    @Override public void setEnemySpawner(EnemySpawner spawner) { enemySpawner = spawner; }
+    @Override public int getTotalEnemies() { return totalEnemies; }
+
+    @Override public void hideVictoryImage() { if (victoryImageView != null) victoryImageView.setVisible(false); }
+    @Override public void hideGameOverImage() { if (gameOverImageView != null) gameOverImageView.setVisible(false); }
+    @Override public void setGameOverSoundPlayed(boolean value) { gameOverSoundPlayed = value; }
+
+    @Override public double[][] getFixedStartPositions() { return FIXED_START_POSITIONS; }
 
     private PlayerInput capturePlayerInput(Tank tank) {
         // Capture current keyboard state (arrow keys + space)

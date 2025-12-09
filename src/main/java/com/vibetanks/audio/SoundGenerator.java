@@ -1,5 +1,6 @@
 package com.vibetanks.audio;
 
+import com.vibetanks.util.GameLogger;
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -8,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 
 public class SoundGenerator {
+    private static final GameLogger LOG = GameLogger.getLogger(SoundGenerator.class);
 
     private static final float SAMPLE_RATE = 22050;
 
@@ -46,9 +48,9 @@ public class SoundGenerator {
             // Generate laser sound - sci-fi zap
             generateLaserSound("src/main/resources/sounds/laser.wav");
 
-            System.out.println("Sound files generated successfully!");
+            LOG.info("Sound files generated successfully!");
         } catch (Exception e) {
-            System.err.println("Error generating sounds: " + e.getMessage());
+            LOG.error("Error generating sounds: {}", e.getMessage());
         }
     }
 

@@ -1,6 +1,7 @@
 package com.vibetanks.core;
 
 import com.vibetanks.audio.SoundManager;
+import com.vibetanks.util.GameLogger;
 
 import java.util.Iterator;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.List;
  * Eliminates code duplication for collision detection, entity updates, and game rules.
  */
 public class GameLogic {
+    private static final GameLogger LOG = GameLogger.getLogger(GameLogic.class);
 
     /**
      * Result of processing bullets, containing information about what happened.
@@ -432,8 +434,7 @@ public class GameLogic {
         playerScores[playerIndex] = result.newScore;
         playerLevelScores[playerIndex] += points;
 
-        System.out.println("SCORE: Player " + (playerIndex + 1) + " score: " + result.oldScore +
-                          " -> " + result.newScore + " (+" + points + ")");
+        LOG.debug("SCORE: Player {} score: {} -> {} (+{})", playerIndex + 1, result.oldScore, result.newScore, points);
 
         // Check if crossed a 100-point threshold (e.g., 0->100, 95->105, 199->201)
         int oldHundreds = result.oldScore / 100;
@@ -445,8 +446,8 @@ public class GameLogic {
             for (int i = 0; i < result.livesAwarded; i++) {
                 player.addLife();
             }
-            System.out.println("Player " + (playerIndex + 1) + " earned " + result.livesAwarded +
-                              " extra life(s) for reaching " + (newHundreds * 100) + " points!");
+            LOG.info("Player {} earned {} extra lives for reaching {} points",
+                playerIndex + 1, result.livesAwarded, newHundreds * 100);
         }
 
         return result;

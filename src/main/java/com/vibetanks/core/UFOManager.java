@@ -1,6 +1,7 @@
 package com.vibetanks.core;
 
 import com.vibetanks.audio.SoundManager;
+import com.vibetanks.util.GameLogger;
 
 import java.util.List;
 
@@ -9,6 +10,7 @@ import java.util.List;
  * Extracted from Game.java to reduce complexity.
  */
 public class UFOManager {
+    private static final GameLogger LOG = GameLogger.getLogger(UFOManager.class);
     private static final int UFO_MESSAGE_DURATION = GameConstants.UFO_MESSAGE_DURATION;
 
     private UFO ufo;
@@ -65,8 +67,7 @@ public class UFOManager {
             Tank player = playerTanks.get(i);
             if (player.getMachinegunCount() > 0 && playerMachinegunKills[i] >= 5) {
                 shouldSpawn = true;
-                System.out.println("UFO spawn triggered! Player " + (i + 1) + " killed " +
-                    playerMachinegunKills[i] + " enemies with machinegun!");
+                LOG.info("UFO spawn triggered! Player {} killed {} enemies with machinegun!", i + 1, playerMachinegunKills[i]);
                 break;
             }
         }
@@ -74,7 +75,7 @@ public class UFOManager {
         // Also random spawn chance per frame
         if (!shouldSpawn && GameConstants.RANDOM.nextDouble() < GameConstants.UFO_SPAWN_CHANCE) {
             shouldSpawn = true;
-            System.out.println("UFO spawned randomly!");
+            LOG.info("UFO spawned randomly!");
         }
 
         if (shouldSpawn) {
@@ -88,7 +89,7 @@ public class UFOManager {
         double startY = 100 + GameConstants.RANDOM.nextDouble() * 200;
         ufo = new UFO(startX, startY, !fromRight);
         ufoSpawnedThisLevel = true;
-        System.out.println("UFO spawned at " + startX + ", " + startY);
+        LOG.debug("UFO spawned at {}, {}", startX, startY);
     }
 
     /**
@@ -106,7 +107,7 @@ public class UFOManager {
                 // UFO escaped (wasn't killed by player)
                 if (!ufoWasKilled) {
                     ufoLostMessageTimer = UFO_MESSAGE_DURATION;
-                    System.out.println("UFO escaped! Lost it!");
+                    LOG.info("UFO escaped! Lost it!");
                     escaped = true;
                 }
                 ufo = null;
@@ -132,10 +133,10 @@ public class UFOManager {
      */
     public void handleUFODestroyed(int killerPlayerNumber, double eggSpawnX, double eggSpawnY) {
         easterEgg = new EasterEgg(eggSpawnX, eggSpawnY);
-        System.out.println("Easter egg spawned at " + eggSpawnX + ", " + eggSpawnY);
+        LOG.debug("Easter egg spawned at {}, {}", eggSpawnX, eggSpawnY);
         ufoWasKilled = true;
         ufoKilledMessageTimer = UFO_MESSAGE_DURATION;
-        System.out.println("Zed is dead! Killed by Player " + killerPlayerNumber);
+        LOG.info("Zed is dead! Killed by Player {}", killerPlayerNumber);
         ufo = null;
     }
 

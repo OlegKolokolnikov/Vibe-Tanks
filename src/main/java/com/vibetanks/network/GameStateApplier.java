@@ -3,6 +3,7 @@ package com.vibetanks.network;
 import com.vibetanks.animation.CelebrationManager;
 import com.vibetanks.audio.SoundManager;
 import com.vibetanks.core.*;
+import com.vibetanks.util.GameLogger;
 
 import java.util.*;
 
@@ -11,6 +12,7 @@ import java.util.*;
  * Extracted from Game.java to reduce complexity.
  */
 public class GameStateApplier {
+    private static final GameLogger LOG = GameLogger.getLogger(GameStateApplier.class);
 
     /**
      * Context interface for accessing and modifying game state.
@@ -181,8 +183,8 @@ public class GameStateApplier {
 
     private static void applyHostSettings(GameState state) {
         if (state.hostPlayerSpeed != 1.0 || state.hostEnemySpeed != 1.0) {
-            System.out.println("[DEBUG] Received host settings: playerSpeed=" + state.hostPlayerSpeed +
-                ", enemySpeed=" + state.hostEnemySpeed);
+            LOG.debug("[DEBUG] Received host settings: playerSpeed={}, enemySpeed={}",
+                state.hostPlayerSpeed, state.hostEnemySpeed);
         }
         GameSettings.setHostSettings(
             state.hostPlayerSpeed,
@@ -205,7 +207,7 @@ public class GameStateApplier {
                 case 4 -> { x = 15 * 32; y = 24 * 32; }
                 default -> { x = 8 * 32; y = 24 * 32; }
             }
-            System.out.println("Adding Player " + playerNum + " tank (new player connected)");
+            LOG.info("Adding Player {} tank (new player connected)", playerNum);
             playerTanks.add(new Tank(x, y, Direction.UP, true, playerNum));
 
             // Update playerStartPositions array for respawn
@@ -244,10 +246,10 @@ public class GameStateApplier {
             boolean skipPosition = isLocalPlayer && !isFirstSync && !justRespawned;
 
             if (isFirstSync) {
-                System.out.println("Client first sync - accepting host position: " + pData.x + ", " + pData.y);
+                LOG.info("Client first sync - accepting host position: {}, {}", pData.x, pData.y);
                 ctx.setRespawnSyncFrames(5);
             } else if (justRespawned) {
-                System.out.println("Client respawning at host position: " + pData.x + ", " + pData.y);
+                LOG.info("Client respawning at host position: {}, {}", pData.x, pData.y);
                 ctx.setRespawnSyncFrames(5);
             }
 
@@ -264,7 +266,7 @@ public class GameStateApplier {
             playerScores[i] = pData.score;
             playerLevelScores[i] = pData.levelScore;
             if (pData.score != oldScore) {
-                System.out.println("APPLY_STATE: Player " + (i + 1) + " score updated: " + oldScore + " -> " + pData.score);
+                LOG.debug("APPLY_STATE: Player {} score updated: {} -> {}", i + 1, oldScore, pData.score);
             }
             // Update kills by type
             if (pData.killsByType != null) {
@@ -489,13 +491,13 @@ public class GameStateApplier {
         int[][] playerKillsByType = ctx.getPlayerKillsByType();
 
         if (levelChanged) {
-            System.out.println("Level changed from " + gameMap.getLevelNumber() + " to " + state.levelNumber);
+            LOG.info("Level changed from {} to {}", gameMap.getLevelNumber(), state.levelNumber);
         }
         if (gameRestarted) {
-            System.out.println("Game restarted by host - resetting client state");
+            LOG.info("Game restarted by host - resetting client state");
         }
         if (nextLevelStarted) {
-            System.out.println("Next level started by host - resetting client state");
+            LOG.info("Next level started by host - resetting client state");
         }
 
         // Reset client state for new level or restart

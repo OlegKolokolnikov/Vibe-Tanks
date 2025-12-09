@@ -3,6 +3,7 @@ package com.vibetanks.animation;
 import com.vibetanks.core.Base;
 import com.vibetanks.core.GameConstants;
 import com.vibetanks.core.Tank;
+import com.vibetanks.util.GameLogger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
  * Extracted from Game.java to reduce complexity.
  */
 public class CelebrationManager {
+    private static final GameLogger LOG = GameLogger.getLogger(CelebrationManager.class);
 
     private final List<DancingCharacter> dancingCharacters = new ArrayList<>();
     private final List<DancingGirl> victoryDancingGirls = new ArrayList<>();
@@ -100,8 +102,7 @@ public class CelebrationManager {
             victoryDancingGirls.add(new DancingGirl(x, y, danceStyle));
         }
 
-        System.out.println("Victory celebration initialized with " + girlCount +
-            " dancing girls for " + playerCount + " players");
+        LOG.info("Victory celebration initialized with {} dancing girls for {} players", girlCount, playerCount);
     }
 
     /**

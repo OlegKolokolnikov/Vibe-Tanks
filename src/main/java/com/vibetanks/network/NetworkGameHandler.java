@@ -2,6 +2,7 @@ package com.vibetanks.network;
 
 import com.vibetanks.audio.SoundManager;
 import com.vibetanks.core.*;
+import com.vibetanks.util.GameLogger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +12,8 @@ import java.util.List;
  * Extracted from Game.java to reduce complexity.
  */
 public class NetworkGameHandler {
+    private static final GameLogger LOG = GameLogger.getLogger(NetworkGameHandler.class);
+
 
     /**
      * Result of handling client update - indicates if main update should continue.
@@ -197,12 +200,12 @@ public class NetworkGameHandler {
                 PlayerInput clientInput = network.getPlayerInput(i);
                 if (clientInput != null) {
                     if (clientInput.requestNextLevel && ctx.isVictory()) {
-                        System.out.println("HOST: Client " + i + " requested next level");
+                        LOG.info("HOST: Client {} requested next level", i);
                         ctx.startNextLevel();
                         return new HostUpdateResult(true);
                     }
                     if (clientInput.requestRestart && ctx.isGameOver()) {
-                        System.out.println("HOST: Client " + i + " requested restart");
+                        LOG.info("HOST: Client {} requested restart", i);
                         ctx.restartCurrentLevel();
                         return new HostUpdateResult(true);
                     }
@@ -231,7 +234,7 @@ public class NetworkGameHandler {
                 case 4 -> { x = 15 * 32; y = 24 * 32; }
                 default -> { x = 8 * 32; y = 24 * 32; }
             }
-            System.out.println("HOST: Adding Player " + playerNum + " tank (new player connected)");
+            LOG.info("HOST: Adding Player {} tank (new player connected)", playerNum);
             Tank newPlayer = new Tank(x, y, Direction.UP, true, playerNum);
             newPlayer.giveTemporaryShield();
             playerTanks.add(newPlayer);
@@ -244,8 +247,8 @@ public class NetworkGameHandler {
             newStartPositions[playerNum - 1] = new double[]{x, y};
             ctx.setPlayerStartPositions(newStartPositions);
             playerStartPositions = newStartPositions;
-            System.out.println("HOST: Updated playerStartPositions for Player " + playerNum +
-                " to: " + x + ", " + y + " (array size: " + playerStartPositions.length + ")");
+            LOG.info("HOST: Updated playerStartPositions for Player {} at {}, {} (array size: {})",
+                playerNum, x, y, playerStartPositions.length);
         }
     }
 

@@ -3,6 +3,7 @@ package com.vibetanks.core;
 import com.vibetanks.animation.DancingCharacter;
 import com.vibetanks.animation.DancingGirl;
 import com.vibetanks.audio.SoundManager;
+import com.vibetanks.util.GameLogger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
  * - Score tracking between levels
  */
 public class GameStateManager {
+    private static final GameLogger LOG = GameLogger.getLogger(GameStateManager.class);
 
     // Victory delay (frames before showing victory screen)
     private boolean victoryConditionMet = false;
@@ -54,7 +56,7 @@ public class GameStateManager {
             if (!victoryConditionMet) {
                 victoryConditionMet = true;
                 victoryDelayTimer = 0;
-                System.out.println("All enemies defeated! Victory in 10 seconds...");
+                LOG.info("All enemies defeated! Victory in 10 seconds...");
             }
             victoryDelayTimer++;
             if (victoryDelayTimer >= VICTORY_DELAY) {

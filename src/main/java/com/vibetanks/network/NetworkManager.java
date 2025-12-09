@@ -1,5 +1,7 @@
 package com.vibetanks.network;
 
+import com.vibetanks.util.GameLogger;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -9,6 +11,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class NetworkManager {
+    private static final GameLogger LOG = GameLogger.getLogger(NetworkManager.class);
     private static final int PORT = 25565;
     private static final int MAX_PLAYERS = 4; // 1 host + 3 clients
 
@@ -58,7 +61,7 @@ public class NetworkManager {
                 }
             } catch (Exception e) {
                 if (active) {
-                    System.err.println("Lost connection to Player " + playerNumber + ": " + e.getMessage());
+                    LOG.warn("Lost connection to Player {}: {}", playerNumber, e.getMessage());
                     active = false;
                 }
             }
@@ -71,7 +74,7 @@ public class NetworkManager {
                 out.flush();
                 out.reset();
             } catch (IOException e) {
-                System.err.println("Error sending to Player " + playerNumber + ": " + e.getMessage());
+                LOG.warn("Error sending to Player {}: {}", playerNumber, e.getMessage());
                 active = false;
             }
         }
@@ -83,7 +86,7 @@ public class NetworkManager {
                 if (in != null) in.close();
                 if (socket != null) socket.close();
             } catch (IOException e) {
-                System.err.println("Error closing client: " + e.getMessage());
+                LOG.warn("Error closing client: {}", e.getMessage());
             }
         }
     }
@@ -110,7 +113,7 @@ public class NetworkManager {
         Process netstatProcess = null;
         Process killProcess = null;
         try {
-            System.out.println("Checking for process on port " + port + "...");
+            LOG.debug("Checking for process on port {}...", port);
 
             // Find process using the port
             netstatProcess = Runtime.getRuntime().exec("netstat -ano");
@@ -130,7 +133,7 @@ public class NetworkManager {
             netstatProcess.waitFor();
 
             if (pid != null && !pid.isEmpty()) {
-                System.out.println("Found process " + pid + " using port " + port + ", killing it...");
+                LOG.info("Found process {} using port {}, killing it...", pid, port);
 
                 // Kill the process using PowerShell
                 killProcess = Runtime.getRuntime().exec(
@@ -138,14 +141,14 @@ public class NetworkManager {
                 );
                 killProcess.waitFor();
 
-                System.out.println("Process killed, waiting for port release...");
+                LOG.debug("Process killed, waiting for port release...");
                 Thread.sleep(1000); // Wait for port to be released
-                System.out.println("Port should now be available");
+                LOG.debug("Port should now be available");
             } else {
-                System.out.println("No process found using port " + port);
+                LOG.debug("No process found using port {}", port);
             }
         } catch (Exception e) {
-            System.err.println("Error checking/killing process on port: " + e.getMessage());
+            LOG.error("Error checking/killing process on port: {}", e.getMessage());
         } finally {
             // Ensure processes are destroyed to prevent zombie processes
             if (netstatProcess != null) {
@@ -161,34 +164,34 @@ public class NetworkManager {
     public boolean startHost() {
         // Prevent starting if already hosting
         if (isHosting) {
-            System.out.println("Already hosting - skipping");
+            LOG.debug("Already hosting - skipping");
             return false;
         }
 
         // Debug: Check if port is available
-        System.out.println("Attempting to start host on port " + PORT);
+        LOG.info("Attempting to start host on port {}", PORT);
 
         // Kill any process using the port
         if (!isPortAvailable(PORT)) {
-            System.out.println("Port " + PORT + " is in use, attempting to free it...");
+            LOG.info("Port {} is in use, attempting to free it...", PORT);
             killProcessOnPort(PORT);
         }
 
         // Wait for port to become available (up to 3 seconds)
         int attempts = 0;
         while (!isPortAvailable(PORT) && attempts < 6) {
-            System.out.println("Port " + PORT + " not available yet, waiting... (attempt " + (attempts + 1) + "/6)");
+            LOG.debug("Port {} not available yet, waiting... (attempt {}/6)", PORT, attempts + 1);
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
-                System.err.println("Interrupted while waiting for port");
+                LOG.warn("Interrupted while waiting for port");
                 return false;
             }
             attempts++;
         }
 
         if (!isPortAvailable(PORT)) {
-            System.err.println("Port " + PORT + " is still not available after waiting");
+            LOG.error("Port {} is still not available after waiting", PORT);
             return false;
         }
 
@@ -199,10 +202,10 @@ public class NetworkManager {
         try {
             serverSocket = new ServerSocket();
             serverSocket.setReuseAddress(true); // Allow immediate port reuse
-            System.out.println("Binding to port " + PORT + "...");
+            LOG.debug("Binding to port {}...", PORT);
             serverSocket.bind(new InetSocketAddress(PORT));
-            System.out.println("Successfully bound to port " + PORT);
-            System.out.println("Waiting for players to connect on port " + PORT + "...");
+            LOG.info("Successfully bound to port {}", PORT);
+            LOG.info("Waiting for players to connect on port {}...", PORT);
 
             // Accept connections in background - keeps running during gameplay
             acceptThread = new Thread(() -> {
@@ -211,18 +214,18 @@ public class NetworkManager {
                     while (isHosting && serverSocket.isBound() && !serverSocket.isClosed()) {
                         // Check if we have room for more players
                         if (clients.size() >= MAX_PLAYERS - 1) {
-                            System.out.println("Maximum players reached (4/4), stopping accept");
+                            LOG.info("Maximum players reached (4/4), stopping accept");
                             break;
                         }
 
                         Socket clientSocket = serverSocket.accept();
                         int playerNum = clients.size() + 2; // Player 2, 3, or 4
-                        System.out.println("Player " + playerNum + " connected from: " + clientSocket.getInetAddress());
+                        LOG.info("Player {} connected from: {}", playerNum, clientSocket.getInetAddress());
 
                         // Create ObjectOutputStream immediately so client can create its InputStream
                         ObjectOutputStream tempOut = new ObjectOutputStream(clientSocket.getOutputStream());
                         tempOut.flush();
-                        System.out.println("Server stream header sent to Player " + playerNum);
+                        LOG.debug("Server stream header sent to Player {}", playerNum);
 
                         ClientHandler client = new ClientHandler(clientSocket, playerNum, tempOut);
                         clients.add(client);
@@ -230,21 +233,21 @@ public class NetworkManager {
                         // Send player number to client so they know which player they are
                         tempOut.writeObject(Integer.valueOf(playerNum));
                         tempOut.flush();
-                        System.out.println("Sent player number " + playerNum + " to client");
+                        LOG.debug("Sent player number {} to client", playerNum);
 
                         // First connection establishes game as ready
                         if (!connected) {
                             connected = true;
                         }
 
-                        System.out.println("Player " + playerNum + " joined mid-game, total players: " + (clients.size() + 1));
+                        LOG.info("Player {} joined mid-game, total players: {}", playerNum, clients.size() + 1);
                     }
                 } catch (IOException e) {
                     if (isHosting) {
-                        System.out.println("Accept loop ended: " + e.getMessage());
+                        LOG.debug("Accept loop ended: {}", e.getMessage());
                     }
                 }
-                System.out.println("Accept thread exiting");
+                LOG.debug("Accept thread exiting");
             });
             acceptThread.setDaemon(false); // Non-daemon so it properly cleans up
             acceptThread.start();
@@ -252,8 +255,7 @@ public class NetworkManager {
             return true;
         } catch (IOException e) {
             isHosting = false; // Reset flag on failure
-            System.err.println("Failed to start host: " + e.getClass().getName() + " - " + e.getMessage());
-            e.printStackTrace();
+            LOG.error("Failed to start host: {} - {}", e.getClass().getName(), e.getMessage());
             return false;
         }
     }
@@ -263,10 +265,10 @@ public class NetworkManager {
         isHost = false;
 
         try {
-            System.out.println("Connecting to " + hostIP + ":" + PORT + "...");
+            LOG.info("Connecting to {}:{}...", hostIP, PORT);
             socket = new Socket();
             socket.connect(new InetSocketAddress(hostIP, PORT), 5000); // 5 second timeout
-            System.out.println("Connected to host!");
+            LOG.info("Connected to host!");
 
             out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();
@@ -281,7 +283,7 @@ public class NetworkManager {
                     Object firstObj = in.readObject();
                     if (firstObj instanceof Integer) {
                         playerNumber = (Integer) firstObj;
-                        System.out.println("Received player number from host: " + playerNumber);
+                        LOG.info("Received player number from host: {}", playerNumber);
                     } else if (firstObj instanceof GameState) {
                         // Fallback for backwards compatibility
                         receivedStates.offer((GameState) firstObj);
@@ -295,7 +297,7 @@ public class NetworkManager {
                     }
                 } catch (Exception e) {
                     if (connected) {
-                        System.err.println("Connection lost: " + e.getMessage());
+                        LOG.warn("Connection lost: {}", e.getMessage());
                         connected = false;
                     }
                 }
@@ -305,7 +307,7 @@ public class NetworkManager {
 
             return true;
         } catch (IOException e) {
-            System.err.println("Failed to connect: " + e.getMessage());
+            LOG.error("Failed to connect: {}", e.getMessage());
             return false;
         }
     }
@@ -327,7 +329,7 @@ public class NetworkManager {
             out.writeObject(input);
             out.flush();
         } catch (IOException e) {
-            System.err.println("Error sending input: " + e.getMessage());
+            LOG.warn("Error sending input: {}", e.getMessage());
             connected = false;
         }
     }
@@ -369,34 +371,34 @@ public class NetworkManager {
     }
 
     public void close() {
-        System.out.println("NetworkManager.close() called");
+        LOG.debug("NetworkManager.close() called");
         connected = false;
         isHosting = false; // Reset hosting flag to stop accept loop
 
         try {
             // Close server socket FIRST to unblock accept() calls
             if (serverSocket != null && !serverSocket.isClosed()) {
-                System.out.println("Closing server socket...");
+                LOG.debug("Closing server socket...");
                 serverSocket.close();
-                System.out.println("Server socket closed");
+                LOG.debug("Server socket closed");
             }
         } catch (IOException e) {
-            System.err.println("Error closing server socket: " + e.getMessage());
+            LOG.warn("Error closing server socket: {}", e.getMessage());
         }
 
         // Wait for accept thread to finish (it should exit when socket closes)
         if (acceptThread != null && acceptThread.isAlive()) {
-            System.out.println("Waiting for accept thread to exit...");
+            LOG.debug("Waiting for accept thread to exit...");
             try {
                 acceptThread.join(2000); // Wait up to 2 seconds for thread to exit
                 if (acceptThread.isAlive()) {
-                    System.err.println("Warning: accept thread did not exit, interrupting...");
+                    LOG.warn("Accept thread did not exit, interrupting...");
                     acceptThread.interrupt();
                     acceptThread.join(1000); // Wait another second after interrupt
                 }
-                System.out.println("Accept thread terminated");
+                LOG.debug("Accept thread terminated");
             } catch (InterruptedException e) {
-                System.err.println("Interrupted while waiting for accept thread");
+                LOG.warn("Interrupted while waiting for accept thread");
             }
         }
 
@@ -417,10 +419,10 @@ public class NetworkManager {
             if (in != null) in.close();
             if (socket != null && !socket.isClosed()) socket.close();
         } catch (IOException e) {
-            System.err.println("Error closing connection: " + e.getMessage());
+            LOG.warn("Error closing connection: {}", e.getMessage());
         }
 
-        System.out.println("NetworkManager.close() complete");
+        LOG.debug("NetworkManager.close() complete");
     }
 
     public String getLocalIP() {

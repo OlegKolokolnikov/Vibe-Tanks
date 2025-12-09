@@ -6,6 +6,7 @@ import com.vibetanks.core.GameSettings;
 import com.vibetanks.core.NicknameManager;
 import com.vibetanks.network.IPHistoryManager;
 import com.vibetanks.network.NetworkManager;
+import com.vibetanks.util.GameLogger;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -21,6 +22,8 @@ import javafx.stage.Stage;
 import java.util.List;
 
 public class MenuScene {
+    private static final GameLogger LOG = GameLogger.getLogger(MenuScene.class);
+
     private Scene scene;
     private Stage stage;
     private int windowWidth;
@@ -476,18 +479,18 @@ public class MenuScene {
     private void hostGame() {
         // Close any existing network manager first
         if (currentNetworkManager != null) {
-            System.out.println("Closing previous network manager...");
+            LOG.info("Closing previous network manager...");
             currentNetworkManager.close();
 
             // Wait longer for OS to release the port (Windows needs more time)
             try {
                 Thread.sleep(1500);
             } catch (InterruptedException ex) {
-                System.err.println("Interrupted while waiting for port release");
+                LOG.warn("Interrupted while waiting for port release");
             }
 
             currentNetworkManager = null;
-            System.out.println("Previous network manager cleanup complete");
+            LOG.info("Previous network manager cleanup complete");
         }
 
         currentNetworkManager = new NetworkManager();
@@ -503,9 +506,9 @@ public class MenuScene {
         alert.setOnHidden(e -> {
             if (!network.isConnected()) {
                 // Only cleanup if not connected (if connected, game will handle cleanup)
-                System.out.println("Host dialog closed - cleaning up network...");
+                LOG.info("Host dialog closed - cleaning up network...");
                 network.close();
-                System.out.println("Network cleanup complete");
+                LOG.info("Network cleanup complete");
             }
         });
 
@@ -535,7 +538,7 @@ public class MenuScene {
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
-                        System.out.println("Connection wait interrupted - stopping...");
+                        LOG.info("Connection wait interrupted - stopping...");
                         break;
                     }
                 }

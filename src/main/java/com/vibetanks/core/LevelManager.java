@@ -4,12 +4,15 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
+import com.vibetanks.util.GameLogger;
+
 /**
  * Manages saving and loading of custom levels in JSON format.
  * Levels are stored in a 'levels' folder next to the game.
  */
 
 public class LevelManager {
+    private static final GameLogger LOG = GameLogger.getLogger(LevelManager.class);
     private static final String LEVELS_FOLDER = "levels";
 
     /**
@@ -21,7 +24,7 @@ public class LevelManager {
             try {
                 Files.createDirectories(levelsDir);
             } catch (IOException e) {
-                System.err.println("Failed to create levels directory: " + e.getMessage());
+                LOG.error("Failed to create levels directory: {}", e.getMessage());
             }
         }
         return levelsDir;
@@ -40,10 +43,10 @@ public class LevelManager {
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(filepath.toFile()))) {
             writer.println(toJson(level));
-            System.out.println("Level saved to: " + filepath);
+            LOG.info("Level saved to: {}", filepath);
             return true;
         } catch (IOException e) {
-            System.err.println("Failed to save level: " + e.getMessage());
+            LOG.error("Failed to save level: {}", e.getMessage());
             return false;
         }
     }
@@ -100,7 +103,7 @@ public class LevelManager {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Failed to list levels: " + e.getMessage());
+            LOG.error("Failed to list levels: {}", e.getMessage());
         }
 
         Collections.sort(numbers);
@@ -112,7 +115,7 @@ public class LevelManager {
      */
     public static LevelData loadLevelFromPath(Path filepath) {
         if (!Files.exists(filepath)) {
-            System.err.println("Level file not found: " + filepath);
+            LOG.error("Level file not found: {}", filepath);
             return null;
         }
 
@@ -120,7 +123,7 @@ public class LevelManager {
             String json = new String(Files.readAllBytes(filepath));
             return fromJson(json);
         } catch (IOException e) {
-            System.err.println("Failed to load level: " + e.getMessage());
+            LOG.error("Failed to load level: {}", e.getMessage());
             return null;
         }
     }
@@ -137,7 +140,7 @@ public class LevelManager {
                 levels.add(entry.getFileName().toString());
             }
         } catch (IOException e) {
-            System.err.println("Failed to list levels: " + e.getMessage());
+            LOG.error("Failed to list levels: {}", e.getMessage());
         }
 
         Collections.sort(levels);
@@ -153,7 +156,7 @@ public class LevelManager {
             Files.deleteIfExists(filepath);
             return true;
         } catch (IOException e) {
-            System.err.println("Failed to delete level: " + e.getMessage());
+            LOG.error("Failed to delete level: {}", e.getMessage());
             return false;
         }
     }

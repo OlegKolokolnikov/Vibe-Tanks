@@ -3,10 +3,12 @@ package com.vibetanks.core;
 import com.vibetanks.audio.SoundManager;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import com.vibetanks.util.GameLogger;
 
 import java.util.List;
 
 public class Tank {
+    private static final GameLogger LOG = GameLogger.getLogger(Tank.class);
     public enum EnemyType {
         REGULAR,    // 1 shot, normal speed
         ARMORED,    // 2 shots, normal speed, bigger
@@ -607,7 +609,7 @@ public class Tank {
         // Remove all shields
         hasShield = false;
         hasPauseShield = false;
-        System.out.println("Tank instantly killed by BOSS contact!");
+        LOG.info("Tank instantly killed by BOSS contact!");
     }
 
     public void render(GraphicsContext gc) {

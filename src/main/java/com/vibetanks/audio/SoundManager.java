@@ -1,5 +1,6 @@
 package com.vibetanks.audio;
 
+import com.vibetanks.util.GameLogger;
 import javax.sound.sampled.*;
 import java.io.File;
 import java.net.URL;
@@ -8,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 public class SoundManager {
+    private static final GameLogger LOG = GameLogger.getLogger(SoundManager.class);
     private byte[] shootSoundData;
     private byte[] explosionSoundData;
     private byte[] introSoundData;
@@ -65,16 +67,16 @@ public class SoundManager {
                 playerDeathSoundData == null || baseDestroyedSoundData == null ||
                 explanationMusicData == null || treeBurnSoundData == null ||
                 laserSoundData == null) {
-                System.out.println("Some sounds could not be loaded. Game will run without sound effects.");
+                LOG.warn("Some sounds could not be loaded. Game will run without sound effects.");
             } else {
-                System.out.println("All sounds loaded successfully!");
+                LOG.info("All sounds loaded successfully!");
                 // Pre-open audio lines for shoot and explosion (fixes HDMI latency)
                 initializeAudioLines();
                 // Register shutdown hook to clean up audio lines
                 registerShutdownHook();
             }
         } catch (Exception e) {
-            System.out.println("Error initializing sounds: " + e.getMessage());
+            LOG.error("Error initializing sounds: {}", e.getMessage());
             e.printStackTrace();
         }
     }
@@ -92,9 +94,9 @@ public class SoundManager {
             explosionLine.open(audioFormat, 4096);
             explosionLine.start();
 
-            System.out.println("Audio lines pre-opened for low latency!");
+            LOG.info("Audio lines pre-opened for low latency!");
         } catch (LineUnavailableException e) {
-            System.out.println("Could not pre-open audio lines: " + e.getMessage());
+            LOG.warn("Could not pre-open audio lines: {}", e.getMessage());
             shootLine = null;
             explosionLine = null;
         }
@@ -157,7 +159,7 @@ public class SoundManager {
         if (!shootFile.exists() || !explosionFile.exists() || !introFile.exists() || !sadFile.exists() ||
             !playerDeathFile.exists() || !baseDestroyedFile.exists() || !explanationMusicFile.exists() ||
             !treeBurnFile.exists() || !laserFile.exists()) {
-            System.out.println("Generating sound files...");
+            LOG.info("Generating sound files...");
             SoundGenerator.generateAllSounds();
         }
     }
@@ -182,7 +184,7 @@ public class SoundManager {
                 return data;
             }
         } catch (Exception e) {
-            System.out.println("Could not load sound: " + resourcePath + " - " + e.getMessage());
+            LOG.warn("Could not load sound: {} - {}", resourcePath, e.getMessage());
         }
         return null;
     }

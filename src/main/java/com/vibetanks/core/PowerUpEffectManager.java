@@ -1,10 +1,13 @@
 package com.vibetanks.core;
 
+import com.vibetanks.util.GameLogger;
+
 /**
  * Manages time-based power-up effects (base protection, freeze, speed boost).
  * Extracted from Game.java to reduce complexity.
  */
 public class PowerUpEffectManager {
+    private static final GameLogger LOG = GameLogger.getLogger(PowerUpEffectManager.class);
     // Base protection (SHOVEL power-up)
     private int baseProtectionDuration = 0;
     private boolean isFlashing = false;
@@ -111,7 +114,7 @@ public class PowerUpEffectManager {
      */
     public void activateEnemyFreeze() {
         enemyFreezeDuration = FREEZE_TIME;
-        System.out.println("FREEZE: Enemies frozen for 10 seconds!");
+        LOG.info("FREEZE: Enemies frozen for 10 seconds!");
     }
 
     /**
@@ -119,7 +122,7 @@ public class PowerUpEffectManager {
      */
     public void activatePlayerFreeze() {
         playerFreezeDuration = FREEZE_TIME;
-        System.out.println("FREEZE: Players frozen for 10 seconds! (can still shoot)");
+        LOG.info("FREEZE: Players frozen for 10 seconds! (can still shoot)");
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.vibetanks.rendering;
 
+import com.vibetanks.util.GameLogger;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
@@ -12,6 +13,7 @@ import java.net.URL;
  * Extracted from Game.java to reduce complexity.
  */
 public class ImageLoader {
+    private static final GameLogger LOG = GameLogger.getLogger(ImageLoader.class);
 
     /**
      * Result of loading an end-game image.
@@ -93,16 +95,15 @@ public class ImageLoader {
             if (image != null && !image.isError()) {
                 ImageView imageView = createImageView(image, width, height);
                 root.getChildren().add(imageView);
-                System.out.println(capitalize(displayName) + " image view added successfully!");
+                LOG.debug("{} image view added successfully!", capitalize(displayName));
                 return new LoadResult(imageView, true);
             } else {
-                System.out.println("Could not load " + displayName + " image from any source");
-                System.out.println("Please place a '" + filename + "' file in: src/main/resources/images/");
+                LOG.warn("Could not load {} image from any source", displayName);
+                LOG.info("Please place a '{}' file in: src/main/resources/images/", filename);
                 return new LoadResult(null, false);
             }
         } catch (Exception e) {
-            System.out.println("Could not load " + displayName + " image: " + e.getMessage());
-            e.printStackTrace();
+            LOG.error("Could not load {} image: {}", displayName, e.getMessage());
             return new LoadResult(null, false);
         }
     }
@@ -114,15 +115,15 @@ public class ImageLoader {
         try {
             File localFile = new File("src/main/resources/images/" + filename);
             if (localFile.exists()) {
-                System.out.println("Loading " + displayName + " image from local file: " + localFile.getPath());
+                LOG.debug("Loading {} image from local file: {}", displayName, localFile.getPath());
                 Image image = new Image(localFile.toURI().toString());
                 if (!image.isError()) {
-                    System.out.println("Successfully loaded " + displayName + " image from local file!");
+                    LOG.debug("Successfully loaded {} image from local file!", displayName);
                     return image;
                 }
             }
         } catch (Exception e) {
-            System.out.println("Could not load from local file: " + e.getMessage());
+            LOG.debug("Could not load from local file: {}", e.getMessage());
         }
         return null;
     }
@@ -134,15 +135,15 @@ public class ImageLoader {
         try {
             URL resourceUrl = clazz.getResource("/images/" + filename);
             if (resourceUrl != null) {
-                System.out.println("Loading " + displayName + " image from resources");
+                LOG.debug("Loading {} image from resources", displayName);
                 Image image = new Image(resourceUrl.toString());
                 if (!image.isError()) {
-                    System.out.println("Successfully loaded " + displayName + " image from resources!");
+                    LOG.debug("Successfully loaded {} image from resources!", displayName);
                     return image;
                 }
             }
         } catch (Exception e) {
-            System.out.println("Could not load from resources: " + e.getMessage());
+            LOG.debug("Could not load from resources: {}", e.getMessage());
         }
         return null;
     }
@@ -153,14 +154,14 @@ public class ImageLoader {
     private static Image tryLoadFromUrls(String[] urls, String displayName) {
         for (String url : urls) {
             try {
-                System.out.println("Trying to load " + displayName + " image from URL: " + url);
+                LOG.debug("Trying to load {} image from URL: {}", displayName, url);
                 Image image = new Image(url, true);
                 if (!image.isError()) {
-                    System.out.println("Successfully loaded " + displayName + " image from: " + url);
+                    LOG.debug("Successfully loaded {} image from: {}", displayName, url);
                     return image;
                 }
             } catch (Exception e) {
-                System.out.println("Failed to load from: " + url);
+                LOG.debug("Failed to load from: {}", url);
             }
         }
         return null;

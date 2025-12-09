@@ -1,6 +1,7 @@
 package com.vibetanks.core;
 
 import com.vibetanks.audio.SoundManager;
+import com.vibetanks.util.GameLogger;
 
 import java.util.List;
 
@@ -9,6 +10,7 @@ import java.util.List;
  * Extracts power-up logic from Game.java to improve separation of concerns.
  */
 public class PowerUpHandler {
+    private static final GameLogger LOG = GameLogger.getLogger(PowerUpHandler.class);
 
     /**
      * Result of power-up collection by a player.
@@ -121,7 +123,7 @@ public class PowerUpHandler {
                 destroyed++;
             }
         }
-        System.out.println("BOMB: All enemies destroyed! (" + destroyed + " kills)");
+        LOG.info("BOMB: All enemies destroyed! ({} kills)", destroyed);
         return destroyed;
     }
 
@@ -134,7 +136,7 @@ public class PowerUpHandler {
      */
     public static int applyEnemyBomb(List<Tank> playerTanks, SoundManager soundManager) {
         int killed = 0;
-        System.out.println("BOMB collected by enemy - damaging all players!");
+        LOG.info("BOMB collected by enemy - damaging all players!");
         for (Tank player : playerTanks) {
             if (player.isAlive()) {
                 // BOMB bypasses all shields
@@ -165,7 +167,7 @@ public class PowerUpHandler {
                 enemy.applyTempSpeedBoost(speedBoostMultiplier);
             }
         }
-        System.out.println("CAR: All enemies get speed boost for 30 seconds!");
+        LOG.info("CAR: All enemies get speed boost for 30 seconds!");
     }
 
     /**
@@ -180,7 +182,7 @@ public class PowerUpHandler {
                 enemy.removeTempSpeedBoost();
             }
         }
-        System.out.println("Enemy team speed boost expired - only original enemy keeps the speed");
+        LOG.info("Enemy team speed boost expired - only original enemy keeps the speed");
     }
 
     /**
@@ -210,7 +212,7 @@ public class PowerUpHandler {
         // Apply the power-up effect directly to the player
         PowerUp tempPowerUp = new PowerUp(0, 0, type);
         tempPowerUp.applyEffect(player);
-        System.out.println("BOSS KILL REWARD: Player received " + type + "!");
+        LOG.info("BOSS KILL REWARD: Player received {}!", type);
         return type;
     }
 }

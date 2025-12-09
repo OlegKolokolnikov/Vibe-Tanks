@@ -2,6 +2,7 @@ package com.vibetanks.core;
 
 import com.vibetanks.animation.CelebrationManager;
 import com.vibetanks.audio.SoundManager;
+import com.vibetanks.util.GameLogger;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ import java.util.List;
  * Extracted from Game.java to reduce complexity.
  */
 public class LevelTransitionManager {
+    private static final GameLogger LOG = GameLogger.getLogger(LevelTransitionManager.class);
 
     /**
      * Context interface for accessing and modifying game state during level transitions.
@@ -104,7 +106,7 @@ public class LevelTransitionManager {
         // Play intro sound for new level
         ctx.getSoundManager().playIntro();
 
-        System.out.println("Starting Level " + gameMap.getLevelNumber());
+        LOG.info("Starting Level {}", gameMap.getLevelNumber());
     }
 
     /**
@@ -155,7 +157,7 @@ public class LevelTransitionManager {
         // Play intro sound for retry
         ctx.getSoundManager().playIntro();
 
-        System.out.println("Restarting Level " + gameMap.getLevelNumber());
+        LOG.info("Restarting Level {}", gameMap.getLevelNumber());
     }
 
     /**

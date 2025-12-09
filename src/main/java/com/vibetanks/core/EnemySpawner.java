@@ -1,9 +1,11 @@
 package com.vibetanks.core;
 
+import com.vibetanks.util.GameLogger;
 import java.util.List;
 import java.util.Random;
 
 public class EnemySpawner {
+    private static final GameLogger LOG = GameLogger.getLogger(EnemySpawner.class);
     private int totalEnemies;
     private int maxOnScreen;
     private int spawnedCount;
@@ -110,7 +112,7 @@ public class EnemySpawner {
                 int bossHealth = BOSS_BASE_HEALTH + (levelNumber - 1);
                 enemy.setHealth(bossHealth);
                 enemy.setMaxHealth(bossHealth);
-                System.out.println("BOSS spawned with " + bossHealth + " health (Level " + levelNumber + ")");
+                LOG.info("BOSS spawned with {} health (Level {})", bossHealth, levelNumber);
             }
 
             enemyTanks.add(enemy);

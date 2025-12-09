@@ -18,6 +18,7 @@ import com.vibetanks.network.PlayerData;
 import com.vibetanks.network.PlayerInput;
 import com.vibetanks.ui.InputHandler;
 import com.vibetanks.ui.MenuScene;
+import com.vibetanks.util.GameLogger;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -32,6 +33,8 @@ import java.util.*;
 public class Game implements GameStateApplier.GameContext, LevelTransitionManager.LevelTransitionContext,
         HUDRenderer.PlayerNameProvider, HUDRenderer.EndGameStatsProvider, HUDRenderer.GameOverState,
         NetworkGameHandler.HostContext, NetworkGameHandler.ClientContext {
+    private static final GameLogger LOG = GameLogger.getLogger(Game.class);
+
     private final Pane root;
     private final Canvas canvas;
     private final GraphicsContext gc;
@@ -225,10 +228,10 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             Tank player = playerTanks.get(i);
             playerStartPositions[i][0] = player.getX();
             playerStartPositions[i][1] = player.getY();
-            System.out.println("INIT: Player " + (i + 1) + " start position: " +
-                playerStartPositions[i][0] + ", " + playerStartPositions[i][1]);
+            LOG.debug("INIT: Player {} start position: {}, {}", i + 1,
+                playerStartPositions[i][0], playerStartPositions[i][1]);
         }
-        System.out.println("INIT: playerStartPositions array size: " + playerStartPositions.length);
+        LOG.debug("INIT: playerStartPositions array size: {}", playerStartPositions.length);
 
         // Initialize enemy tanks list
         enemyTanks = new ArrayList<>();
@@ -354,12 +357,12 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         if (result.tank1Killed && result.killedTank1 != null) {
             soundManager.playExplosion();
             String victimName = getPlayerNameForTank(result.killedTank1);
-            System.out.println("KILL LOG: " + victimName + " was killed by BOSS (contact)");
+            LOG.info("KILL LOG: {} was killed by BOSS (contact)", victimName);
         }
         if (result.tank2Killed && result.killedTank2 != null) {
             soundManager.playExplosion();
             String victimName = getPlayerNameForTank(result.killedTank2);
-            System.out.println("KILL LOG: " + victimName + " was killed by BOSS (contact)");
+            LOG.info("KILL LOG: {} was killed by BOSS (contact)", victimName);
         }
     }
 
@@ -382,10 +385,10 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         Tank boss = new Tank(bossX, bossY, Direction.DOWN, false, 0, Tank.EnemyType.BOSS);
         enemyTanks.add(boss);
 
-        System.out.println("TEST MODE: Spawned BOSS at (" + bossX + ", " + bossY + ") facing DOWN");
-        System.out.println("Player is at (" + player.getX() + ", " + player.getY() + ")");
-        System.out.println("Player has shield: " + player.hasShield() + ", pause shield: " + player.hasPauseShield());
-        System.out.println("Press B again to spawn another BOSS");
+        LOG.debug("TEST MODE: Spawned BOSS at ({}, {}) facing DOWN", bossX, bossY);
+        LOG.debug("Player is at ({}, {})", player.getX(), player.getY());
+        LOG.debug("Player has shield: {}, pause shield: {}", player.hasShield(), player.hasPauseShield());
+        LOG.debug("Press B again to spawn another BOSS");
     }
 
     private void tryTakeLifeFromTeammate() {
@@ -415,7 +418,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 teammate.setLives(teammate.getLives() - 1);
                 myTank.setLives(1);
                 myTank.respawn(FIXED_START_POSITIONS[requestingPlayerIndex][0], FIXED_START_POSITIONS[requestingPlayerIndex][1]);
-                System.out.println("Player " + (requestingPlayerIndex + 1) + " took a life from Player " + (i + 1));
+                LOG.info("Player {} took a life from Player {}", requestingPlayerIndex + 1, i + 1);
                 return;
             }
         }
@@ -449,7 +452,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - fpsLastTime >= 5000) {
                     double fps = fpsFrameCount / 5.0;
-                    System.out.println("[CLIENT FPS] " + String.format("%.1f", fps));
+                    LOG.debug("[CLIENT FPS] {}", String.format("%.1f", fps));
                     fpsFrameCount = 0;
                     fpsLastTime = currentTime;
                 }
@@ -506,7 +509,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             localUpdateCount++;
             long now = System.currentTimeMillis();
             if (now - lastLocalUpdateTime >= 5000) {
-                System.out.println("[DEBUG] Local game updates per second: " + (localUpdateCount / 5.0));
+                LOG.debug("[DEBUG] Local game updates per second: {}", localUpdateCount / 5.0);
                 localUpdateCount = 0;
                 lastLocalUpdateTime = now;
             }
@@ -537,7 +540,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             if (!network.isConnected()) {
                 // Connection lost
                 gameOver = true;
-                System.out.println("Network connection lost!");
+                LOG.warn("Network connection lost!");
                 return;
             }
 
@@ -598,12 +601,13 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 player.setLives(player.getLives() - 1);
                 double respawnX = FIXED_START_POSITIONS[i][0];
                 double respawnY = FIXED_START_POSITIONS[i][1];
-                System.out.println("Player " + (i + 1) + " will respawn in 1 second at: " + respawnX + ", " + respawnY + " (lives left: " + player.getLives() + ")");
+                LOG.info("Player {} will respawn in 1 second at: {}, {} (lives left: {})",
+                    i + 1, respawnX, respawnY, player.getLives());
                 player.respawn(respawnX, respawnY); // This now starts the timer
             } else if (player.getLives() == 1) {
                 // Player died on last life - decrement to 0 so game over check works
                 player.setLives(0);
-                System.out.println("Player " + (i + 1) + " lost their last life!");
+                LOG.info("Player {} lost their last life!", i + 1);
             }
         }
 
@@ -620,7 +624,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     enemy.removeTempSpeedBoost();
                 }
             }
-            System.out.println("Enemy team speed boost expired - only original enemy keeps the speed");
+            LOG.info("Enemy team speed boost expired - only original enemy keeps the speed");
         }
 
         // Update enemy tanks with AI (skip if frozen, except BOSS is unfreezable)
@@ -654,7 +658,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     int killerPlayer = result.killerPlayerNumber;
                     if (killerPlayer >= 1 && killerPlayer <= 4) {
                         addScore(killerPlayer - 1, 20);
-                        System.out.println("UFO destroyed by Player " + killerPlayer + " - awarded 20 points!");
+                        LOG.info("UFO destroyed by Player {} - awarded 20 points!", killerPlayer);
                     }
                     double[] eggPos = getRandomPowerUpSpawnPosition();
                     ufoManager.handleUFODestroyed(killerPlayer, eggPos[0], eggPos[1]);
@@ -676,7 +680,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                         }
                         addScore(killerPlayer - 1, ProjectileHandler.getScoreForKill(enemy.getEnemyType()));
                         if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
-                            System.out.println("BOSS killed by Player " + killerPlayer + " - awarding power-up!");
+                            LOG.info("BOSS killed by Player {} - awarding power-up!", killerPlayer);
                             bossKillerPlayerIndex = killerPlayer - 1;
                             bossKillPowerUpReward = applyRandomPowerUp(killer);
                         }
@@ -693,7 +697,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 if (result.playerKilled && playerTanks.size() > 2) {
                     double[] spawnPos = getRandomPowerUpSpawnPosition();
                     powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
-                    System.out.println("Power-up spawned for killed player (3+ players mode)");
+                    LOG.info("Power-up spawned for killed player (3+ players mode)");
                 }
 
                 // Handle base hit
@@ -755,7 +759,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 int killerPlayer = laserResult.killerPlayerNumber;
                 if (killerPlayer >= 1 && killerPlayer <= 4) {
                     addScore(killerPlayer - 1, 20);
-                    System.out.println("UFO destroyed by laser from Player " + killerPlayer + " - awarded 20 points!");
+                    LOG.info("UFO destroyed by laser from Player {} - awarded 20 points!", killerPlayer);
                 }
                 double[] eggPos = getRandomPowerUpSpawnPosition();
                 ufoManager.handleUFODestroyed(killerPlayer, eggPos[0], eggPos[1]);
@@ -827,13 +831,13 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             for (int j = 0; j < 3; j++) {
                 player.addLife();
             }
-            System.out.println("Easter egg collected by Player " + (playerIndex + 1) + "! +3 lives!");
+            LOG.info("Easter egg collected by Player {}! +3 lives!", playerIndex + 1);
             GameLogic.applyEasterEggEffect(enemyTanks, true);
         } else if (eggResult.easterEggCollectedByEnemy) {
-            System.out.println("Easter egg collected by enemy! All enemies become HEAVY tanks!");
+            LOG.info("Easter egg collected by enemy! All enemies become HEAVY tanks!");
             GameLogic.applyEasterEggEffect(enemyTanks, false);
         } else if (eggResult.easterEggExpired) {
-            System.out.println("Easter egg expired!");
+            LOG.info("Easter egg expired!");
         }
 
         // Remove dead enemy tanks using shared GameLogic
@@ -844,7 +848,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             if (!victoryConditionMet) {
                 victoryConditionMet = true;
                 victoryDelayTimer = 0;
-                System.out.println("All enemies defeated! Victory in 10 seconds...");
+                LOG.info("All enemies defeated! Victory in 10 seconds...");
             }
             victoryDelayTimer++;
             if (victoryDelayTimer >= VICTORY_DELAY) {
@@ -1070,7 +1074,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         }
         // Close network connection if it exists
         if (network != null) {
-            System.out.println("Closing network connection...");
+            LOG.info("Closing network connection...");
             network.close();
         }
     }

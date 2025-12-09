@@ -1,5 +1,6 @@
 package com.vibetanks.core;
 
+import com.vibetanks.util.GameLogger;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Random;
 
 public class GameMap {
+    private static final GameLogger LOG = GameLogger.getLogger(GameMap.class);
     private static final int TILE_SIZE = GameConstants.TILE_SIZE;
     private static final int BURN_DURATION = GameConstants.BURN_DURATION;
 
@@ -80,7 +82,7 @@ public class GameMap {
         if (LevelManager.hasCustomLevel(num)) {
             LevelData customLevel = LevelManager.loadLevelByNumber(num);
             if (customLevel != null) {
-                System.out.println("Loading custom level " + num);
+                LOG.info("Loading custom level {}", num);
                 this.customLevelData = customLevel;
                 importTiles(customLevel.getTiles());
                 return;
@@ -88,7 +90,7 @@ public class GameMap {
         }
 
         // No custom level, generate random
-        System.out.println("Generating random level " + num);
+        LOG.info("Generating random level {}", num);
         currentLevelSeed = System.currentTimeMillis();
         random.setSeed(currentLevelSeed);
         generateRandomLevel();

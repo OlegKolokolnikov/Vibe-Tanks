@@ -61,25 +61,14 @@ public class UFOManager {
             return;
         }
 
-        // Check if any player with machinegun has killed 5+ enemies while having it
-        boolean shouldSpawn = false;
+        // UFO only spawns when a player has machinegun AND has killed 5+ enemies with it
         for (int i = 0; i < playerTanks.size() && i < 4; i++) {
             Tank player = playerTanks.get(i);
             if (player.getMachinegunCount() > 0 && playerMachinegunKills[i] >= 5) {
-                shouldSpawn = true;
                 LOG.info("UFO spawn triggered! Player {} killed {} enemies with machinegun!", i + 1, playerMachinegunKills[i]);
-                break;
+                spawnUFO(mapWidth, mapHeight);
+                return;
             }
-        }
-
-        // Also random spawn chance per frame
-        if (!shouldSpawn && GameConstants.RANDOM.nextDouble() < GameConstants.UFO_SPAWN_CHANCE) {
-            shouldSpawn = true;
-            LOG.info("UFO spawned randomly!");
-        }
-
-        if (shouldSpawn) {
-            spawnUFO(mapWidth, mapHeight);
         }
     }
 

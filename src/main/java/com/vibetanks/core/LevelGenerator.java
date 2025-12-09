@@ -508,18 +508,29 @@ public class LevelGenerator {
     }
 
     private void createBaseProtection() {
-        // Base is at row 24, cols 12-13 (center bottom)
-        int baseRow = height - 2;
-        int baseColStart = width / 2 - 1;
+        // Base is at row 24, cols 12-13 (2x2 area typically)
+        // Surround with bricks in a U-shape
+        tiles[23][11] = GameMap.TileType.BRICK;
+        tiles[23][12] = GameMap.TileType.BRICK;
+        tiles[23][13] = GameMap.TileType.BRICK;
+        tiles[23][14] = GameMap.TileType.BRICK;
+        tiles[24][11] = GameMap.TileType.BRICK;
+        tiles[24][14] = GameMap.TileType.BRICK;
+        tiles[25][11] = GameMap.TileType.BRICK;
+        tiles[25][12] = GameMap.TileType.BRICK;
+        tiles[25][13] = GameMap.TileType.BRICK;
+        tiles[25][14] = GameMap.TileType.BRICK;
 
-        // Surround base with bricks
-        for (int col = baseColStart - 1; col <= baseColStart + 2; col++) {
-            placeTile(baseRow - 1, col, GameMap.TileType.BRICK);
+        // Add steel wall above base to protect from center spawn
+        // Random width 1-5 blocks, centered above base
+        int steelWidth = 1 + random.nextInt(5); // 1-5 blocks
+        int startCol = 12 - steelWidth / 2; // Center around col 12-13
+        int steelRow = 20 + random.nextInt(2); // Row 20 or 21
+        for (int col = startCol; col < startCol + steelWidth && col < width - 1; col++) {
+            if (col > 0) {
+                tiles[steelRow][col] = GameMap.TileType.STEEL;
+            }
         }
-        placeTile(baseRow, baseColStart - 1, GameMap.TileType.BRICK);
-        placeTile(baseRow, baseColStart + 2, GameMap.TileType.BRICK);
-        placeTile(baseRow + 1, baseColStart - 1, GameMap.TileType.BRICK);
-        placeTile(baseRow + 1, baseColStart + 2, GameMap.TileType.BRICK);
     }
 
     private void clearSpawnAreas() {

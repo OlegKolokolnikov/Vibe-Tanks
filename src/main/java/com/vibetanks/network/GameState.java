@@ -86,6 +86,7 @@ public class GameState implements Serializable {
     public double hostEnemyShootSpeed = 1.0;
 
     public static class EasterEggData implements Serializable {
+        private static final long serialVersionUID = 1L;
         public double x, y;
         public int lifetime;
 
@@ -97,6 +98,7 @@ public class GameState implements Serializable {
     }
 
     public static class UFOData implements Serializable {
+        private static final long serialVersionUID = 1L;
         public double x, y;
         public double dx, dy;
         public boolean alive;
@@ -117,6 +119,7 @@ public class GameState implements Serializable {
     }
 
     public static class DancingCharacterData implements Serializable {
+        private static final long serialVersionUID = 1L;
         public double x, y;
         public boolean isAlien;
         public int animFrame;
@@ -134,6 +137,7 @@ public class GameState implements Serializable {
     }
 
     public static class DancingGirlData implements Serializable {
+        private static final long serialVersionUID = 1L;
         public double x, y;
         public int animFrame;
         public int danceStyle;
@@ -151,6 +155,7 @@ public class GameState implements Serializable {
     }
 
     public static class BurningTileData implements Serializable {
+        private static final long serialVersionUID = 1L;
         public int row, col;
         public int framesRemaining;
 
@@ -162,6 +167,7 @@ public class GameState implements Serializable {
     }
 
     public static class LaserData implements Serializable {
+        private static final long serialVersionUID = 1L;
         public long id;
         public double startX, startY;
         public int direction;
@@ -183,6 +189,7 @@ public class GameState implements Serializable {
     }
 
     public static class EnemyData implements Serializable {
+        private static final long serialVersionUID = 1L;
         public double x, y;
         public int direction;
         public boolean alive;
@@ -206,6 +213,7 @@ public class GameState implements Serializable {
     }
 
     public static class BulletData implements Serializable {
+        private static final long serialVersionUID = 1L;
         public long id;
         public double x, y;
         public int direction;
@@ -229,6 +237,7 @@ public class GameState implements Serializable {
     }
 
     public static class PowerUpData implements Serializable {
+        private static final long serialVersionUID = 1L;
         public long id;
         public double x, y;
         public int type; // Ordinal of PowerUp.Type
@@ -244,6 +253,7 @@ public class GameState implements Serializable {
     }
 
     public static class TileChange implements Serializable {
+        private static final long serialVersionUID = 1L;
         public int row, col;
         public int tileType; // Ordinal of GameMap.TileType
 

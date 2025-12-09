@@ -8,10 +8,10 @@ public class EnemySpawner {
     private int maxOnScreen;
     private int spawnedCount;
     private int spawnCooldown;
-    private static final int SPAWN_DELAY = 50; // ~0.8 seconds
-    private static final int BOSS_BASE_HEALTH = 12;
+    private static final int SPAWN_DELAY = GameConstants.SPAWN_DELAY;
+    private static final int BOSS_BASE_HEALTH = GameConstants.BOSS_BASE_HEALTH;
 
-    private Random random;
+    private final Random random = GameConstants.RANDOM; // Use shared Random instance
     private GameMap map;
     private int levelNumber;
 
@@ -27,7 +27,6 @@ public class EnemySpawner {
         this.maxOnScreen = maxOnScreen;
         this.spawnedCount = 0;
         this.spawnCooldown = SPAWN_DELAY;
-        this.random = new Random();
         this.map = map;
         this.levelNumber = map.getLevelNumber();
     }

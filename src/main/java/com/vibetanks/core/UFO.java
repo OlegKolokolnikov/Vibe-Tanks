@@ -9,9 +9,9 @@ import java.util.Random;
 public class UFO {
     private static final int SIZE = 48;
     private static final double SPEED = 1.5;
-    private static final int SHOOT_COOLDOWN = 90; // frames between shots
+    private static final int SHOOT_COOLDOWN = GameConstants.UFO_SHOOT_COOLDOWN;
     private static final int LIFETIME = GameConstants.UFO_LIFETIME;
-    private static final int DIRECTION_CHANGE_INTERVAL = 60; // Change direction every second
+    private static final int DIRECTION_CHANGE_INTERVAL = GameConstants.UFO_DIRECTION_CHANGE;
 
     private double x, y;
     private double dx, dy; // Movement direction
@@ -19,7 +19,7 @@ public class UFO {
     private int lifetime;
     private int shootCooldown;
     private int directionChangeTimer;
-    private Random random;
+    private final Random random = GameConstants.RANDOM; // Use shared Random instance
     private boolean movingRight; // General direction (left to right or right to left)
     private int health = 3; // UFO takes 3 hits to destroy
 
@@ -35,7 +35,6 @@ public class UFO {
         this.lifetime = LIFETIME;
         this.shootCooldown = SHOOT_COOLDOWN;
         this.directionChangeTimer = DIRECTION_CHANGE_INTERVAL;
-        this.random = new Random();
         this.hoverOffset = 0;
         this.lightFrame = 0;
 

@@ -9,13 +9,13 @@ import java.util.Map;
 import java.util.Random;
 
 public class GameMap {
-    private static final int TILE_SIZE = 32;
-    private static final int BURN_DURATION = 60; // frames (1 second at 60 FPS)
+    private static final int TILE_SIZE = GameConstants.TILE_SIZE;
+    private static final int BURN_DURATION = GameConstants.BURN_DURATION;
 
     private int width;
     private int height;
     private TileType[][] tiles;
-    private Random random = new Random();
+    private final Random random = GameConstants.RANDOM; // Use shared Random instance
     private int levelNumber = 1;
     private long currentLevelSeed; // Seed used for current level (for restart)
     private LevelData customLevelData; // Custom level data (if using custom level)

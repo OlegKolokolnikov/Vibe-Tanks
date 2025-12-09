@@ -4,8 +4,8 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 public class Bullet {
-    private static final int DEFAULT_SIZE = 8;
-    private static final double SPEED = 6.0;
+    private static final int DEFAULT_SIZE = GameConstants.BULLET_SIZE;
+    private static final double SPEED = GameConstants.BULLET_SPEED;
     private static long nextId = 1; // Global bullet ID counter
 
     /**

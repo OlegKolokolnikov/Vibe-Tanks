@@ -58,6 +58,28 @@ public final class GameConstants {
 
     // UFO settings
     public static final double UFO_SPAWN_CHANCE = 0.0005; // Per frame chance
+    public static final int UFO_SHOOT_COOLDOWN = 90;      // Frames between UFO shots
+    public static final int UFO_DIRECTION_CHANGE = 60;    // Change direction every second
+
+    // Enemy spawner settings
+    public static final int SPAWN_DELAY = 50;             // ~0.8 seconds between spawns
+    public static final int BOSS_BASE_HEALTH = 12;        // Base health for boss (increases per level)
+
+    // Tank settings
+    public static final int TANK_SHOOT_COOLDOWN = 30;     // Frames between shots
+    public static final int LASER_SHOOT_COOLDOWN = 10;    // Very fast laser shooting
+    public static final int RESPAWN_DELAY = 60;           // 1 second respawn delay
+    public static final double TANK_BASE_SPEED = 2.0;     // Base movement speed
+    public static final double SLIDE_DISTANCE = 32.0;     // One tile slide on ice
+
+    // Bullet/Laser settings
+    public static final double BULLET_SPEED = 6.0;
+    public static final int BULLET_SIZE = 8;
+    public static final int LASER_BEAM_WIDTH = 12;
+    public static final int LASER_LIFETIME = 15;          // Laser visible frames
+
+    // Map burning
+    public static final int BURN_DURATION = 60;           // 1 second burn time
 
     // Scoring
     public static final int SCORE_REGULAR = 1;

@@ -9,8 +9,8 @@ import javafx.scene.paint.Color;
  * Deals 3 damage to any unit it touches.
  */
 public class Laser {
-    private static final int BEAM_WIDTH = 12; // Wider beam for better visibility
-    private static final int LIFETIME = 15; // Slightly longer for visibility
+    private static final int BEAM_WIDTH = GameConstants.LASER_BEAM_WIDTH;
+    private static final int LIFETIME = GameConstants.LASER_LIFETIME;
     private static long nextId = 1;
 
     /**

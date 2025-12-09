@@ -267,19 +267,4 @@ public class ProjectileHandler {
 
         return result;
     }
-
-    /**
-     * Get score for killing an enemy.
-     *
-     * @param enemyType The type of enemy killed
-     * @return Points to award
-     */
-    public static int getScoreForKill(Tank.EnemyType enemyType) {
-        return switch (enemyType) {
-            case POWER -> 2;  // Rainbow tank
-            case HEAVY -> 5;  // Black tank
-            case BOSS -> 10;  // Boss tank
-            default -> 1;     // Regular, Armored, Fast
-        };
-    }
 }

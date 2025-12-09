@@ -1,6 +1,7 @@
 package com.vibetanks.core;
 
 import com.vibetanks.audio.SoundManager;
+import com.vibetanks.rendering.TankRenderer;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import com.vibetanks.util.GameLogger;
@@ -18,7 +19,7 @@ public class Tank {
         BOSS        // 12 shots, fast, black, 4x size, can destroy iron
     }
 
-    private static final int BASE_SIZE = 28;
+    public static final int BASE_SIZE = 28;
     private int size = BASE_SIZE; // Instance variable for tank size
     private static final double SPEED = 2.0;
     private static final double TARGET_FPS = 60.0; // Game is designed for 60 FPS
@@ -613,213 +614,7 @@ public class Tank {
     }
 
     public void render(GraphicsContext gc) {
-        if (!alive) return;
-
-        // Scale factor for rendering (1.0 for normal tanks, 4.0 for BOSS)
-        double scale = (double) size / BASE_SIZE;
-
-        // Draw shield if active (animated waving circle)
-        if (hasShield) {
-            // Use System.currentTimeMillis() for sync across all clients
-            long time = System.currentTimeMillis();
-
-            // Draw multiple overlapping circles with wave effect
-            for (int i = 0; i < 3; i++) {
-                // Each ring has a different phase offset
-                double phase = time / 150.0 + i * Math.PI * 2 / 3;
-                double wave = Math.sin(phase) * 2 * scale; // Wave amplitude
-                double breathe = Math.sin(time / 300.0) * 1.5 * scale; // Breathing effect
-
-                // Color varies slightly for each ring
-                double alpha = 0.6 + 0.4 * Math.sin(phase + i);
-                gc.setStroke(Color.color(0, 0.8 + 0.2 * Math.sin(phase), 1, alpha));
-                gc.setLineWidth((2 - i * 0.5) * scale);
-
-                double offset = 4 * scale + wave + breathe + i * 2 * scale;
-                gc.strokeOval(x - offset, y - offset, size + offset * 2, size + offset * 2);
-            }
-        }
-
-        // Draw pause shield (yellow/orange pulsing)
-        if (hasPauseShield) {
-            int pulse = (int) (System.currentTimeMillis() / 200) % 2;
-            gc.setStroke(pulse == 0 ? Color.YELLOW : Color.ORANGE);
-            gc.setLineWidth(3 * scale);
-            gc.strokeOval(x - 6 * scale, y - 6 * scale, size + 12 * scale, size + 12 * scale);
-        }
-
-        // Draw ship indicator if active (triangle)
-        if (canSwim) {
-            gc.setStroke(Color.BLUE);
-            gc.setLineWidth(2 * scale);
-            double centerX = x + size / 2;
-            double topY = y - 6 * scale;
-            double bottomY = y + size + 6 * scale;
-            double leftX = x - 6 * scale;
-            double rightX = x + size + 6 * scale;
-            gc.strokePolygon(
-                new double[]{leftX, rightX, centerX},
-                new double[]{bottomY, bottomY, topY},
-                3
-            );
-        }
-
-        // Get tank color
-        Color tankColor;
-        Color darkColor;
-        if (isPlayer) {
-            tankColor = getPlayerColor(playerNumber);
-            darkColor = tankColor.darker();
-        } else {
-            switch (enemyType) {
-                case REGULAR -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
-                case ARMORED -> { tankColor = Color.DARKRED; darkColor = Color.rgb(80, 0, 0); }
-                case FAST -> { tankColor = Color.rgb(255, 100, 100); darkColor = Color.rgb(200, 60, 60); }
-                case POWER -> {
-                    // Rainbow color animation for POWER tanks
-                    int frame = (int) (System.currentTimeMillis() / 100) % 7;
-                    Color[] rainbow = { Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.PURPLE };
-                    tankColor = rainbow[frame];
-                    darkColor = tankColor.darker();
-                }
-                case BOSS -> {
-                    // Pulsing red color for BOSS tank
-                    double pulse = (Math.sin(System.currentTimeMillis() / 150.0) + 1) / 2; // 0 to 1
-                    int red = (int) (150 + pulse * 105); // 150 to 255
-                    int green = (int) (pulse * 50); // 0 to 50
-                    tankColor = Color.rgb(red, green, 0);
-                    darkColor = Color.rgb((int)(red * 0.6), 0, 0);
-                }
-                case HEAVY -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
-                default -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
-            }
-        }
-
-        // Calculate track animation offset (alternates every 4 frames)
-        int trackOffset = (trackAnimationFrame / 4) % 2 == 0 ? 0 : (int)(3 * scale);
-
-        // Draw tank based on direction
-        gc.save();
-        gc.translate(x + size / 2.0, y + size / 2.0);
-
-        // Rotate based on direction
-        switch (direction) {
-            case UP -> gc.rotate(0);
-            case RIGHT -> gc.rotate(90);
-            case DOWN -> gc.rotate(180);
-            case LEFT -> gc.rotate(270);
-        }
-
-        gc.translate(-size / 2.0, -size / 2.0);
-
-        // Draw left track
-        gc.setFill(darkColor);
-        gc.fillRect(0, 0, 8 * scale, size);
-        // Track details (animated)
-        gc.setFill(Color.rgb(40, 40, 40));
-        int trackCount = (int)(5 * scale);
-        for (int i = 0; i < trackCount; i++) {
-            int ty = (int)((i * 7 * scale + trackOffset) % size);
-            gc.fillRect(1 * scale, ty, 6 * scale, 3 * scale);
-        }
-
-        // Draw right track
-        gc.setFill(darkColor);
-        gc.fillRect(size - 8 * scale, 0, 8 * scale, size);
-        // Track details (animated)
-        gc.setFill(Color.rgb(40, 40, 40));
-        for (int i = 0; i < trackCount; i++) {
-            int ty = (int)((i * 7 * scale + trackOffset) % size);
-            gc.fillRect(size - 7 * scale, ty, 6 * scale, 3 * scale);
-        }
-
-        // Draw tank body (between tracks)
-        gc.setFill(tankColor);
-        gc.fillRect(6 * scale, 4 * scale, size - 12 * scale, size - 8 * scale);
-
-        // Draw turret (circular base)
-        gc.setFill(darkColor);
-        gc.fillOval(size / 2.0 - 7 * scale, size / 2.0 - 7 * scale, 14 * scale, 14 * scale);
-        gc.setFill(tankColor);
-        gc.fillOval(size / 2.0 - 5 * scale, size / 2.0 - 5 * scale, 10 * scale, 10 * scale);
-
-        // Draw cannon barrel
-        gc.setFill(Color.DARKGRAY);
-        gc.fillRect(size / 2.0 - 2 * scale, -2 * scale, 4 * scale, size / 2.0 + 2 * scale);
-        gc.setFill(Color.GRAY);
-        gc.fillRect(size / 2.0 - 1 * scale, -2 * scale, 2 * scale, size / 2.0);
-
-        // Special markings for enemy types
-        if (!isPlayer) {
-            switch (enemyType) {
-                case ARMORED -> {
-                    // Extra armor plates
-                    gc.setFill(Color.GRAY);
-                    gc.fillRect(8 * scale, 6 * scale, size - 16 * scale, 3 * scale);
-                    gc.fillRect(8 * scale, size - 9 * scale, size - 16 * scale, 3 * scale);
-                }
-                case HEAVY -> {
-                    // White dot indicator
-                    gc.setFill(Color.WHITE);
-                    gc.fillOval(size / 2.0 - 3 * scale, size / 2.0 - 3 * scale, 6 * scale, 6 * scale);
-                }
-                case FAST -> {
-                    // Speed stripes
-                    gc.setStroke(Color.WHITE);
-                    gc.setLineWidth(scale);
-                    gc.strokeLine(10 * scale, size - 6 * scale, 14 * scale, size - 6 * scale);
-                    gc.strokeLine(size - 14 * scale, size - 6 * scale, size - 10 * scale, size - 6 * scale);
-                }
-                case BOSS -> {
-                    // Skull with crossbones
-                    double cx = size / 2.0;
-                    double cy = size / 2.0 - 2 * scale;
-
-                    // Skull (white oval)
-                    gc.setFill(Color.WHITE);
-                    gc.fillOval(cx - 8 * scale, cy - 6 * scale, 16 * scale, 14 * scale);
-
-                    // Eye sockets (black)
-                    gc.setFill(Color.BLACK);
-                    gc.fillOval(cx - 5 * scale, cy - 2 * scale, 4 * scale, 4 * scale);
-                    gc.fillOval(cx + 1 * scale, cy - 2 * scale, 4 * scale, 4 * scale);
-
-                    // Nose (black triangle)
-                    gc.fillPolygon(
-                        new double[]{cx - 1 * scale, cx + 1 * scale, cx},
-                        new double[]{cy + 3 * scale, cy + 3 * scale, cy + 5 * scale},
-                        3
-                    );
-
-                    // Teeth (white rectangles on black mouth)
-                    gc.setFill(Color.BLACK);
-                    gc.fillRect(cx - 4 * scale, cy + 5 * scale, 8 * scale, 3 * scale);
-                    gc.setFill(Color.WHITE);
-                    for (int i = 0; i < 4; i++) {
-                        gc.fillRect(cx - 3.5 * scale + i * 2 * scale, cy + 5 * scale, 1.5 * scale, 3 * scale);
-                    }
-
-                    // Crossbones behind skull
-                    gc.setStroke(Color.WHITE);
-                    gc.setLineWidth(2 * scale);
-                    // Bone 1 (top-left to bottom-right)
-                    gc.strokeLine(cx - 12 * scale, cy - 8 * scale, cx + 12 * scale, cy + 12 * scale);
-                    // Bone 2 (top-right to bottom-left)
-                    gc.strokeLine(cx + 12 * scale, cy - 8 * scale, cx - 12 * scale, cy + 12 * scale);
-
-                    // Bone ends (small circles)
-                    gc.setFill(Color.WHITE);
-                    gc.fillOval(cx - 14 * scale, cy - 10 * scale, 4 * scale, 4 * scale);
-                    gc.fillOval(cx + 10 * scale, cy - 10 * scale, 4 * scale, 4 * scale);
-                    gc.fillOval(cx - 14 * scale, cy + 10 * scale, 4 * scale, 4 * scale);
-                    gc.fillOval(cx + 10 * scale, cy + 10 * scale, 4 * scale, 4 * scale);
-                }
-                // POWER has rainbow colors - no extra markings needed
-            }
-        }
-
-        gc.restore();
-
+        TankRenderer.render(gc, this);
         // Reset moving flag (will be set again if tank moves next frame)
         isMoving = false;
     }
@@ -846,6 +641,8 @@ public class Tank {
     public double getX() { return x; }
     public double getY() { return y; }
     public int getSize() { return size; }
+    public boolean isPlayer() { return isPlayer; }
+    public int getPlayerNumber() { return playerNumber; }
     public boolean isAlive() { return alive; }
     public void setAlive(boolean alive) { this.alive = alive; }
     public int getLives() { return lives; }
@@ -1011,6 +808,10 @@ public class Tank {
 
     public boolean canSwim() {
         return canSwim;
+    }
+
+    public int getTrackAnimationFrame() {
+        return trackAnimationFrame;
     }
 
     public boolean canDestroyTrees() {

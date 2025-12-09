@@ -47,6 +47,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     private GameMap gameMap;
     private List<Tank> playerTanks;
     private List<Tank> enemyTanks;
+    private List<Tank> allTanksCache = new ArrayList<>(); // Reusable list for collision detection
     private List<Bullet> bullets;
     private List<Laser> lasers;
     private List<PowerUp> powerUps;
@@ -552,10 +553,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             }
         }
 
-        // Create combined list of all tanks for collision detection
-        List<Tank> allTanks = new ArrayList<>();
-        allTanks.addAll(playerTanks);
-        allTanks.addAll(enemyTanks);
+        // Reuse combined list of all tanks for collision detection (avoid allocation in hot path)
+        allTanksCache.clear();
+        allTanksCache.addAll(playerTanks);
+        allTanksCache.addAll(enemyTanks);
+        List<Tank> allTanks = allTanksCache;
 
         // Handle player input (local or host) - pass freeze state
         boolean isPlayerFrozen = powerUpEffectManager.arePlayersFrozen();
@@ -678,7 +680,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                         if (killer.getMachinegunCount() > 0) {
                             ufoManager.recordMachinegunKill(killerPlayer - 1);
                         }
-                        addScore(killerPlayer - 1, ProjectileHandler.getScoreForKill(enemy.getEnemyType()));
+                        addScore(killerPlayer - 1, GameConstants.getScoreForEnemyType(enemy.getEnemyType()));
                         if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
                             LOG.info("BOSS killed by Player {} - awarding power-up!", killerPlayer);
                             bossKillerPlayerIndex = killerPlayer - 1;
@@ -738,7 +740,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     if (enemyTypeOrdinal < 6) {
                         playerKillsByType[killerPlayer - 1][enemyTypeOrdinal]++;
                     }
-                    addScore(killerPlayer - 1, ProjectileHandler.getScoreForKill(enemy.getEnemyType()));
+                    addScore(killerPlayer - 1, GameConstants.getScoreForEnemyType(enemy.getEnemyType()));
                     // BOSS kill rewards
                     if (laserResult.isBossKill) {
                         Tank killer = playerTanks.get(killerPlayer - 1);
@@ -1188,45 +1190,6 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     @Override
     public PlayerInput capturePlayerInput() {
         return inputHandler.capturePlayerInput();
-    }
-
-    private PlayerInput capturePlayerInput(Tank tank) {
-        // Capture current keyboard state (arrow keys + space)
-        return inputHandler.capturePlayerInput();
-    }
-
-    private void applyPlayerInput(Tank tank, PlayerInput input) {
-        if (!tank.isAlive()) return;
-
-        List<Tank> allTanks = new ArrayList<>();
-        allTanks.addAll(playerTanks);
-        allTanks.addAll(enemyTanks);
-
-        // Apply movement (only if not frozen)
-        if (!powerUpEffectManager.arePlayersFrozen()) {
-            if (input.up) {
-                tank.move(Direction.UP, gameMap, allTanks, base);
-            } else if (input.down) {
-                tank.move(Direction.DOWN, gameMap, allTanks, base);
-            } else if (input.left) {
-                tank.move(Direction.LEFT, gameMap, allTanks, base);
-            } else if (input.right) {
-                tank.move(Direction.RIGHT, gameMap, allTanks, base);
-            }
-        }
-
-        // Apply shooting (always allowed, even when frozen)
-        if (input.shoot) {
-            // Use laser if tank has laser power-up, otherwise use normal bullets
-            if (tank.hasLaser()) {
-                Laser laser = tank.shootLaser(soundManager);
-                if (laser != null) {
-                    lasers.add(laser);
-                }
-            } else {
-                tank.shoot(bullets, soundManager);
-            }
-        }
     }
 
 }

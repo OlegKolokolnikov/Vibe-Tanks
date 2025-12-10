@@ -687,9 +687,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                         Tank killer = playerTanks.get(killerPlayer - 1);
                         addScore(killerPlayer - 1, GameConstants.getScoreForEnemyType(enemy.getEnemyType()));
                         if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
-                            LOG.info("BOSS killed by Player {} - awarding power-up!", killerPlayer);
+                            LOG.info("BOSS killed by Player {} (tank playerNumber={}) - awarding power-up!",
+                                killerPlayer, killer.getPlayerNumber());
                             bossKillerPlayerIndex = killerPlayer - 1;
                             bossKillPowerUpReward = applyRandomPowerUp(killer);
+                            LOG.info("After reward: killer.hasShip={}", killer.hasShip());
                         }
                     }
                 }

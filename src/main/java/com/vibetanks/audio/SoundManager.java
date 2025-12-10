@@ -19,6 +19,7 @@ public class SoundManager {
     private byte[] explanationMusicData;
     private byte[] treeBurnSoundData;
     private byte[] laserSoundData;
+    private byte[] victorySoundData;
 
     private AudioFormat audioFormat;
     private ExecutorService soundExecutor;
@@ -61,12 +62,13 @@ public class SoundManager {
             explanationMusicData = loadSoundData("/sounds/explanation_music.wav");
             treeBurnSoundData = loadSoundData("/sounds/tree_burn.wav");
             laserSoundData = loadSoundData("/sounds/laser.wav");
+            victorySoundData = loadSoundData("/sounds/victory.wav");
 
             if (shootSoundData == null || explosionSoundData == null ||
                 introSoundData == null || sadSoundData == null ||
                 playerDeathSoundData == null || baseDestroyedSoundData == null ||
                 explanationMusicData == null || treeBurnSoundData == null ||
-                laserSoundData == null) {
+                laserSoundData == null || victorySoundData == null) {
                 LOG.warn("Some sounds could not be loaded. Game will run without sound effects.");
             } else {
                 LOG.info("All sounds loaded successfully!");
@@ -155,10 +157,11 @@ public class SoundManager {
         File explanationMusicFile = new File("src/main/resources/sounds/explanation_music.wav");
         File treeBurnFile = new File("src/main/resources/sounds/tree_burn.wav");
         File laserFile = new File("src/main/resources/sounds/laser.wav");
+        File victoryFile = new File("src/main/resources/sounds/victory.wav");
 
         if (!shootFile.exists() || !explosionFile.exists() || !introFile.exists() || !sadFile.exists() ||
             !playerDeathFile.exists() || !baseDestroyedFile.exists() || !explanationMusicFile.exists() ||
-            !treeBurnFile.exists() || !laserFile.exists()) {
+            !treeBurnFile.exists() || !laserFile.exists() || !victoryFile.exists()) {
             LOG.info("Generating sound files...");
             SoundGenerator.generateAllSounds();
         }
@@ -267,6 +270,10 @@ public class SoundManager {
 
     public void playLaser() {
         playSoundNew(laserSoundData);
+    }
+
+    public void playVictory() {
+        playSoundNew(victorySoundData);
     }
 
     public void playExplanationMusic() {

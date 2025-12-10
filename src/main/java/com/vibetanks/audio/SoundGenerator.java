@@ -48,6 +48,9 @@ public class SoundGenerator {
             // Generate laser sound - sci-fi zap
             generateLaserSound("src/main/resources/sounds/laser.wav");
 
+            // Generate victory sound - triumphant fanfare
+            generateVictorySound("src/main/resources/sounds/victory.wav");
+
             LOG.info("Sound files generated successfully!");
         } catch (Exception e) {
             LOG.error("Error generating sounds: {}", e.getMessage());
@@ -553,6 +556,62 @@ public class SoundGenerator {
             short shortSample = (short) (sample * Short.MAX_VALUE);
             buffer[i * 2] = (byte) (shortSample & 0xFF);
             buffer[i * 2 + 1] = (byte) ((shortSample >> 8) & 0xFF);
+        }
+
+        saveWav(filename, buffer);
+    }
+
+    private static void generateVictorySound(String filename) throws Exception {
+        // Triumphant victory fanfare - ascending major chord arpeggio with flourish
+        // C major chord: C, E, G, then high C with fanfare
+        double[] frequencies = {
+            523.25,  // C5
+            659.25,  // E5
+            783.99,  // G5
+            1046.50, // C6
+            1318.51, // E6
+            1046.50, // C6 (resolve)
+        };
+        double[] durations = {0.15, 0.15, 0.15, 0.25, 0.15, 0.4}; // Last note held longer
+
+        int totalSamples = 0;
+        for (double d : durations) {
+            totalSamples += (int) (d * SAMPLE_RATE);
+        }
+        byte[] buffer = new byte[totalSamples * 2];
+
+        int bufferIndex = 0;
+        for (int noteIdx = 0; noteIdx < frequencies.length; noteIdx++) {
+            double freq = frequencies[noteIdx];
+            double noteDuration = durations[noteIdx];
+            int numSamples = (int) (noteDuration * SAMPLE_RATE);
+
+            for (int i = 0; i < numSamples; i++) {
+                double t = (double) i / SAMPLE_RATE;
+                double angle = 2.0 * Math.PI * freq * t;
+
+                // Rich sound with harmonics
+                double wave = Math.sin(angle) * 0.5 +           // Fundamental
+                              Math.sin(angle * 2) * 0.25 +      // 2nd harmonic
+                              Math.sin(angle * 3) * 0.15 +      // 3rd harmonic
+                              Math.sin(angle * 4) * 0.1;        // 4th harmonic
+
+                short sample = (short) (wave * 0.4 * Short.MAX_VALUE);
+
+                // Apply envelope - quick attack, sustain, smooth release
+                double envelope = 1.0;
+                double attackTime = 0.02;
+                double releaseStart = 0.7;
+                if (t < attackTime) {
+                    envelope = t / attackTime;
+                } else if (i > numSamples * releaseStart) {
+                    envelope = (numSamples - i) / (numSamples * (1.0 - releaseStart));
+                }
+                sample = (short) (sample * envelope);
+
+                buffer[bufferIndex++] = (byte) (sample & 0xFF);
+                buffer[bufferIndex++] = (byte) ((sample >> 8) & 0xFF);
+            }
         }
 
         saveWav(filename, buffer);

@@ -876,8 +876,10 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 LOG.info("All enemies defeated! Victory in 10 seconds...");
             }
             victoryDelayTimer++;
-            if (victoryDelayTimer >= VICTORY_DELAY) {
+            if (victoryDelayTimer >= VICTORY_DELAY && !victory) {
                 victory = true;
+                soundManager.playVictory();
+                queueSoundEvent(GameState.SoundType.VICTORY);
             }
         }
 

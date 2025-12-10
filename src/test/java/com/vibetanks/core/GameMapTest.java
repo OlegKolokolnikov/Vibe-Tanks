@@ -395,6 +395,96 @@ class GameMapTest {
 
             // After reset, protection tiles should be brick
         }
+
+        @Test
+        @DisplayName("isBaseProtectionBroken should return false when all tiles intact")
+        void isBaseProtectionBrokenFalseWhenIntact() {
+            gameMap.setBaseProtection(GameMap.TileType.BRICK);
+
+            assertFalse(gameMap.isBaseProtectionBroken());
+        }
+
+        @Test
+        @DisplayName("isBaseProtectionBroken should return false when steel protection")
+        void isBaseProtectionBrokenFalseWhenSteel() {
+            gameMap.setBaseProtection(GameMap.TileType.STEEL);
+
+            assertFalse(gameMap.isBaseProtectionBroken());
+        }
+
+        @Test
+        @DisplayName("isBaseProtectionBroken should return true when top wall destroyed")
+        void isBaseProtectionBrokenTrueWhenTopWallDestroyed() {
+            gameMap.setBaseProtection(GameMap.TileType.BRICK);
+            // Destroy top wall tile (row 23, col 12)
+            gameMap.setTile(23, 12, GameMap.TileType.EMPTY);
+
+            assertTrue(gameMap.isBaseProtectionBroken());
+        }
+
+        @Test
+        @DisplayName("isBaseProtectionBroken should return true when left wall destroyed")
+        void isBaseProtectionBrokenTrueWhenLeftWallDestroyed() {
+            gameMap.setBaseProtection(GameMap.TileType.BRICK);
+            // Destroy left wall tile (row 24, col 11)
+            gameMap.setTile(24, 11, GameMap.TileType.EMPTY);
+
+            assertTrue(gameMap.isBaseProtectionBroken());
+        }
+
+        @Test
+        @DisplayName("isBaseProtectionBroken should return true when right wall destroyed")
+        void isBaseProtectionBrokenTrueWhenRightWallDestroyed() {
+            gameMap.setBaseProtection(GameMap.TileType.BRICK);
+            // Destroy right wall tile (row 24, col 13)
+            gameMap.setTile(24, 13, GameMap.TileType.EMPTY);
+
+            assertTrue(gameMap.isBaseProtectionBroken());
+        }
+
+        @Test
+        @DisplayName("isBaseProtectionBroken should return true when bottom wall destroyed")
+        void isBaseProtectionBrokenTrueWhenBottomWallDestroyed() {
+            gameMap.setBaseProtection(GameMap.TileType.BRICK);
+            // Destroy bottom wall tile (row 25, col 12)
+            gameMap.setTile(25, 12, GameMap.TileType.EMPTY);
+
+            assertTrue(gameMap.isBaseProtectionBroken());
+        }
+
+        @Test
+        @DisplayName("isBaseProtectionBroken should return true when any single tile destroyed")
+        void isBaseProtectionBrokenTrueWhenAnySingleTileDestroyed() {
+            // Protection tiles are at positions:
+            // Top: (23,11), (23,12), (23,13)
+            // Left: (24,11), Right: (24,13)
+            // Bottom: (25,11), (25,12), (25,13)
+            int[][] protectionTiles = {
+                {23, 11}, {23, 12}, {23, 13},
+                {24, 11}, {24, 13},
+                {25, 11}, {25, 12}, {25, 13}
+            };
+
+            for (int[] pos : protectionTiles) {
+                // Reset protection
+                gameMap.setBaseProtection(GameMap.TileType.BRICK);
+                assertFalse(gameMap.isBaseProtectionBroken(),
+                    "Protection should be intact before destroying tile at (" + pos[0] + "," + pos[1] + ")");
+
+                // Destroy single tile
+                gameMap.setTile(pos[0], pos[1], GameMap.TileType.EMPTY);
+                assertTrue(gameMap.isBaseProtectionBroken(),
+                    "Protection should be broken after destroying tile at (" + pos[0] + "," + pos[1] + ")");
+            }
+        }
+
+        @Test
+        @DisplayName("isBaseProtectionBroken should return true when all tiles destroyed")
+        void isBaseProtectionBrokenTrueWhenAllDestroyed() {
+            gameMap.setBaseProtection(GameMap.TileType.EMPTY);
+
+            assertTrue(gameMap.isBaseProtectionBroken());
+        }
     }
 
     @Nested

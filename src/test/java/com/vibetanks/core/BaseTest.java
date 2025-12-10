@@ -236,4 +236,185 @@ class BaseTest {
             assertTrue(base.isAlive());
         }
     }
+
+    @Nested
+    @DisplayName("Cat Escape Animation Tests")
+    class CatEscapeAnimationTests {
+
+        @Test
+        @DisplayName("Cat escape should be off by default")
+        void catEscapeOffByDefault() {
+            assertFalse(base.isCatEscaping());
+        }
+
+        @Test
+        @DisplayName("startCatEscape should not work without cat mode")
+        void startCatEscapeRequiresCatMode() {
+            assertFalse(base.isCatMode());
+
+            base.startCatEscape();
+
+            assertFalse(base.isCatEscaping());
+        }
+
+        @Test
+        @DisplayName("startCatEscape should work with cat mode enabled")
+        void startCatEscapeWorksWithCatMode() {
+            base.setCatMode(true);
+
+            base.startCatEscape();
+
+            assertTrue(base.isCatEscaping());
+        }
+
+        @Test
+        @DisplayName("startCatEscape should initialize escape position to base position")
+        void startCatEscapeInitializesPosition() {
+            base.setCatMode(true);
+
+            base.startCatEscape();
+
+            assertEquals(base.getX(), base.getCatEscapeX());
+            assertEquals(base.getY(), base.getCatEscapeY());
+        }
+
+        @Test
+        @DisplayName("startCatEscape should set toy position to the right of base")
+        void startCatEscapeSetsToPosition() {
+            base.setCatMode(true);
+
+            base.startCatEscape();
+
+            assertTrue(base.getToyX() > base.getX());
+        }
+
+        @Test
+        @DisplayName("startCatEscape should reset frame counter")
+        void startCatEscapeResetsFrameCounter() {
+            base.setCatMode(true);
+
+            base.startCatEscape();
+
+            assertEquals(0, base.getCatEscapeFrame());
+        }
+
+        @Test
+        @DisplayName("startCatEscape should set random toy type (0-2)")
+        void startCatEscapeSetsRandomToyType() {
+            base.setCatMode(true);
+
+            base.startCatEscape();
+
+            int toyType = base.getToyType();
+            assertTrue(toyType >= 0 && toyType <= 2,
+                "Toy type should be 0, 1, or 2 but was " + toyType);
+        }
+
+        @Test
+        @DisplayName("startCatEscape should not restart if already escaping")
+        void startCatEscapeDoesNotRestartIfEscaping() {
+            base.setCatMode(true);
+            base.startCatEscape();
+
+            double initialToyX = base.getToyX();
+            int initialToyType = base.getToyType();
+
+            // Try to start again
+            base.startCatEscape();
+
+            // Should remain unchanged
+            assertEquals(initialToyX, base.getToyX());
+            assertEquals(initialToyType, base.getToyType());
+        }
+
+        @Test
+        @DisplayName("setCatEscapeState should set all escape properties")
+        void setCatEscapeStateSetsAllProperties() {
+            base.setCatEscapeState(true, 150.0, 250.0, 30, 400.0, 180.0, 2);
+
+            assertTrue(base.isCatEscaping());
+            assertEquals(150.0, base.getCatEscapeX());
+            assertEquals(250.0, base.getCatEscapeY());
+            assertEquals(30, base.getCatEscapeFrame());
+            assertEquals(400.0, base.getToyX());
+            assertEquals(180.0, base.getToyY());
+            assertEquals(2, base.getToyType());
+        }
+
+        @Test
+        @DisplayName("setCatEscapeState can disable escaping")
+        void setCatEscapeStateCanDisable() {
+            base.setCatMode(true);
+            base.startCatEscape();
+            assertTrue(base.isCatEscaping());
+
+            base.setCatEscapeState(false, 0, 0, 0, 0, 0, 0);
+
+            assertFalse(base.isCatEscaping());
+        }
+
+        @Test
+        @DisplayName("reset should clear cat escape state")
+        void resetClearsCatEscapeState() {
+            base.setCatMode(true);
+            base.startCatEscape();
+            assertTrue(base.isCatEscaping());
+
+            base.reset();
+
+            assertFalse(base.isCatEscaping());
+            assertFalse(base.isCatMode());
+            assertEquals(0, base.getCatEscapeFrame());
+        }
+    }
+
+    @Nested
+    @DisplayName("Reset Tests")
+    class ResetTests {
+
+        @Test
+        @DisplayName("reset should restore base to alive")
+        void resetRestoresAlive() {
+            base.destroy();
+            assertFalse(base.isAlive());
+
+            base.reset();
+
+            assertTrue(base.isAlive());
+        }
+
+        @Test
+        @DisplayName("reset should hide all flags")
+        void resetHidesFlags() {
+            base.raiseFlag();
+            base.raiseVictoryFlag();
+
+            base.reset();
+
+            assertFalse(base.isShowingFlag());
+            assertFalse(base.isShowingVictoryFlag());
+        }
+
+        @Test
+        @DisplayName("reset should clear flag heights")
+        void resetClearsFlagHeights() {
+            base.setFlagState(true, 50.0);
+            base.setVictoryFlagState(true, 40.0);
+
+            base.reset();
+
+            assertEquals(0, base.getFlagHeight());
+            assertEquals(0, base.getVictoryFlagHeight());
+        }
+
+        @Test
+        @DisplayName("reset should clear cat mode")
+        void resetClearsCatMode() {
+            base.setCatMode(true);
+
+            base.reset();
+
+            assertFalse(base.isCatMode());
+        }
+    }
 }

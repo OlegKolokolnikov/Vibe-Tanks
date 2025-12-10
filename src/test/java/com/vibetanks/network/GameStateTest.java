@@ -386,4 +386,152 @@ class GameStateTest {
             assertEquals(1, gameState.mapTiles[5][5]);
         }
     }
+
+    @Nested
+    @DisplayName("Cat Escape State Tests")
+    class CatEscapeStateTests {
+
+        @Test
+        @DisplayName("Cat escape fields should have default values")
+        void catEscapeFieldsHaveDefaults() {
+            assertFalse(gameState.catEscaping);
+            assertEquals(0, gameState.catEscapeX);
+            assertEquals(0, gameState.catEscapeY);
+            assertEquals(0, gameState.catEscapeFrame);
+            assertEquals(0, gameState.toyX);
+            assertEquals(0, gameState.toyY);
+            assertEquals(0, gameState.toyType);
+        }
+
+        @Test
+        @DisplayName("Cat escape fields should be modifiable")
+        void catEscapeFieldsModifiable() {
+            gameState.catEscaping = true;
+            gameState.catEscapeX = 150.5;
+            gameState.catEscapeY = 250.75;
+            gameState.catEscapeFrame = 45;
+            gameState.toyX = 400.0;
+            gameState.toyY = 180.0;
+            gameState.toyType = 2;
+
+            assertTrue(gameState.catEscaping);
+            assertEquals(150.5, gameState.catEscapeX);
+            assertEquals(250.75, gameState.catEscapeY);
+            assertEquals(45, gameState.catEscapeFrame);
+            assertEquals(400.0, gameState.toyX);
+            assertEquals(180.0, gameState.toyY);
+            assertEquals(2, gameState.toyType);
+        }
+
+        @Test
+        @DisplayName("Cat escape state should be serializable")
+        void catEscapeStateShouldBeSerializable() throws IOException, ClassNotFoundException {
+            gameState.catEscaping = true;
+            gameState.catEscapeX = 120.0;
+            gameState.catEscapeY = 220.0;
+            gameState.catEscapeFrame = 30;
+            gameState.toyX = 350.0;
+            gameState.toyY = 170.0;
+            gameState.toyType = 1;
+
+            // Serialize
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(gameState);
+            oos.close();
+
+            // Deserialize
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            GameState deserialized = (GameState) ois.readObject();
+            ois.close();
+
+            assertTrue(deserialized.catEscaping);
+            assertEquals(120.0, deserialized.catEscapeX);
+            assertEquals(220.0, deserialized.catEscapeY);
+            assertEquals(30, deserialized.catEscapeFrame);
+            assertEquals(350.0, deserialized.toyX);
+            assertEquals(170.0, deserialized.toyY);
+            assertEquals(1, deserialized.toyType);
+        }
+
+        @Test
+        @DisplayName("Toy type should support all three types")
+        void toyTypeSupportAllTypes() {
+            for (int type = 0; type <= 2; type++) {
+                gameState.toyType = type;
+                assertEquals(type, gameState.toyType, "Toy type " + type + " should be settable");
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Sound Event Tests")
+    class SoundEventTests {
+
+        @Test
+        @DisplayName("Sound events list should be initialized")
+        void soundEventsListInitialized() {
+            assertNotNull(gameState.soundEvents);
+            assertTrue(gameState.soundEvents.isEmpty());
+        }
+
+        @Test
+        @DisplayName("SoundEvent constructor with type only")
+        void soundEventConstructorWithTypeOnly() {
+            GameState.SoundEvent event = new GameState.SoundEvent(GameState.SoundType.VICTORY);
+
+            assertEquals(GameState.SoundType.VICTORY, event.type);
+            assertEquals(0, event.playerNumber);
+        }
+
+        @Test
+        @DisplayName("SoundEvent constructor with type and player number")
+        void soundEventConstructorWithTypeAndPlayer() {
+            GameState.SoundEvent event = new GameState.SoundEvent(GameState.SoundType.PLAYER_DEATH, 2);
+
+            assertEquals(GameState.SoundType.PLAYER_DEATH, event.type);
+            assertEquals(2, event.playerNumber);
+        }
+
+        @Test
+        @DisplayName("All SoundType values should exist")
+        void allSoundTypesExist() {
+            GameState.SoundType[] types = GameState.SoundType.values();
+            assertTrue(types.length >= 7, "Should have at least 7 sound types");
+
+            // Verify specific types exist
+            assertNotNull(GameState.SoundType.SHOOT);
+            assertNotNull(GameState.SoundType.EXPLOSION);
+            assertNotNull(GameState.SoundType.PLAYER_DEATH);
+            assertNotNull(GameState.SoundType.LASER);
+            assertNotNull(GameState.SoundType.BASE_DESTROYED);
+            assertNotNull(GameState.SoundType.TREE_BURN);
+            assertNotNull(GameState.SoundType.VICTORY);
+        }
+
+        @Test
+        @DisplayName("Sound events should be serializable")
+        void soundEventsShouldBeSerializable() throws IOException, ClassNotFoundException {
+            gameState.soundEvents.add(new GameState.SoundEvent(GameState.SoundType.VICTORY));
+            gameState.soundEvents.add(new GameState.SoundEvent(GameState.SoundType.PLAYER_DEATH, 1));
+
+            // Serialize
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(gameState);
+            oos.close();
+
+            // Deserialize
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            GameState deserialized = (GameState) ois.readObject();
+            ois.close();
+
+            assertEquals(2, deserialized.soundEvents.size());
+            assertEquals(GameState.SoundType.VICTORY, deserialized.soundEvents.get(0).type);
+            assertEquals(GameState.SoundType.PLAYER_DEATH, deserialized.soundEvents.get(1).type);
+            assertEquals(1, deserialized.soundEvents.get(1).playerNumber);
+        }
+    }
 }

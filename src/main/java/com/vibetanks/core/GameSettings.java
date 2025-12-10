@@ -52,6 +52,12 @@ public class GameSettings {
         musicVolume = prefs.getDouble(KEY_MUSIC_VOLUME, DEFAULT_VOLUME);
         playerNickname = prefs.get(KEY_NICKNAME, "");
         enemyCount = prefs.getInt(KEY_ENEMY_COUNT, DEFAULT_ENEMY_COUNT);
+
+        // Log loaded settings for debugging speed differences between machines
+        System.out.println("[GameSettings] Loaded: playerSpeed=" + playerSpeedMultiplier +
+                ", enemySpeed=" + enemySpeedMultiplier +
+                ", playerShootSpeed=" + playerShootSpeedMultiplier +
+                ", enemyShootSpeed=" + enemyShootSpeedMultiplier);
     }
 
     public static void saveSettings() {

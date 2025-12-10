@@ -1,5 +1,8 @@
 package com.vibetanks.core;
 
+import com.vibetanks.util.GameLogger;
+
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 /**
@@ -7,6 +10,7 @@ import java.util.prefs.Preferences;
  * Stores nickname persistently using Java Preferences.
  */
 public class NicknameManager {
+    private static final GameLogger LOG = GameLogger.getLogger(NicknameManager.class);
     private static final String PREFS_KEY = "player_nickname";
     private static final Preferences prefs = Preferences.userNodeForPackage(NicknameManager.class);
     private static final int MAX_NICKNAME_LENGTH = 12;
@@ -28,6 +32,7 @@ public class NicknameManager {
     public static void setNickname(String nickname) {
         if (nickname == null || nickname.trim().isEmpty()) {
             prefs.remove(PREFS_KEY);
+            flushPrefs();
             return;
         }
 
@@ -38,6 +43,19 @@ public class NicknameManager {
         }
 
         prefs.put(PREFS_KEY, nickname);
+        flushPrefs();
+        LOG.info("Nickname saved: {}", nickname);
+    }
+
+    /**
+     * Flush preferences to persistent storage.
+     */
+    private static void flushPrefs() {
+        try {
+            prefs.flush();
+        } catch (BackingStoreException e) {
+            LOG.error("Failed to save nickname to preferences: {}", e.getMessage());
+        }
     }
 
     /**
@@ -45,6 +63,8 @@ public class NicknameManager {
      */
     public static void clearNickname() {
         prefs.remove(PREFS_KEY);
+        flushPrefs();
+        LOG.info("Nickname cleared");
     }
 
     /**

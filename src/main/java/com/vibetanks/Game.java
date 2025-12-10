@@ -441,13 +441,30 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
+                // Calculate actual delta time since last frame
+                long deltaTime = (lastFrameTime != 0) ? now - lastFrameTime : FRAME_TIME;
+
                 // Limit frame rate to ~60 FPS by skipping frames if not enough time has passed
-                if (lastFrameTime != 0 && now - lastFrameTime < FRAME_TIME) {
+                if (deltaTime < FRAME_TIME) {
                     return; // Not enough time has passed since last frame
                 }
+
+                // Clamp delta time to prevent spiral of death (max 2 frames worth)
+                // This also handles cases where the game was paused or minimized
+                if (deltaTime > FRAME_TIME * 2) {
+                    deltaTime = FRAME_TIME * 2;
+                }
+
                 lastFrameTime = now;
 
-                update();
+                // Run updates for each frame that should have occurred
+                // This ensures consistent game speed even if frame rate drops
+                long accumulated = deltaTime;
+                while (accumulated >= FRAME_TIME) {
+                    update();
+                    accumulated -= FRAME_TIME;
+                }
+
                 render();
 
                 // FPS counter
@@ -455,7 +472,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - fpsLastTime >= 5000) {
                     double fps = fpsFrameCount / 5.0;
-                    LOG.debug("[CLIENT FPS] {}", String.format("%.1f", fps));
+                    LOG.info("[FPS] {} (target: 60)", String.format("%.1f", fps));
                     fpsFrameCount = 0;
                     fpsLastTime = currentTime;
                 }

@@ -73,10 +73,11 @@ class GameUpdateOrchestratorTest {
         }
 
         @Test
-        @DisplayName("updatePlayerTanks should handle dead player with lives")
+        @DisplayName("updatePlayerTanks should handle dead player with lives remaining")
         void updatePlayerTanksShouldHandleDeadPlayerWithLives() {
             Tank player = new Tank(200, 700, Direction.UP, true, 1);
-            player.setLives(3);
+            // Simulate death: lives already decremented by damage() to 2
+            player.setLives(2);
             player.setAlive(false);
             context.playerTanks.add(player);
             allTanks.add(player);
@@ -85,16 +86,17 @@ class GameUpdateOrchestratorTest {
 
             GameUpdateOrchestrator.updatePlayerTanks(context, allTanks, respawnPositions);
 
-            // Player should lose a life and start respawn
+            // Lives should remain at 2 (not decremented again), player starts respawn
             assertEquals(2, player.getLives());
             assertTrue(player.isWaitingToRespawn());
         }
 
         @Test
-        @DisplayName("updatePlayerTanks should handle player on last life")
+        @DisplayName("updatePlayerTanks should handle player with no lives left")
         void updatePlayerTanksShouldHandlePlayerOnLastLife() {
             Tank player = new Tank(200, 700, Direction.UP, true, 1);
-            player.setLives(1);
+            // Simulate final death: lives already decremented by damage() to 0
+            player.setLives(0);
             player.setAlive(false);
             context.playerTanks.add(player);
             allTanks.add(player);
@@ -103,7 +105,9 @@ class GameUpdateOrchestratorTest {
 
             GameUpdateOrchestrator.updatePlayerTanks(context, allTanks, respawnPositions);
 
+            // Player should stay at 0 lives, no respawn
             assertEquals(0, player.getLives());
+            assertFalse(player.isWaitingToRespawn());
         }
 
         @Test

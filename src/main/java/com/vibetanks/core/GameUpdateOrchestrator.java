@@ -82,15 +82,15 @@ public class GameUpdateOrchestrator {
                 player.update(gameMap, bullets, soundManager, allTanks, base);
             } else if (player.isWaitingToRespawn()) {
                 player.updateRespawnTimer();
-            } else if (player.getLives() > 1) {
-                player.setLives(player.getLives() - 1);
+            } else if (player.getLives() > 0) {
+                // Lives already decremented by damage(), just respawn
                 double respawnX = respawnPositions[i][0];
                 double respawnY = respawnPositions[i][1];
                 LOG.info("Player {} will respawn at: {}, {} (lives left: {})",
                     i + 1, respawnX, respawnY, player.getLives());
                 player.respawn(respawnX, respawnY);
-            } else if (player.getLives() == 1) {
-                player.setLives(0);
+            } else if (player.getLives() <= 0) {
+                // Player has no lives left - game over for this player
                 LOG.info("Player {} lost their last life!", i + 1);
             }
         }

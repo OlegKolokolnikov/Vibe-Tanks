@@ -310,6 +310,61 @@ class TankPhysicsTest {
 
             // BOSS should be blocked by steel
         }
+
+        @Test
+        @DisplayName("BOSS tank should NOT destroy base through steel protection")
+        void bossTankShouldNotDestroyBaseThroughSteelProtection() {
+            // Base at position (384, 768) - standard base position at bottom center
+            Base base = new Base(384, 768);
+            assertTrue(base.isAlive(), "Base should start alive");
+
+            // Place steel protection around the base (simulating shovel power-up effect)
+            // Steel tiles at row 24 (y=768), cols 12-14
+            // And row 23 (y=736), cols 12-14 for extra protection
+            gameMap.setTile(23, 11, GameMap.TileType.STEEL);
+            gameMap.setTile(23, 12, GameMap.TileType.STEEL);
+            gameMap.setTile(23, 13, GameMap.TileType.STEEL);
+            gameMap.setTile(23, 14, GameMap.TileType.STEEL);
+
+            // BOSS tank approaching from above, would collide with steel protection
+            // Position BOSS just above the steel row
+            // Row 23 is at y=736, BOSS at y=700 moving down would hit steel first
+            Tank boss = new Tank(384, 700, Direction.DOWN, false, 0, Tank.EnemyType.BOSS);
+            List<Tank> others = new ArrayList<>();
+
+            // Try to move BOSS toward base through steel
+            boolean moved = physics.move(boss, Direction.DOWN, gameMap, others, base);
+
+            // BOSS should be stopped by steel and base should NOT be destroyed
+            assertFalse(moved, "BOSS should be stopped by steel protection");
+            assertTrue(base.isAlive(), "Base should remain alive - steel blocks BOSS from reaching it");
+        }
+
+        @Test
+        @DisplayName("BOSS tank CAN destroy base without steel protection")
+        void bossTankCanDestroyBaseWithoutSteelProtection() {
+            // Base at accessible position - smaller values to avoid map boundary issues
+            // Base is 32 pixels (2 tiles), positioned at (200, 200)
+            Base base = new Base(200, 200);
+            assertTrue(base.isAlive(), "Base should start alive");
+
+            // No steel protection - clear path to base
+            // BOSS positioned to directly collide with base on next move
+            // BOSS tank size is ~32, positioned right above base
+            // At y=170, tank bottom edge at ~198, base top at 200 - almost touching
+            // One move of ~2 pixels puts BOSS colliding with base
+            Tank boss = new Tank(200, 168, Direction.DOWN, false, 0, Tank.EnemyType.BOSS);
+            List<Tank> others = new ArrayList<>();
+
+            // Move BOSS toward base - should collide and destroy it
+            // May need multiple moves to reach collision
+            for (int i = 0; i < 10 && base.isAlive(); i++) {
+                physics.move(boss, Direction.DOWN, gameMap, others, base);
+            }
+
+            // Base should be destroyed since there's no steel protection
+            assertFalse(base.isAlive(), "Base should be destroyed when BOSS reaches it without steel");
+        }
     }
 
     @Nested

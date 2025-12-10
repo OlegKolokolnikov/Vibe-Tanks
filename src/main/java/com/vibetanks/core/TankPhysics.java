@@ -116,7 +116,7 @@ public class TankPhysics {
         }
 
         // Check collision with base (with BOSS special handling)
-        if (!handleBaseCollision(tank, newX, newY, base)) {
+        if (!handleBaseCollision(tank, newX, newY, base, map)) {
             return false;
         }
 
@@ -394,12 +394,16 @@ public class TankPhysics {
     }
 
     // Handle collision with base
-    private boolean handleBaseCollision(Tank tank, double newX, double newY, Base base) {
+    private boolean handleBaseCollision(Tank tank, double newX, double newY, Base base, GameMap map) {
         if (!base.isAlive()) return true;
 
         if (checkCollision(newX, newY, base.getX(), base.getY(), tank.getSize(), 32)) {
-            // BOSS destroys the base on contact
+            // BOSS destroys the base on contact - but only if not blocked by steel
             if (tank.getEnemyType() == Tank.EnemyType.BOSS) {
+                // Check if steel is blocking the BOSS from reaching the base
+                if (hasBlockingSteel(map, newX, newY, tank.getSize())) {
+                    return false; // Steel blocks BOSS - cannot reach base
+                }
                 base.destroy();
                 return true; // Continue moving
             } else {

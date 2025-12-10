@@ -173,6 +173,12 @@ public class GameStateApplier {
         base.setVictoryFlagState(state.baseShowVictoryFlag, state.baseVictoryFlagHeight);
         base.setCatMode(state.baseCatMode);
 
+        // Sync cat escape animation state
+        if (state.catEscaping) {
+            base.setCatEscapeState(true, state.catEscapeX, state.catEscapeY,
+                state.catEscapeFrame, state.toyX, state.toyY, state.toyType);
+        }
+
         // Play explosion sound when enemy dies
         int currentEnemyCount = ctx.getEnemyTanks().size();
         if (currentEnemyCount < ctx.getPrevEnemyCount()) {

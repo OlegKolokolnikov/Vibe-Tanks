@@ -882,6 +882,12 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 victory = true;
                 soundManager.playVictory();
                 queueSoundEvent(GameState.SoundType.VICTORY);
+
+                // Start cat escape animation if base is cat and protection was broken
+                if (base.isCatMode() && gameMap.isBaseProtectionBroken()) {
+                    base.startCatEscape();
+                    LOG.info("Cat escaping from damaged base!");
+                }
             }
         }
 

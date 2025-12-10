@@ -361,8 +361,14 @@ public class ServerGameState {
         }
 
         // Check victory condition ONLY if not game over
-        if (!gameOver && GameLogic.checkVictory(enemySpawner, enemyTanks)) {
+        if (!gameOver && !victory && GameLogic.checkVictory(enemySpawner, enemyTanks)) {
             victory = true;
+
+            // Start cat escape animation if base is cat and protection was broken
+            if (base.isCatMode() && gameMap.isBaseProtectionBroken()) {
+                base.startCatEscape();
+                LOG.info("Cat escaping from damaged base!");
+            }
         }
     }
 

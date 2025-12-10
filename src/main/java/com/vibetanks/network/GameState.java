@@ -54,6 +54,13 @@ public class GameState implements Serializable {
     public double baseVictoryFlagHeight;
     public boolean baseCatMode;
 
+    // Cat escape animation (when victory with broken protection in cat mode)
+    public boolean catEscaping;
+    public double catEscapeX, catEscapeY;
+    public int catEscapeFrame;
+    public double toyX, toyY;
+    public int toyType;
+
     // Map changes (for destructible tiles)
     public List<TileChange> tileChanges = new ArrayList<>();
 

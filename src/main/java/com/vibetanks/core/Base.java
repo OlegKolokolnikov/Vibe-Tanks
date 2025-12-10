@@ -26,6 +26,15 @@ public class Base {
     private boolean catMode = false;
     private int catAnimFrame = 0;
 
+    // Cat escape animation (when victory with broken protection in cat mode)
+    private boolean catEscaping = false;
+    private double catEscapeX = 0;
+    private double catEscapeY = 0;
+    private int catEscapeFrame = 0;
+    private double toyX = 0;
+    private double toyY = 0;
+    private int toyType = 0; // 0 = yarn ball, 1 = mouse, 2 = feather
+
     public Base(double x, double y) {
         this.x = x;
         this.y = y;
@@ -72,7 +81,13 @@ public class Base {
 
     public void render(GraphicsContext gc) {
         if (alive) {
-            if (catMode) {
+            if (catEscaping) {
+                // Cat is escaping - render empty base and escaping cat with toy
+                catEscapeFrame++;
+                renderEmptyBase(gc);
+                renderEscapingCat(gc);
+                renderToy(gc);
+            } else if (catMode) {
                 // Draw cute cat instead of eagle
                 catAnimFrame++;
                 renderCat(gc);
@@ -274,6 +289,275 @@ public class Base {
         }
     }
 
+    /**
+     * Render empty base (cat has left).
+     */
+    private void renderEmptyBase(GraphicsContext gc) {
+        // Empty cream background where cat used to be
+        gc.setFill(Color.rgb(255, 240, 220));
+        gc.fillRect(x, y, SIZE, SIZE);
+
+        // Small cat bed/cushion left behind
+        gc.setFill(Color.rgb(180, 100, 80)); // Brown cushion
+        gc.fillOval(x + 4, y + 20, 24, 10);
+        gc.setFill(Color.rgb(200, 120, 100)); // Lighter center
+        gc.fillOval(x + 8, y + 22, 16, 6);
+
+        // Some cat fur left on the cushion
+        gc.setFill(Color.rgb(255, 180, 100)); // Orange fur bits
+        gc.fillOval(x + 10, y + 23, 3, 2);
+        gc.fillOval(x + 16, y + 24, 2, 2);
+        gc.fillOval(x + 20, y + 22, 2, 3);
+    }
+
+    /**
+     * Render escaping cat animation - cat runs toward the toy.
+     */
+    private void renderEscapingCat(GraphicsContext gc) {
+        // Cat moves toward the toy
+        double targetX = toyX - 20;
+        double targetY = toyY + 10;
+
+        // Calculate movement (cat gets faster as it approaches toy)
+        double dx = targetX - catEscapeX;
+        double dy = targetY - catEscapeY;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 5) {
+            // Move cat toward toy
+            double speed = Math.min(4, 1 + catEscapeFrame * 0.05);
+            catEscapeX += (dx / distance) * speed;
+            catEscapeY += (dy / distance) * speed;
+        }
+
+        // Running leg animation
+        double legCycle = Math.sin(catEscapeFrame * 0.4) * 4;
+
+        // Cat body (slightly stretched when running)
+        gc.setFill(Color.rgb(255, 165, 0)); // Orange cat
+
+        // Body
+        gc.fillOval(catEscapeX + 2, catEscapeY + 8, 24, 14);
+
+        // Head (turned toward toy)
+        gc.fillOval(catEscapeX + 20, catEscapeY + 2, 14, 12);
+
+        // Ears (alert, pointing forward)
+        gc.beginPath();
+        gc.moveTo(catEscapeX + 26, catEscapeY + 4);
+        gc.lineTo(catEscapeX + 30, catEscapeY - 4);
+        gc.lineTo(catEscapeX + 32, catEscapeY + 4);
+        gc.closePath();
+        gc.fill();
+        gc.beginPath();
+        gc.moveTo(catEscapeX + 30, catEscapeY + 2);
+        gc.lineTo(catEscapeX + 36, catEscapeY - 2);
+        gc.lineTo(catEscapeX + 34, catEscapeY + 6);
+        gc.closePath();
+        gc.fill();
+
+        // Inner ears (pink)
+        gc.setFill(Color.rgb(255, 182, 193));
+        gc.beginPath();
+        gc.moveTo(catEscapeX + 27, catEscapeY + 3);
+        gc.lineTo(catEscapeX + 30, catEscapeY - 2);
+        gc.lineTo(catEscapeX + 31, catEscapeY + 4);
+        gc.closePath();
+        gc.fill();
+
+        // Tail (up and excited)
+        gc.setFill(Color.rgb(255, 165, 0));
+        double tailWave = Math.sin(catEscapeFrame * 0.3) * 3;
+        gc.fillOval(catEscapeX - 4, catEscapeY + 8, 8, 6);
+        gc.fillOval(catEscapeX - 8 + tailWave, catEscapeY + 2, 6, 8);
+        gc.fillOval(catEscapeX - 10 + tailWave * 1.5, catEscapeY - 4, 5, 8);
+
+        // Legs (running animation)
+        gc.setFill(Color.rgb(255, 165, 0));
+        // Front legs
+        gc.fillOval(catEscapeX + 18, catEscapeY + 16 + legCycle, 5, 8);
+        gc.fillOval(catEscapeX + 22, catEscapeY + 16 - legCycle, 5, 8);
+        // Back legs
+        gc.fillOval(catEscapeX + 4, catEscapeY + 16 - legCycle, 5, 8);
+        gc.fillOval(catEscapeX + 8, catEscapeY + 16 + legCycle, 5, 8);
+
+        // Eyes (wide and excited)
+        gc.setFill(Color.rgb(50, 205, 50)); // Green eyes
+        gc.fillOval(catEscapeX + 24, catEscapeY + 5, 4, 5);
+        gc.fillOval(catEscapeX + 30, catEscapeY + 5, 4, 5);
+        // Pupils (dilated - excited)
+        gc.setFill(Color.BLACK);
+        gc.fillOval(catEscapeX + 25, catEscapeY + 6, 3, 4);
+        gc.fillOval(catEscapeX + 31, catEscapeY + 6, 3, 4);
+
+        // Nose
+        gc.setFill(Color.rgb(255, 105, 180));
+        gc.beginPath();
+        gc.moveTo(catEscapeX + 34, catEscapeY + 9);
+        gc.lineTo(catEscapeX + 32, catEscapeY + 11);
+        gc.lineTo(catEscapeX + 36, catEscapeY + 11);
+        gc.closePath();
+        gc.fill();
+
+        // Whiskers (flowing back from speed)
+        gc.setStroke(Color.rgb(80, 80, 80));
+        gc.setLineWidth(1);
+        gc.strokeLine(catEscapeX + 34, catEscapeY + 10, catEscapeX + 42, catEscapeY + 8);
+        gc.strokeLine(catEscapeX + 34, catEscapeY + 11, catEscapeX + 42, catEscapeY + 11);
+        gc.strokeLine(catEscapeX + 34, catEscapeY + 12, catEscapeX + 42, catEscapeY + 14);
+    }
+
+    /**
+     * Render the cat toy.
+     */
+    private void renderToy(GraphicsContext gc) {
+        switch (toyType) {
+            case 0 -> renderYarnBall(gc);
+            case 1 -> renderToyMouse(gc);
+            case 2 -> renderFeatherToy(gc);
+        }
+    }
+
+    private void renderYarnBall(GraphicsContext gc) {
+        // Bouncing animation
+        double bounce = Math.abs(Math.sin(catEscapeFrame * 0.1)) * 5;
+
+        // Main yarn ball
+        gc.setFill(Color.rgb(255, 100, 150)); // Pink yarn
+        gc.fillOval(toyX, toyY - bounce, 20, 20);
+
+        // Yarn texture lines
+        gc.setStroke(Color.rgb(255, 150, 180));
+        gc.setLineWidth(1);
+        gc.strokeArc(toyX + 2, toyY + 2 - bounce, 16, 16, 30, 120, javafx.scene.shape.ArcType.OPEN);
+        gc.strokeArc(toyX + 4, toyY + 4 - bounce, 12, 12, 60, 180, javafx.scene.shape.ArcType.OPEN);
+        gc.strokeArc(toyX + 3, toyY + 5 - bounce, 14, 10, -30, 90, javafx.scene.shape.ArcType.OPEN);
+
+        // Trailing yarn string
+        gc.setStroke(Color.rgb(255, 100, 150));
+        gc.setLineWidth(2);
+        double stringWave = Math.sin(catEscapeFrame * 0.15) * 8;
+        gc.beginPath();
+        gc.moveTo(toyX + 5, toyY + 18 - bounce);
+        gc.bezierCurveTo(
+            toyX - 10 + stringWave, toyY + 30,
+            toyX - 20 - stringWave, toyY + 40,
+            toyX - 30, toyY + 35
+        );
+        gc.stroke();
+    }
+
+    private void renderToyMouse(GraphicsContext gc) {
+        // Jiggle animation
+        double jiggle = Math.sin(catEscapeFrame * 0.2) * 2;
+
+        // Mouse body (grey)
+        gc.setFill(Color.rgb(150, 150, 150));
+        gc.fillOval(toyX + jiggle, toyY, 22, 14);
+
+        // Mouse head
+        gc.fillOval(toyX + 18 + jiggle, toyY + 2, 10, 10);
+
+        // Ears
+        gc.setFill(Color.rgb(255, 180, 180)); // Pink inner ear
+        gc.fillOval(toyX + 20 + jiggle, toyY - 2, 6, 6);
+        gc.fillOval(toyX + 26 + jiggle, toyY - 2, 6, 6);
+
+        // Eyes (beady)
+        gc.setFill(Color.BLACK);
+        gc.fillOval(toyX + 24 + jiggle, toyY + 5, 3, 3);
+
+        // Nose
+        gc.setFill(Color.rgb(255, 150, 150));
+        gc.fillOval(toyX + 27 + jiggle, toyY + 7, 4, 3);
+
+        // Tail (curvy)
+        gc.setStroke(Color.rgb(255, 180, 180));
+        gc.setLineWidth(2);
+        double tailWave = Math.sin(catEscapeFrame * 0.15) * 5;
+        gc.beginPath();
+        gc.moveTo(toyX + jiggle, toyY + 7);
+        gc.bezierCurveTo(
+            toyX - 10 + tailWave, toyY + 5,
+            toyX - 15 - tailWave, toyY + 15,
+            toyX - 25, toyY + 10
+        );
+        gc.stroke();
+
+        // Whiskers
+        gc.setStroke(Color.rgb(80, 80, 80));
+        gc.setLineWidth(1);
+        gc.strokeLine(toyX + 28 + jiggle, toyY + 6, toyX + 34 + jiggle, toyY + 4);
+        gc.strokeLine(toyX + 28 + jiggle, toyY + 8, toyX + 34 + jiggle, toyY + 8);
+    }
+
+    private void renderFeatherToy(GraphicsContext gc) {
+        // Swaying animation
+        double sway = Math.sin(catEscapeFrame * 0.08) * 15;
+
+        // Stick
+        gc.setStroke(Color.rgb(139, 90, 43)); // Brown stick
+        gc.setLineWidth(3);
+        gc.strokeLine(toyX + 10, toyY + 30, toyX + 10 + sway * 0.3, toyY);
+
+        // String from stick to feathers
+        gc.setStroke(Color.rgb(200, 200, 200));
+        gc.setLineWidth(1);
+        gc.beginPath();
+        gc.moveTo(toyX + 10 + sway * 0.3, toyY);
+        gc.bezierCurveTo(
+            toyX + 15 + sway * 0.5, toyY - 15,
+            toyX + 20 + sway * 0.7, toyY - 25,
+            toyX + 25 + sway, toyY - 20
+        );
+        gc.stroke();
+
+        // Feathers (multiple colors)
+        double featherX = toyX + 25 + sway;
+        double featherY = toyY - 20;
+        double featherSway = Math.sin(catEscapeFrame * 0.12) * 3;
+
+        // Blue feather
+        gc.setFill(Color.rgb(100, 150, 255));
+        renderFeather(gc, featherX, featherY, featherSway, 0);
+
+        // Purple feather
+        gc.setFill(Color.rgb(180, 100, 255));
+        renderFeather(gc, featherX + 5, featherY + 3, featherSway * 1.2, 15);
+
+        // Pink feather
+        gc.setFill(Color.rgb(255, 150, 200));
+        renderFeather(gc, featherX - 3, featherY + 2, featherSway * 0.8, -10);
+
+        // Sparkles around feathers
+        gc.setFill(Color.YELLOW);
+        double sparkle = (catEscapeFrame % 20) / 20.0;
+        if (sparkle < 0.5) {
+            gc.fillOval(featherX + 15 + featherSway, featherY - 10, 3, 3);
+            gc.fillOval(featherX - 5 + featherSway, featherY - 5, 2, 2);
+        }
+    }
+
+    private void renderFeather(GraphicsContext gc, double fx, double fy, double sway, double angle) {
+        gc.save();
+        gc.translate(fx, fy);
+        gc.rotate(angle + sway);
+
+        // Feather shape
+        gc.beginPath();
+        gc.moveTo(0, 0);
+        gc.bezierCurveTo(-4, -8, -6, -16, -2, -24);
+        gc.bezierCurveTo(2, -16, 0, -8, 0, 0);
+        gc.fill();
+
+        // Feather spine
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(1);
+        gc.strokeLine(0, 0, -1, -22);
+
+        gc.restore();
+    }
+
     private void renderCat(GraphicsContext gc) {
         // Warm background
         gc.setFill(Color.rgb(255, 240, 220)); // Cream background
@@ -395,6 +679,63 @@ public class Base {
     }
 
     /**
+     * Start cat escape animation (called when victory with broken protection in cat mode).
+     */
+    public void startCatEscape() {
+        if (catMode && !catEscaping) {
+            catEscaping = true;
+            catEscapeX = x;
+            catEscapeY = y;
+            catEscapeFrame = 0;
+            // Place toy to the right of the base (cat will run towards it)
+            toyX = x + 200;
+            toyY = y - 50;
+            toyType = GameConstants.RANDOM.nextInt(3); // Random toy
+        }
+    }
+
+    public boolean isCatEscaping() {
+        return catEscaping;
+    }
+
+    public double getCatEscapeX() {
+        return catEscapeX;
+    }
+
+    public double getCatEscapeY() {
+        return catEscapeY;
+    }
+
+    public int getCatEscapeFrame() {
+        return catEscapeFrame;
+    }
+
+    public double getToyX() {
+        return toyX;
+    }
+
+    public double getToyY() {
+        return toyY;
+    }
+
+    public int getToyType() {
+        return toyType;
+    }
+
+    /**
+     * Set cat escape state (for network sync).
+     */
+    public void setCatEscapeState(boolean escaping, double escapeX, double escapeY, int frame, double toyX, double toyY, int toyType) {
+        this.catEscaping = escaping;
+        this.catEscapeX = escapeX;
+        this.catEscapeY = escapeY;
+        this.catEscapeFrame = frame;
+        this.toyX = toyX;
+        this.toyY = toyY;
+        this.toyType = toyType;
+    }
+
+    /**
      * Reset the base to initial state (for new level or game restart).
      */
     public void reset() {
@@ -407,5 +748,12 @@ public class Base {
         this.victoryFlagWaveFrame = 0;
         this.catMode = false;
         this.catAnimFrame = 0;
+        this.catEscaping = false;
+        this.catEscapeX = 0;
+        this.catEscapeY = 0;
+        this.catEscapeFrame = 0;
+        this.toyX = 0;
+        this.toyY = 0;
+        this.toyType = 0;
     }
 }

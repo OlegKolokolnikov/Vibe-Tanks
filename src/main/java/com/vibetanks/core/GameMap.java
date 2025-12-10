@@ -334,6 +334,21 @@ public class GameMap {
         setBaseProtection(TileType.BRICK);
     }
 
+    /**
+     * Check if base protection has been broken (any protection tile is EMPTY).
+     * Returns true if at least one protection tile is destroyed.
+     */
+    public boolean isBaseProtectionBroken() {
+        // Check all protection tiles - if any are EMPTY, protection is broken
+        int[][] protectionTiles = {{23, 11}, {23, 12}, {23, 13}, {24, 11}, {24, 13}, {25, 11}, {25, 12}, {25, 13}};
+        for (int[] pos : protectionTiles) {
+            if (tiles[pos[0]][pos[1]] == TileType.EMPTY) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Custom level support
     public void setCustomLevel(LevelData levelData) {
         this.customLevelData = levelData;

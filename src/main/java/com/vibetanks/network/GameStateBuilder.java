@@ -183,6 +183,15 @@ public class GameStateBuilder {
         state.baseShowVictoryFlag = base.isShowingVictoryFlag();
         state.baseVictoryFlagHeight = base.getVictoryFlagHeight();
         state.baseCatMode = base.isCatMode();
+
+        // Cat escape animation state
+        state.catEscaping = base.isCatEscaping();
+        state.catEscapeX = base.getCatEscapeX();
+        state.catEscapeY = base.getCatEscapeY();
+        state.catEscapeFrame = base.getCatEscapeFrame();
+        state.toyX = base.getToyX();
+        state.toyY = base.getToyY();
+        state.toyType = base.getToyType();
     }
 
     private static void buildMapData(GameState state, GameMap gameMap, List<GameState.TileChange> mapChanges) {

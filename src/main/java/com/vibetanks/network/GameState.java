@@ -81,7 +81,7 @@ public class GameState implements Serializable {
     // UFO bonus enemy
     public UFOData ufoData;
     public int ufoLostMessageTimer; // Timer for "Lost it!" message
-    public int ufoKilledMessageTimer; // Timer for "Zed is dead!" message
+    public int ufoKilledMessageTimer; // Timer for "Poor ALF :(" message
 
     // Easter egg collectible
     public EasterEggData easterEggData;

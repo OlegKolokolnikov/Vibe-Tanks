@@ -62,7 +62,7 @@ public class EffectRenderer {
     }
 
     /**
-     * Render "Zed is dead!" message when UFO is killed.
+     * Render "Poor ALF :(" message when UFO is killed.
      */
     public void renderUfoKilledMessage(int ufoKilledMessageTimer) {
         Font savedFont = gc.getFont();
@@ -75,16 +75,16 @@ public class EffectRenderer {
 
         int fontSize = 50;
 
-        // Draw "Zed is dead!" message
+        // Draw "Poor ALF :(" message
         gc.setFont(Font.font("Arial", FontWeight.BOLD, fontSize));
 
         // Shadow/outline effect
         gc.setFill(Color.rgb(0, 0, 0, alpha * 0.7));
-        gc.fillText("Zed is dead!", width / 2 - 130 + 3, height / 3 + 3);
+        gc.fillText("Poor ALF :(", width / 2 - 120 + 3, height / 3 + 3);
 
         // Main text with green color (victory!)
         gc.setFill(Color.rgb(50, 255, 50, alpha));
-        gc.fillText("Zed is dead!", width / 2 - 130, height / 3);
+        gc.fillText("Poor ALF :(", width / 2 - 120, height / 3);
 
         // Explosion effect around text (pulsing particles)
         double centerX = width / 2;

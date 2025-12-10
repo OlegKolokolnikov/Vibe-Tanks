@@ -135,7 +135,7 @@ public class UFOManager {
         LOG.debug("Easter egg spawned at {}, {}", eggSpawnX, eggSpawnY);
         ufoWasKilled = true;
         ufoKilledMessageTimer = UFO_MESSAGE_DURATION;
-        LOG.info("Zed is dead! Killed by Player {}", killerPlayerNumber);
+        LOG.info("Poor ALF :( Killed by Player {}", killerPlayerNumber);
         ufo = null;
     }
 

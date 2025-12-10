@@ -122,7 +122,7 @@ public class GameRenderer {
             effectRenderer.renderUfoLostMessage(ufoLostMessageTimer);
         }
 
-        // Render "Zed is dead!" message when UFO is killed
+        // Render "Poor ALF :(" message when UFO is killed
         if (ufoKilledMessageTimer > 0) {
             effectRenderer.renderUfoKilledMessage(ufoKilledMessageTimer);
         }

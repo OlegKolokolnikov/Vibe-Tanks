@@ -52,6 +52,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     private List<Bullet> bullets;
     private List<Laser> lasers;
     private List<PowerUp> powerUps;
+    private List<GameState.SoundEvent> pendingSoundEvents = new ArrayList<>(); // Sound events for network sync
     private EnemySpawner enemySpawner;
     private InputHandler inputHandler;
     private SoundManager soundManager;
@@ -480,6 +481,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         GameLogic.addScore(playerIndex, points, playerScores, playerLevelScores, playerTanks);
     }
 
+
     /**
      * Notify the owner tank that their bullet was destroyed.
      * This allows the tank to shoot again immediately.
@@ -698,11 +700,14 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
                 }
 
-                // Handle player killed - spawn power-up in 3+ player mode
-                if (result.playerKilled && playerTanks.size() > 2) {
-                    double[] spawnPos = getRandomPowerUpSpawnPosition();
-                    powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
-                    LOG.info("Power-up spawned for killed player (3+ players mode)");
+                // Handle player killed - queue death sound and spawn power-up in 3+ player mode
+                if (result.playerKilled) {
+                    queueSoundEvent(GameState.SoundType.PLAYER_DEATH);
+                    if (playerTanks.size() > 2) {
+                        double[] spawnPos = getRandomPowerUpSpawnPosition();
+                        powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                        LOG.info("Power-up spawned for killed player (3+ players mode)");
+                    }
                 }
 
                 // Handle base hit
@@ -757,6 +762,16 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             if (laserResult.shouldDropPowerUp) {
                 double[] spawnPos = getRandomPowerUpSpawnPosition();
                 powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+            }
+
+            // Handle player killed - queue death sound and spawn power-up in 3+ player mode
+            if (laserResult.playerKilled) {
+                queueSoundEvent(GameState.SoundType.PLAYER_DEATH);
+                if (playerTanks.size() > 2) {
+                    double[] spawnPos = getRandomPowerUpSpawnPosition();
+                    powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                    LOG.info("Power-up spawned for killed player by laser (3+ players mode)");
+                }
             }
 
             // Handle UFO destruction
@@ -1099,9 +1114,10 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             enemyTanks, bullets, lasers, powerUps,
             gameOver, victory, enemySpawner, gameMap, base, connectedPlayers,
             powerUpEffectManager, bossKillerPlayerIndex, bossKillPowerUpReward,
-            celebrationManager, mapChanges, ufoManager
+            celebrationManager, mapChanges, ufoManager, pendingSoundEvents
         );
         mapChanges.clear(); // Clear after building state
+        pendingSoundEvents.clear(); // Clear sound events after sending
         return state;
     }
 
@@ -1185,6 +1201,12 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     @Override public long getLastNetworkUpdate() { return lastNetworkUpdate; }
     @Override public void setLastNetworkUpdate(long time) { lastNetworkUpdate = time; }
     @Override public long getNetworkUpdateInterval() { return NETWORK_UPDATE_INTERVAL; }
+    @Override public void queueSoundEvent(GameState.SoundType type) {
+        pendingSoundEvents.add(new GameState.SoundEvent(type));
+    }
+    @Override public void queueSoundEvent(GameState.SoundType type, int playerNumber) {
+        pendingSoundEvents.add(new GameState.SoundEvent(type, playerNumber));
+    }
 
     // ============ NetworkGameHandler.ClientContext IMPLEMENTATION ============
     // Note: Many methods are already implemented via other interfaces

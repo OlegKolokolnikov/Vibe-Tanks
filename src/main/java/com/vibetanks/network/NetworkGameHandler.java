@@ -84,6 +84,8 @@ public class NetworkGameHandler {
         long getLastNetworkUpdate();
         void setLastNetworkUpdate(long time);
         long getNetworkUpdateInterval();
+        void queueSoundEvent(GameState.SoundType type);
+        void queueSoundEvent(GameState.SoundType type, int playerNumber);
     }
 
     /**
@@ -280,6 +282,8 @@ public class NetworkGameHandler {
                         Laser laser = clientTank.shootLaser(soundManager);
                         if (laser != null) {
                             lasers.add(laser);
+                            // Queue laser sound for network sync (other clients need to hear it)
+                            ctx.queueSoundEvent(GameState.SoundType.LASER, i);
                         }
                     } else {
                         clientTank.shoot(bullets, soundManager);

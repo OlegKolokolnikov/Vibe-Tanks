@@ -179,6 +179,26 @@ public class GameStateApplier {
             ctx.getSoundManager().playExplosion();
         }
         ctx.setPrevEnemyCount(currentEnemyCount);
+
+        // Play sound events from server
+        playSoundEvents(state, ctx);
+    }
+
+    private static void playSoundEvents(GameState state, GameContext ctx) {
+        if (state.soundEvents == null || state.soundEvents.isEmpty()) {
+            return;
+        }
+
+        SoundManager soundManager = ctx.getSoundManager();
+        for (GameState.SoundEvent event : state.soundEvents) {
+            switch (event.type) {
+                case LASER -> soundManager.playLaser();
+                case PLAYER_DEATH -> soundManager.playPlayerDeath();
+                case BASE_DESTROYED -> soundManager.playBaseDestroyed();
+                case TREE_BURN -> soundManager.playTreeBurn();
+                // SHOOT and EXPLOSION are handled locally for responsiveness
+            }
+        }
     }
 
     private static void applyHostSettings(GameState state) {

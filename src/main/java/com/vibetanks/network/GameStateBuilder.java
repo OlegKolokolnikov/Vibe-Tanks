@@ -39,7 +39,8 @@ public class GameStateBuilder {
             PowerUp.Type bossKillPowerUpReward,
             CelebrationManager celebrationManager,
             List<GameState.TileChange> mapChanges,
-            UFOManager ufoManager
+            UFOManager ufoManager,
+            List<GameState.SoundEvent> soundEvents
     ) {
         GameState state = new GameState();
 
@@ -89,6 +90,11 @@ public class GameStateBuilder {
         state.hostEnemySpeed = GameSettings.getEnemySpeedMultiplier();
         state.hostPlayerShootSpeed = GameSettings.getPlayerShootSpeedMultiplier();
         state.hostEnemyShootSpeed = GameSettings.getEnemyShootSpeedMultiplier();
+
+        // Add sound events for network sync
+        if (soundEvents != null && !soundEvents.isEmpty()) {
+            state.soundEvents.addAll(soundEvents);
+        }
 
         return state;
     }

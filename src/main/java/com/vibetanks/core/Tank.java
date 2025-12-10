@@ -585,6 +585,8 @@ public class Tank {
         this.canSwim = false;
         this.canDestroyTrees = false;
         this.machinegunCount = 0;
+        this.laserDuration = 0; // Reset laser power-up
+        this.tempSpeedBoost = 0; // Reset temporary speed boost
     }
 
     public void giveTemporaryShield() {

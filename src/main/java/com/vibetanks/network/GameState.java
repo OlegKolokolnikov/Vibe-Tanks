@@ -85,6 +85,34 @@ public class GameState implements Serializable {
     public double hostPlayerShootSpeed = 1.0;
     public double hostEnemyShootSpeed = 1.0;
 
+    // Sound events for network sync (cleared after each frame)
+    public List<SoundEvent> soundEvents = new ArrayList<>();
+
+    public static class SoundEvent implements Serializable {
+        private static final long serialVersionUID = 1L;
+        public SoundType type;
+        public int playerNumber; // For player-specific sounds (0 = not player-specific)
+
+        public SoundEvent(SoundType type) {
+            this.type = type;
+            this.playerNumber = 0;
+        }
+
+        public SoundEvent(SoundType type, int playerNumber) {
+            this.type = type;
+            this.playerNumber = playerNumber;
+        }
+    }
+
+    public enum SoundType {
+        SHOOT,
+        EXPLOSION,
+        PLAYER_DEATH,
+        LASER,
+        BASE_DESTROYED,
+        TREE_BURN
+    }
+
     public static class EasterEggData implements Serializable {
         private static final long serialVersionUID = 1L;
         public double x, y;

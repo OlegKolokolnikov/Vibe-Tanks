@@ -65,61 +65,63 @@ public class Laser {
     }
 
     public void render(GraphicsContext gc) {
-        // Laser beam with glow effect
-        double beamX = startX;
-        double beamY = startY;
-        double beamWidth, beamHeight;
+        // Thin dotted laser beam
+        double dotSize = 4;      // Size of each dot
+        double dotSpacing = 8;   // Space between dots (creates dotted effect)
+        double thinWidth = 3;    // Thin beam width
 
-        // Calculate beam dimensions based on direction
+        // Animate dots moving along the beam
+        double animOffset = (System.currentTimeMillis() / 30.0) % dotSpacing;
+
         switch (direction) {
             case UP -> {
-                beamX = startX - BEAM_WIDTH / 2.0;
-                beamY = startY - length;
-                beamWidth = BEAM_WIDTH;
-                beamHeight = length;
+                double x = startX - thinWidth / 2.0;
+                for (double y = startY - animOffset; y > startY - length; y -= dotSpacing) {
+                    // Outer glow
+                    gc.setFill(Color.rgb(255, 100, 0, 0.4));
+                    gc.fillOval(x - 2, y - 2, thinWidth + 4, dotSize + 4);
+                    // Core dot
+                    gc.setFill(Color.rgb(255, 50, 0, 0.9));
+                    gc.fillOval(x, y, thinWidth, dotSize);
+                    // Hot center
+                    gc.setFill(Color.rgb(255, 200, 100, 0.8));
+                    gc.fillOval(x + 0.5, y + 0.5, thinWidth - 1, dotSize - 1);
+                }
             }
             case DOWN -> {
-                beamX = startX - BEAM_WIDTH / 2.0;
-                beamY = startY;
-                beamWidth = BEAM_WIDTH;
-                beamHeight = length;
+                double x = startX - thinWidth / 2.0;
+                for (double y = startY + animOffset; y < startY + length; y += dotSpacing) {
+                    gc.setFill(Color.rgb(255, 100, 0, 0.4));
+                    gc.fillOval(x - 2, y - 2, thinWidth + 4, dotSize + 4);
+                    gc.setFill(Color.rgb(255, 50, 0, 0.9));
+                    gc.fillOval(x, y, thinWidth, dotSize);
+                    gc.setFill(Color.rgb(255, 200, 100, 0.8));
+                    gc.fillOval(x + 0.5, y + 0.5, thinWidth - 1, dotSize - 1);
+                }
             }
             case LEFT -> {
-                beamX = startX - length;
-                beamY = startY - BEAM_WIDTH / 2.0;
-                beamWidth = length;
-                beamHeight = BEAM_WIDTH;
+                double y = startY - thinWidth / 2.0;
+                for (double x = startX - animOffset; x > startX - length; x -= dotSpacing) {
+                    gc.setFill(Color.rgb(255, 100, 0, 0.4));
+                    gc.fillOval(x - 2, y - 2, dotSize + 4, thinWidth + 4);
+                    gc.setFill(Color.rgb(255, 50, 0, 0.9));
+                    gc.fillOval(x, y, dotSize, thinWidth);
+                    gc.setFill(Color.rgb(255, 200, 100, 0.8));
+                    gc.fillOval(x + 0.5, y + 0.5, dotSize - 1, thinWidth - 1);
+                }
             }
             case RIGHT -> {
-                beamX = startX;
-                beamY = startY - BEAM_WIDTH / 2.0;
-                beamWidth = length;
-                beamHeight = BEAM_WIDTH;
-            }
-            default -> {
-                beamWidth = 0;
-                beamHeight = 0;
+                double y = startY - thinWidth / 2.0;
+                for (double x = startX + animOffset; x < startX + length; x += dotSpacing) {
+                    gc.setFill(Color.rgb(255, 100, 0, 0.4));
+                    gc.fillOval(x - 2, y - 2, dotSize + 4, thinWidth + 4);
+                    gc.setFill(Color.rgb(255, 50, 0, 0.9));
+                    gc.fillOval(x, y, dotSize, thinWidth);
+                    gc.setFill(Color.rgb(255, 200, 100, 0.8));
+                    gc.fillOval(x + 0.5, y + 0.5, dotSize - 1, thinWidth - 1);
+                }
             }
         }
-
-        // Outer glow (yellow/orange)
-        gc.setFill(Color.rgb(255, 200, 0, 0.5));
-        gc.fillRect(beamX - 6, beamY - 6, beamWidth + 12, beamHeight + 12);
-
-        // Mid glow (orange)
-        gc.setFill(Color.rgb(255, 100, 0, 0.7));
-        gc.fillRect(beamX - 3, beamY - 3, beamWidth + 6, beamHeight + 6);
-
-        // Core beam (bright red)
-        gc.setFill(Color.rgb(255, 0, 0));
-        gc.fillRect(beamX, beamY, beamWidth, beamHeight);
-
-        // Inner core (white hot center)
-        gc.setFill(Color.rgb(255, 255, 255, 0.9));
-        double coreOffset = BEAM_WIDTH / 4.0;
-        gc.fillRect(beamX + coreOffset, beamY + coreOffset,
-                   Math.max(1, beamWidth - coreOffset * 2),
-                   Math.max(1, beamHeight - coreOffset * 2));
     }
 
     /**

@@ -441,30 +441,15 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                // Calculate actual delta time since last frame
-                long deltaTime = (lastFrameTime != 0) ? now - lastFrameTime : FRAME_TIME;
-
-                // Limit frame rate to ~60 FPS by skipping frames if not enough time has passed
-                if (deltaTime < FRAME_TIME) {
-                    return; // Not enough time has passed since last frame
+                // Limit frame rate to ~60 FPS - skip if not enough time has passed
+                // This prevents the game from running too fast on high refresh rate displays (e.g., Mac 120Hz)
+                if (lastFrameTime != 0 && now - lastFrameTime < FRAME_TIME) {
+                    return;
                 }
-
-                // Clamp delta time to prevent spiral of death (max 2 frames worth)
-                // This also handles cases where the game was paused or minimized
-                if (deltaTime > FRAME_TIME * 2) {
-                    deltaTime = FRAME_TIME * 2;
-                }
-
                 lastFrameTime = now;
 
-                // Run updates for each frame that should have occurred
-                // This ensures consistent game speed even if frame rate drops
-                long accumulated = deltaTime;
-                while (accumulated >= FRAME_TIME) {
-                    update();
-                    accumulated -= FRAME_TIME;
-                }
-
+                // Always run exactly one update per frame - consistent speed
+                update();
                 render();
 
                 // FPS counter

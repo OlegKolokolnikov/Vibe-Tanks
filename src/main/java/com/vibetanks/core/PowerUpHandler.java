@@ -212,7 +212,7 @@ public class PowerUpHandler {
         // Apply the power-up effect directly to the player
         PowerUp tempPowerUp = new PowerUp(0, 0, type);
         tempPowerUp.applyEffect(player);
-        LOG.info("BOSS KILL REWARD: Player received {}!", type);
+        LOG.info("BOSS KILL REWARD: Player {} received {}! hasShip={}", player.getPlayerNumber(), type, player.hasShip());
         return type;
     }
 }

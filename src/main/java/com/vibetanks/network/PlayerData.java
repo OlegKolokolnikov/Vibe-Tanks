@@ -2,6 +2,7 @@ package com.vibetanks.network;
 
 import com.vibetanks.core.Direction;
 import com.vibetanks.core.Tank;
+import com.vibetanks.util.GameLogger;
 
 import java.io.Serializable;
 
@@ -11,6 +12,7 @@ import java.io.Serializable;
  */
 public class PlayerData implements Serializable {
     private static final long serialVersionUID = 1L;
+    private static final GameLogger LOG = GameLogger.getLogger(PlayerData.class);
 
     // Position and movement
     public double x, y;
@@ -71,6 +73,9 @@ public class PlayerData implements Serializable {
         this.shieldDuration = tank.getShieldDuration();
         this.hasPauseShield = tank.hasPauseShield();
         this.hasShip = tank.hasShip();
+        if (this.hasShip) {
+            LOG.debug("copyFromTank: Player {} hasShip=true", tank.getPlayerNumber());
+        }
         this.hasGun = tank.hasGun();
         this.starCount = tank.getStarCount();
         this.carCount = tank.getCarCount();
@@ -105,6 +110,9 @@ public class PlayerData implements Serializable {
         tank.setShieldWithDuration(this.hasShield, this.shieldDuration);
         tank.setPauseShield(this.hasPauseShield);
         tank.setShip(this.hasShip);
+        if (this.hasShip) {
+            LOG.debug("applyToTank: Setting hasShip=true for player {}", tank.getPlayerNumber());
+        }
         tank.setGun(this.hasGun);
         tank.setStarCount(this.starCount);
         tank.setCarCount(this.carCount);

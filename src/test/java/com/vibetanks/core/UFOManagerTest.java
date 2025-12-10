@@ -89,7 +89,7 @@ class UFOManagerTest {
         }
 
         @Test
-        @DisplayName("checkAndSpawnUFO should spawn with machinegun and 5+ kills")
+        @DisplayName("checkAndSpawnUFO should eventually spawn with machinegun and 5+ kills")
         void checkAndSpawnUFOShouldSpawnWithMachinegunAndKills() {
             List<Tank> players = new ArrayList<>();
             Tank player = new Tank(100, 100, Direction.UP, true, 1);
@@ -97,9 +97,13 @@ class UFOManagerTest {
             players.add(player);
             int[] kills = {5}; // Has machinegun and 5 kills
 
-            manager.checkAndSpawnUFO(players, kills, 800, 600);
+            // Since spawn is random, call multiple times until it spawns
+            // With 0.1% chance per call, should spawn within 10000 calls with very high probability
+            for (int i = 0; i < 10000 && manager.getUFO() == null; i++) {
+                manager.checkAndSpawnUFO(players, kills, 800, 600);
+            }
 
-            assertNotNull(manager.getUFO());
+            assertNotNull(manager.getUFO(), "UFO should eventually spawn with valid conditions");
             assertTrue(manager.isUfoSpawnedThisLevel());
         }
 
@@ -112,10 +116,14 @@ class UFOManagerTest {
             players.add(player);
             int[] kills = {5};
 
-            manager.checkAndSpawnUFO(players, kills, 800, 600);
-            UFO firstUfo = manager.getUFO();
+            // Spawn UFO first (may take multiple calls due to random chance)
+            for (int i = 0; i < 10000 && manager.getUFO() == null; i++) {
+                manager.checkAndSpawnUFO(players, kills, 800, 600);
+            }
+            assertNotNull(manager.getUFO(), "UFO should have spawned");
+            assertTrue(manager.isUfoSpawnedThisLevel());
 
-            // Try to spawn again
+            // Try to spawn again - should not work because flag is set
             manager.setUFO(null); // Clear UFO but keep spawned flag
             manager.checkAndSpawnUFO(players, kills, 800, 600);
 
@@ -158,12 +166,9 @@ class UFOManagerTest {
         @Test
         @DisplayName("handleUFODestroyed should clear UFO")
         void handleUFODestroyedShouldClearUFO() {
-            // First spawn UFO
-            List<Tank> players = new ArrayList<>();
-            Tank player = new Tank(100, 100, Direction.UP, true, 1);
-            player.setMachinegunCount(1);
-            players.add(player);
-            manager.checkAndSpawnUFO(players, new int[]{5}, 800, 600);
+            // First set UFO directly (bypassing random spawn)
+            UFO ufo = new UFO(100, 100, true);
+            manager.setUFO(ufo);
             assertNotNull(manager.getUFO());
 
             manager.handleUFODestroyed(1, 200, 300);
@@ -212,12 +217,10 @@ class UFOManagerTest {
         @Test
         @DisplayName("reset should clear all state")
         void resetShouldClearAllState() {
-            // Set up some state
-            List<Tank> players = new ArrayList<>();
-            Tank player = new Tank(100, 100, Direction.UP, true, 1);
-            player.setMachinegunCount(1);
-            players.add(player);
-            manager.checkAndSpawnUFO(players, new int[]{5}, 800, 600);
+            // Set up some state directly (bypassing random spawn)
+            UFO ufo = new UFO(100, 100, true);
+            manager.setUFO(ufo);
+            manager.setUfoSpawnedThisLevel(true);
             manager.handleUFODestroyed(1, 200, 300);
 
             manager.reset();

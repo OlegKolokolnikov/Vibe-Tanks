@@ -50,6 +50,9 @@ public class UFOManager {
 
     /**
      * Check if UFO should spawn and spawn it if conditions are met.
+     * UFO has a random chance to spawn each frame once conditions are satisfied,
+     * making its appearance less predictable.
+     *
      * @param playerTanks list of player tanks
      * @param playerKills array of total kills per player (index 0-3)
      * @param mapWidth map width in pixels
@@ -60,15 +63,22 @@ public class UFOManager {
             return;
         }
 
-        // UFO spawns when a player has machinegun AND has 5+ total kills
+        // Check if any player meets the spawn conditions (machinegun + 5 kills)
+        boolean conditionsMet = false;
         for (int i = 0; i < playerTanks.size() && i < 4; i++) {
             Tank player = playerTanks.get(i);
             int totalKills = (playerKills != null && i < playerKills.length) ? playerKills[i] : 0;
             if (player.getMachinegunCount() > 0 && totalKills >= 5) {
-                LOG.info("UFO spawn triggered! Player {} has machinegun and {} total kills", i + 1, totalKills);
-                spawnUFO(mapWidth, mapHeight);
-                return;
+                conditionsMet = true;
+                break;
             }
+        }
+
+        // If conditions are met, roll for random spawn chance each frame
+        // At 0.1% per frame (60 FPS), UFO spawns on average after ~17 seconds
+        if (conditionsMet && GameConstants.RANDOM.nextDouble() < GameConstants.UFO_SPAWN_CHANCE) {
+            LOG.info("UFO spawn triggered by random chance!");
+            spawnUFO(mapWidth, mapHeight);
         }
     }
 

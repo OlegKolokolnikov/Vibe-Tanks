@@ -85,6 +85,7 @@ public class TankPhysics {
 
     /**
      * Move tank in the given direction.
+     * If blocked by tiles, attempts to slide along the obstacle to prevent getting stuck.
      * @return true if the tank moved
      */
     public boolean move(Tank tank, Direction direction, GameMap map, List<Tank> otherTanks, Base base) {
@@ -120,7 +121,150 @@ public class TankPhysics {
         }
 
         // Handle movement (with BOSS special tile destruction)
-        return handleTileMovement(tank, newX, newY, map);
+        if (handleTileMovement(tank, newX, newY, map)) {
+            return true;
+        }
+
+        // Direct movement blocked by tiles - try to slide along the obstacle
+        // This prevents getting stuck between two water/obstacle tiles
+        return trySlideAlongObstacle(tank, direction, speed, map, otherTanks, base);
+    }
+
+    /**
+     * When direct movement is blocked, try to slide along the obstacle.
+     * This helps tanks navigate around corners and prevents getting stuck between obstacles.
+     *
+     * The algorithm checks if the tank is misaligned with the tile grid and slides
+     * perpendicular to the intended movement direction to help align with gaps.
+     */
+    private boolean trySlideAlongObstacle(Tank tank, Direction direction, double speed,
+                                           GameMap map, List<Tank> otherTanks, Base base) {
+        int tankSize = tank.getSize();
+        int tileSize = 32;
+        double tankX = tank.getX();
+        double tankY = tank.getY();
+
+        // Only slide for horizontal or vertical movement (not diagonal)
+        if (direction.getDx() != 0 && direction.getDy() != 0) {
+            return false;
+        }
+
+        // Calculate how far tank is from being aligned to tile grid
+        double offsetX = tankX % tileSize;
+        double offsetY = tankY % tileSize;
+
+        double slideAmount = Math.min(speed, 2.0); // Limit slide speed
+
+        if (direction.getDx() != 0) {
+            // Moving horizontally - try to slide vertically to align with gaps
+            // Only slide if tank is not perfectly aligned (offset != 0)
+            if (offsetY > 0) {
+                // Calculate distance to nearest grid alignment points
+                double distToAlignUp = offsetY;  // Distance to align with current tile row
+                double distToAlignDown = tileSize - offsetY;  // Distance to next tile row
+
+                // Try sliding toward the closer alignment point first
+                if (distToAlignUp <= distToAlignDown) {
+                    // Try sliding up first
+                    double slideY = tankY - Math.min(slideAmount, distToAlignUp);
+                    if (canMoveTo(tank, tankX, slideY, map, otherTanks, base)) {
+                        tank.setPosition(tankX, slideY);
+                        return true;
+                    }
+                    // Then try sliding down
+                    slideY = tankY + slideAmount;
+                    if (canMoveTo(tank, tankX, slideY, map, otherTanks, base)) {
+                        tank.setPosition(tankX, slideY);
+                        return true;
+                    }
+                } else {
+                    // Try sliding down first
+                    double slideY = tankY + Math.min(slideAmount, distToAlignDown);
+                    if (canMoveTo(tank, tankX, slideY, map, otherTanks, base)) {
+                        tank.setPosition(tankX, slideY);
+                        return true;
+                    }
+                    // Then try sliding up
+                    slideY = tankY - slideAmount;
+                    if (canMoveTo(tank, tankX, slideY, map, otherTanks, base)) {
+                        tank.setPosition(tankX, slideY);
+                        return true;
+                    }
+                }
+            }
+        } else if (direction.getDy() != 0) {
+            // Moving vertically - try to slide horizontally to align with gaps
+            if (offsetX > 0) {
+                double distToAlignLeft = offsetX;
+                double distToAlignRight = tileSize - offsetX;
+
+                if (distToAlignLeft <= distToAlignRight) {
+                    // Try sliding left first
+                    double slideX = tankX - Math.min(slideAmount, distToAlignLeft);
+                    if (canMoveTo(tank, slideX, tankY, map, otherTanks, base)) {
+                        tank.setPosition(slideX, tankY);
+                        return true;
+                    }
+                    // Then try sliding right
+                    slideX = tankX + slideAmount;
+                    if (canMoveTo(tank, slideX, tankY, map, otherTanks, base)) {
+                        tank.setPosition(slideX, tankY);
+                        return true;
+                    }
+                } else {
+                    // Try sliding right first
+                    double slideX = tankX + Math.min(slideAmount, distToAlignRight);
+                    if (canMoveTo(tank, slideX, tankY, map, otherTanks, base)) {
+                        tank.setPosition(slideX, tankY);
+                        return true;
+                    }
+                    // Then try sliding left
+                    slideX = tankX - slideAmount;
+                    if (canMoveTo(tank, slideX, tankY, map, otherTanks, base)) {
+                        tank.setPosition(slideX, tankY);
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if tank can move to the given position (no collisions).
+     */
+    private boolean canMoveTo(Tank tank, double x, double y, GameMap map,
+                               List<Tank> otherTanks, Base base) {
+        int tankSize = tank.getSize();
+
+        // Check map boundaries
+        int mapWidth = map.getWidth() * 32;
+        int mapHeight = map.getHeight() * 32;
+        if (x < 0 || y < 0 || x + tankSize > mapWidth || y + tankSize > mapHeight) {
+            return false;
+        }
+
+        // Check tile collision
+        if (map.checkTankCollision(x, y, tankSize, tank.canSwim())) {
+            return false;
+        }
+
+        // Check tank collision
+        for (Tank other : otherTanks) {
+            if (other != tank && other.isAlive()) {
+                if (checkCollision(x, y, other.getX(), other.getY(), tankSize, other.getSize())) {
+                    return false;
+                }
+            }
+        }
+
+        // Check base collision
+        if (base.isAlive() && checkCollision(x, y, base.getX(), base.getY(), tankSize, 32)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

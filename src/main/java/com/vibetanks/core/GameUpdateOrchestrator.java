@@ -1,6 +1,7 @@
 package com.vibetanks.core;
 
 import com.vibetanks.audio.SoundManager;
+import com.vibetanks.network.GameState;
 import com.vibetanks.util.GameLogger;
 
 import java.util.Iterator;
@@ -55,6 +56,9 @@ public class GameUpdateOrchestrator {
 
         // Tank cache for collision detection
         List<Tank> getAllTanksCache();
+
+        // Sound event for network sync
+        void queueSoundEvent(GameState.SoundType type);
     }
 
     /**
@@ -207,12 +211,16 @@ public class GameUpdateOrchestrator {
                 if (result.shouldDropPowerUp) {
                     double[] spawnPos = ctx.getRandomPowerUpSpawnPosition();
                     powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                    soundManager.playPowerUpSpawn();
+                    ctx.queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
                 }
 
                 // Handle player killed - spawn power-up in 3+ player mode
                 if (result.playerKilled && playerTanks.size() > 2) {
                     double[] spawnPos = ctx.getRandomPowerUpSpawnPosition();
                     powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                    soundManager.playPowerUpSpawn();
+                    ctx.queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
                     LOG.info("Power-up spawned for killed player (3+ players mode)");
                 }
 
@@ -273,6 +281,8 @@ public class GameUpdateOrchestrator {
             if (result.shouldDropPowerUp) {
                 double[] spawnPos = ctx.getRandomPowerUpSpawnPosition();
                 powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                soundManager.playPowerUpSpawn();
+                ctx.queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
             }
 
             // Handle UFO destruction

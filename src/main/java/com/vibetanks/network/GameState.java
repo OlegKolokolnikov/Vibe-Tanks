@@ -118,7 +118,8 @@ public class GameState implements Serializable {
         LASER,
         BASE_DESTROYED,
         TREE_BURN,
-        VICTORY
+        VICTORY,
+        POWERUP_SPAWN
     }
 
     public static class EasterEggData implements Serializable {

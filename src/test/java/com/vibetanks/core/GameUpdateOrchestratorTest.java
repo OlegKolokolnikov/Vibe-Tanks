@@ -1,6 +1,7 @@
 package com.vibetanks.core;
 
 import com.vibetanks.audio.SoundManager;
+import com.vibetanks.network.GameState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -501,6 +502,11 @@ class GameUpdateOrchestratorTest {
             allTanksCache.addAll(playerTanks);
             allTanksCache.addAll(enemyTanks);
             return allTanksCache;
+        }
+
+        @Override
+        public void queueSoundEvent(GameState.SoundType type) {
+            // No-op for tests
         }
     }
 }

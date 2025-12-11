@@ -51,6 +51,9 @@ public class SoundGenerator {
             // Generate victory sound - triumphant fanfare
             generateVictorySound("src/main/resources/sounds/victory.wav");
 
+            // Generate power-up spawn sound - magical sparkle
+            generatePowerUpSpawnSound("src/main/resources/sounds/powerup_spawn.wav");
+
             LOG.info("Sound files generated successfully!");
         } catch (Exception e) {
             LOG.error("Error generating sounds: {}", e.getMessage());
@@ -612,6 +615,73 @@ public class SoundGenerator {
                 buffer[bufferIndex++] = (byte) (sample & 0xFF);
                 buffer[bufferIndex++] = (byte) ((sample >> 8) & 0xFF);
             }
+        }
+
+        saveWav(filename, buffer);
+    }
+
+    private static void generatePowerUpSpawnSound(String filename) throws Exception {
+        // Magical sparkle/chime sound for power-up appearing
+        // Similar to classic games when an item appears
+        double duration = 0.35;
+        int numSamples = (int) (duration * SAMPLE_RATE);
+        byte[] buffer = new byte[numSamples * 2];
+
+        // Musical notes for the sparkle (ascending arpeggio)
+        double[] sparkleFreqs = {880, 1108.73, 1318.51, 1760}; // A5, C#6, E6, A6 (A major arpeggio)
+
+        for (int i = 0; i < numSamples; i++) {
+            double t = (double) i / SAMPLE_RATE;
+            double tNorm = (double) i / numSamples;
+
+            double sample = 0;
+
+            // Quick ascending arpeggio
+            int noteIndex = (int) (tNorm * 4);
+            if (noteIndex >= sparkleFreqs.length) noteIndex = sparkleFreqs.length - 1;
+
+            double noteStartTime = (noteIndex / 4.0) * duration;
+            double noteT = t - noteStartTime;
+            double freq = sparkleFreqs[noteIndex];
+
+            // Sine wave with harmonics for bell-like quality
+            double phase = 2.0 * Math.PI * noteT * freq;
+            double bell = Math.sin(phase) * 0.5 +
+                          Math.sin(phase * 2) * 0.25 +
+                          Math.sin(phase * 3) * 0.15 +
+                          Math.sin(phase * 4) * 0.1;
+
+            // Per-note envelope (quick attack, medium decay)
+            double noteDuration = duration / 4.0;
+            double noteNorm = noteT / noteDuration;
+            double noteEnv;
+            if (noteNorm < 0.1) {
+                noteEnv = noteNorm / 0.1; // Quick attack
+            } else {
+                noteEnv = Math.pow(1.0 - ((noteNorm - 0.1) / 0.9), 1.5); // Exponential decay
+            }
+            noteEnv = Math.max(0, Math.min(1, noteEnv));
+
+            sample += bell * noteEnv * 0.4;
+
+            // Add shimmer/sparkle effect (high frequency modulation)
+            double shimmer = Math.sin(2.0 * Math.PI * t * 2500) * Math.sin(2.0 * Math.PI * t * 25);
+            double shimmerEnv = Math.exp(-t * 8);
+            sample += shimmer * shimmerEnv * 0.15;
+
+            // Overall envelope
+            double masterEnv = 1.0;
+            if (tNorm > 0.8) {
+                masterEnv = (1.0 - tNorm) / 0.2;
+            }
+            sample *= masterEnv;
+
+            // Soft clip
+            sample = Math.tanh(sample * 1.2);
+
+            short shortSample = (short) (sample * Short.MAX_VALUE);
+            buffer[i * 2] = (byte) (shortSample & 0xFF);
+            buffer[i * 2 + 1] = (byte) ((shortSample >> 8) & 0xFF);
         }
 
         saveWav(filename, buffer);

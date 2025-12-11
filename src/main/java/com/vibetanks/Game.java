@@ -702,6 +702,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 if (result.shouldDropPowerUp) {
                     double[] spawnPos = getRandomPowerUpSpawnPosition();
                     powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                    soundManager.playPowerUpSpawn();
+                    queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
                 }
 
                 // Handle player killed - queue death sound and spawn power-up in 3+ player mode
@@ -710,6 +712,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     if (playerTanks.size() > 2) {
                         double[] spawnPos = getRandomPowerUpSpawnPosition();
                         powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                        soundManager.playPowerUpSpawn();
+                        queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
                         LOG.info("Power-up spawned for killed player (3+ players mode)");
                     }
                 }
@@ -766,6 +770,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             if (laserResult.shouldDropPowerUp) {
                 double[] spawnPos = getRandomPowerUpSpawnPosition();
                 powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                soundManager.playPowerUpSpawn();
+                queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
             }
 
             // Handle player killed - queue death sound and spawn power-up in 3+ player mode
@@ -774,6 +780,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 if (playerTanks.size() > 2) {
                     double[] spawnPos = getRandomPowerUpSpawnPosition();
                     powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+                    soundManager.playPowerUpSpawn();
+                    queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
                     LOG.info("Power-up spawned for killed player by laser (3+ players mode)");
                 }
             }

@@ -203,6 +203,7 @@ public class GameStateApplier {
                 case BASE_DESTROYED -> soundManager.playBaseDestroyed();
                 case TREE_BURN -> soundManager.playTreeBurn();
                 case VICTORY -> soundManager.playVictory();
+                case POWERUP_SPAWN -> soundManager.playPowerUpSpawn();
                 // SHOOT and EXPLOSION are handled locally for responsiveness
             }
         }

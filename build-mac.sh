@@ -19,7 +19,7 @@ cp target/vibe-tanks-1.0-SNAPSHOT-shaded.jar target/jpackage-input/
 
 echo ""
 echo "Step 3: Creating native app image..."
-jpackage --name VibeTanks --app-version 1.0.0 --vendor VibeTanks --dest target/dist --input target/jpackage-input --main-jar vibe-tanks-1.0-SNAPSHOT-shaded.jar --main-class com.vibetanks.Launcher --type app-image
+jpackage --name VibeTanks --app-version 1.0.0 --vendor VibeTanks --dest target/dist --input target/jpackage-input --main-jar vibe-tanks-1.0-SNAPSHOT-shaded.jar --main-class com.vibetanks.Launcher --type app-image --mac-package-identifier com.vibetanks.app
 
 if [ $? -ne 0 ]; then
     echo "Native packaging failed!"
@@ -32,7 +32,12 @@ if [ $? -ne 0 ]; then
 fi
 
 echo ""
-echo "Step 4: Creating alias in project folder..."
+echo "Step 4: Code signing the app..."
+codesign --force --deep --sign - target/dist/VibeTanks.app
+xattr -cr target/dist/VibeTanks.app
+
+echo ""
+echo "Step 5: Creating alias in project folder..."
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ln -sf "$SCRIPT_DIR/target/dist/VibeTanks.app" "$SCRIPT_DIR/VibeTanks.app"
 

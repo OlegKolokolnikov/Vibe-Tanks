@@ -58,7 +58,7 @@ public final class GameConstants {
 
     // UFO settings
     // 0.001 = 0.1% per frame, at 60 FPS = ~6% per second, avg spawn ~17 seconds after conditions met
-    public static final double UFO_SPAWN_CHANCE = 0.001;
+    public static final double UFO_SPAWN_CHANCE = 0.0035; // ~4.8 seconds average at 60 FPS
     public static final int UFO_SHOOT_COOLDOWN = 90;      // Frames between UFO shots
     public static final int UFO_DIRECTION_CHANGE = 60;    // Change direction every second
 

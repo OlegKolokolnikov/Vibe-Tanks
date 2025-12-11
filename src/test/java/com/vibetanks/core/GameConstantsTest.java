@@ -295,8 +295,8 @@ class GameConstantsTest {
         @Test
         @DisplayName("UFO_SPAWN_CHANCE should be very small")
         void ufoSpawnChanceVerySmall() {
-            // 0.1% per frame = ~6% per second = avg ~17 seconds to spawn
-            assertEquals(0.001, GameConstants.UFO_SPAWN_CHANCE, 0.0001);
+            // 0.35% per frame = avg ~4.8 seconds to spawn
+            assertEquals(0.0035, GameConstants.UFO_SPAWN_CHANCE, 0.0001);
         }
 
         @Test

@@ -42,9 +42,9 @@ class NicknameManagerTest {
         @Test
         @DisplayName("setNickname should trim whitespace")
         void setNicknameShouldTrimWhitespace() {
-            NicknameManager.setNickname("  SpacedName  ");
+            NicknameManager.setNickname("  HappyCat  ");
 
-            assertEquals("SpacedName", NicknameManager.getNickname());
+            assertEquals("HappyCat", NicknameManager.getNickname());
         }
 
         @Test

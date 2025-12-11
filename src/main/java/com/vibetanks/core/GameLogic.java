@@ -134,6 +134,21 @@ public class GameLogic {
      */
     public static LaserProcessResult processLaserCollisions(
             Laser laser, List<Tank> enemyTanks, UFO ufo, Base base) {
+        return processLaserCollisions(laser, enemyTanks, ufo, base, null);
+    }
+
+    /**
+     * Process laser collisions with tanks, UFO, and base, with steel blocking check.
+     *
+     * @param laser The laser to process
+     * @param enemyTanks List of enemy tanks
+     * @param ufo The UFO (can be null)
+     * @param base The base
+     * @param gameMap The game map (for steel blocking check, can be null)
+     * @return Result containing what happened
+     */
+    public static LaserProcessResult processLaserCollisions(
+            Laser laser, List<Tank> enemyTanks, UFO ufo, Base base, GameMap gameMap) {
 
         LaserProcessResult result = new LaserProcessResult();
 
@@ -167,8 +182,8 @@ public class GameLogic {
             }
         }
 
-        // Base hit
-        if (laser.collidesWithBase(base) && base.isAlive()) {
+        // Base hit - check steel blocking if map provided
+        if (laser.collidesWithBase(base, gameMap) && base.isAlive()) {
             base.destroy();
             result.baseDestroyed = true;
         }

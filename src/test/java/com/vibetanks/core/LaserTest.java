@@ -410,4 +410,119 @@ class LaserTest {
             assertEquals(15, laser.getLifetime()); // LIFETIME = 15
         }
     }
+
+    @Nested
+    @DisplayName("Steel Blocking Tests")
+    class SteelBlockingTests {
+
+        private GameMap gameMap;
+
+        @BeforeEach
+        void setUp() {
+            gameMap = new GameMap(26, 26);
+            // Clear the map
+            for (int row = 0; row < 26; row++) {
+                for (int col = 0; col < 26; col++) {
+                    gameMap.setTile(row, col, GameMap.TileType.EMPTY);
+                }
+            }
+        }
+
+        @Test
+        @DisplayName("Laser should NOT hit base when steel blocks the path")
+        void laserShouldNotHitBaseThroughSteel() {
+            // Base at row 24 (y=768), col 12-13 (x=384)
+            Base base = new Base(384, 768);
+            assertTrue(base.isAlive());
+
+            // Place steel tiles at row 23 (y=736) to block laser from above
+            gameMap.setTile(23, 12, GameMap.TileType.STEEL);
+            gameMap.setTile(23, 13, GameMap.TileType.STEEL);
+
+            // Laser shooting DOWN from row 20 (y=640) toward base
+            // Laser x = 400 (col 12.5) should pass through steel
+            laser = new Laser(400, 640, Direction.DOWN, false, 1);
+
+            // Without map, laser would hit base
+            assertTrue(laser.collidesWithBase(base, null), "Without map, laser should hit base");
+
+            // With map, steel should block the laser
+            assertFalse(laser.collidesWithBase(base, gameMap), "Steel should block laser from hitting base");
+        }
+
+        @Test
+        @DisplayName("Laser should hit base when no steel blocks the path")
+        void laserShouldHitBaseWithoutSteelBlocking() {
+            // Base at row 24 (y=768), col 12-13 (x=384)
+            Base base = new Base(384, 768);
+
+            // No steel protection - laser has clear path
+            laser = new Laser(400, 640, Direction.DOWN, false, 1);
+
+            assertTrue(laser.collidesWithBase(base, gameMap), "Laser should hit base without steel blocking");
+        }
+
+        @Test
+        @DisplayName("Laser from LEFT should be blocked by steel")
+        void laserFromLeftShouldBeBlockedBySteel() {
+            // Base at (400, 400)
+            Base base = new Base(400, 400);
+
+            // Place steel at col 11 (x=352) to block laser from left
+            gameMap.setTile(12, 11, GameMap.TileType.STEEL);
+            gameMap.setTile(13, 11, GameMap.TileType.STEEL);
+
+            // Laser shooting RIGHT from x=100 toward base at y=416 (row 13)
+            laser = new Laser(100, 416, Direction.RIGHT, false, 1);
+
+            assertFalse(laser.collidesWithBase(base, gameMap), "Steel should block laser from left");
+        }
+
+        @Test
+        @DisplayName("Laser from RIGHT should be blocked by steel")
+        void laserFromRightShouldBeBlockedBySteel() {
+            // Base at (300, 400)
+            Base base = new Base(300, 400);
+
+            // Place steel at col 11 (x=352) to block laser from right
+            gameMap.setTile(12, 11, GameMap.TileType.STEEL);
+            gameMap.setTile(13, 11, GameMap.TileType.STEEL);
+
+            // Laser shooting LEFT from x=500 toward base at y=416 (row 13)
+            laser = new Laser(500, 416, Direction.LEFT, false, 1);
+
+            assertFalse(laser.collidesWithBase(base, gameMap), "Steel should block laser from right");
+        }
+
+        @Test
+        @DisplayName("Laser from below should be blocked by steel")
+        void laserFromBelowShouldBeBlockedBySteel() {
+            // Base at (400, 300)
+            Base base = new Base(400, 300);
+
+            // Place steel at row 11 (y=352) to block laser from below
+            gameMap.setTile(11, 12, GameMap.TileType.STEEL);
+            gameMap.setTile(11, 13, GameMap.TileType.STEEL);
+
+            // Laser shooting UP from y=600 toward base at x=416 (col 13)
+            laser = new Laser(416, 600, Direction.UP, false, 1);
+
+            assertFalse(laser.collidesWithBase(base, gameMap), "Steel should block laser from below");
+        }
+
+        @Test
+        @DisplayName("Brick tiles should NOT block laser to base")
+        void brickTilesShouldNotBlockLaser() {
+            // Base at row 24 (y=768)
+            Base base = new Base(384, 768);
+
+            // Place brick (not steel) tiles - laser passes through brick
+            gameMap.setTile(23, 12, GameMap.TileType.BRICK);
+            gameMap.setTile(23, 13, GameMap.TileType.BRICK);
+
+            laser = new Laser(400, 640, Direction.DOWN, false, 1);
+
+            assertTrue(laser.collidesWithBase(base, gameMap), "Brick should NOT block laser");
+        }
+    }
 }

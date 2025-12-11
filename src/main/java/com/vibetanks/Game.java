@@ -738,9 +738,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 continue;
             }
 
-            // Process laser collisions via ProjectileHandler
+            // Process laser collisions via ProjectileHandler (pass gameMap for steel blocking check)
             ProjectileHandler.LaserCollisionResult laserResult = ProjectileHandler.processLaser(
-                    laser, enemyTanks, playerTanks, base, ufoManager.getUFO(), soundManager);
+                    laser, enemyTanks, playerTanks, base, ufoManager.getUFO(), soundManager, gameMap);
 
             // Handle enemy killed - track kills and award points
             if (laserResult.enemyKilled && laserResult.killedEnemy != null) {

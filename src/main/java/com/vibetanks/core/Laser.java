@@ -223,17 +223,9 @@ public class Laser {
     }
 
     /**
-     * Check if laser beam hits the base (without considering steel blocking)
+     * Check if laser beam hits the base
      */
     public boolean collidesWithBase(Base base) {
-        return collidesWithBase(base, null);
-    }
-
-    /**
-     * Check if laser beam hits the base, considering steel tiles that block the path.
-     * If map is provided, steel tiles between laser source and base will block the hit.
-     */
-    public boolean collidesWithBase(Base base, GameMap map) {
         double baseX = base.getX();
         double baseY = base.getY();
         double baseSize = 64; // Base is 2x2 tiles
@@ -271,78 +263,11 @@ public class Laser {
             }
         }
 
-        // Check rectangle intersection with base
-        boolean hitsBase = beamLeft < baseX + baseSize &&
+        // Check rectangle intersection
+        return beamLeft < baseX + baseSize &&
                beamRight > baseX &&
                beamTop < baseY + baseSize &&
                beamBottom > baseY;
-
-        if (!hitsBase) {
-            return false;
-        }
-
-        // If no map provided, don't check for steel blocking
-        if (map == null) {
-            return true;
-        }
-
-        // Check if steel tiles block the path between laser source and base
-        return !isSteelBlockingPath(map, baseX, baseY, baseSize);
-    }
-
-    /**
-     * Check if steel tiles block the laser path to the target.
-     */
-    private boolean isSteelBlockingPath(GameMap map, double targetX, double targetY, double targetSize) {
-        int tileSize = 32;
-
-        switch (direction) {
-            case UP -> {
-                // Check tiles from laser start going up to target
-                int col = (int) (startX / tileSize);
-                int startRow = (int) (startY / tileSize);
-                int endRow = (int) ((targetY + targetSize) / tileSize);
-                for (int row = startRow - 1; row >= endRow; row--) {
-                    if (row >= 0 && map.getTile(row, col) == GameMap.TileType.STEEL) {
-                        return true; // Steel blocks the path
-                    }
-                }
-            }
-            case DOWN -> {
-                // Check tiles from laser start going down to target
-                int col = (int) (startX / tileSize);
-                int startRow = (int) (startY / tileSize);
-                int endRow = (int) (targetY / tileSize);
-                for (int row = startRow + 1; row <= endRow; row++) {
-                    if (row < map.getHeight() && map.getTile(row, col) == GameMap.TileType.STEEL) {
-                        return true;
-                    }
-                }
-            }
-            case LEFT -> {
-                // Check tiles from laser start going left to target
-                int row = (int) (startY / tileSize);
-                int startCol = (int) (startX / tileSize);
-                int endCol = (int) ((targetX + targetSize) / tileSize);
-                for (int col = startCol - 1; col >= endCol; col--) {
-                    if (col >= 0 && map.getTile(row, col) == GameMap.TileType.STEEL) {
-                        return true;
-                    }
-                }
-            }
-            case RIGHT -> {
-                // Check tiles from laser start going right to target
-                int row = (int) (startY / tileSize);
-                int startCol = (int) (startX / tileSize);
-                int endCol = (int) (targetX / tileSize);
-                for (int col = startCol + 1; col <= endCol; col++) {
-                    if (col < map.getWidth() && map.getTile(row, col) == GameMap.TileType.STEEL) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     // Getters

@@ -237,7 +237,6 @@ public class GameUpdateOrchestrator {
         List<Tank> enemyTanks = ctx.getEnemyTanks();
         List<Tank> playerTanks = ctx.getPlayerTanks();
         List<PowerUp> powerUps = ctx.getPowerUps();
-        GameMap gameMap = ctx.getGameMap();
         Base base = ctx.getBase();
         SoundManager soundManager = ctx.getSoundManager();
         UFO ufo = ctx.getUFO();
@@ -253,7 +252,7 @@ public class GameUpdateOrchestrator {
             }
 
             ProjectileHandler.LaserCollisionResult result = ProjectileHandler.processLaser(
-                laser, enemyTanks, playerTanks, base, ufo, soundManager, gameMap);
+                laser, enemyTanks, playerTanks, base, ufo, soundManager);
 
             // Handle enemy killed
             if (result.enemyKilled && result.killedEnemy != null) {

@@ -494,8 +494,8 @@ public class ServerGameState {
                         }
                     }
                 }
-                // Base hit - check steel blocking
-                if (laser.collidesWithBase(base, gameMap) && base.isAlive()) {
+                // Base hit
+                if (laser.collidesWithBase(base) && base.isAlive()) {
                     base.destroy();
                     gameOver = true;
                 }

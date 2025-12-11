@@ -199,29 +199,6 @@ public class ProjectileHandler {
             Base base,
             UFO ufo,
             SoundManager soundManager) {
-        return processLaser(laser, enemyTanks, playerTanks, base, ufo, soundManager, null);
-    }
-
-    /**
-     * Process a single laser's collisions with map for steel blocking check.
-     *
-     * @param laser The laser to process
-     * @param enemyTanks List of enemy tanks
-     * @param playerTanks List of player tanks
-     * @param base The base
-     * @param ufo The UFO (can be null)
-     * @param soundManager Sound manager
-     * @param gameMap The game map (for steel blocking check, can be null)
-     * @return Result of collision processing
-     */
-    public static LaserCollisionResult processLaser(
-            Laser laser,
-            List<Tank> enemyTanks,
-            List<Tank> playerTanks,
-            Base base,
-            UFO ufo,
-            SoundManager soundManager,
-            GameMap gameMap) {
 
         LaserCollisionResult result = new LaserCollisionResult();
 
@@ -282,8 +259,8 @@ public class ProjectileHandler {
                 }
             }
 
-            // Player laser hits base - check steel blocking if map provided
-            if (laser.collidesWithBase(base, gameMap) && base.isAlive()) {
+            // Player laser hits base
+            if (laser.collidesWithBase(base) && base.isAlive()) {
                 result.hitBase = true;
             }
         }

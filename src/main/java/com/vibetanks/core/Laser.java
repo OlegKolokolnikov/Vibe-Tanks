@@ -228,7 +228,7 @@ public class Laser {
     public boolean collidesWithBase(Base base) {
         double baseX = base.getX();
         double baseY = base.getY();
-        double baseSize = 64; // Base is 2x2 tiles
+        double baseSize = base.getSize(); // Base is 32x32 pixels (1 tile)
 
         // Get beam bounding box
         double beamLeft, beamRight, beamTop, beamBottom;

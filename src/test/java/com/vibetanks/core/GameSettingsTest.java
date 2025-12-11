@@ -249,35 +249,6 @@ class GameSettingsTest {
     }
 
     @Nested
-    @DisplayName("Nickname Tests")
-    class NicknameTests {
-
-        @Test
-        @DisplayName("setPlayerNickname should update value")
-        void setPlayerNicknameUpdatesValue() {
-            GameSettings.setPlayerNickname("TestPlayer");
-
-            assertEquals("TestPlayer", GameSettings.getPlayerNickname());
-        }
-
-        @Test
-        @DisplayName("Nickname should be trimmed")
-        void nicknameShouldBeTrimmed() {
-            GameSettings.setPlayerNickname("  SpacedName  ");
-
-            assertEquals("SpacedName", GameSettings.getPlayerNickname());
-        }
-
-        @Test
-        @DisplayName("Null nickname should become empty string")
-        void nullNicknameShouldBecomeEmpty() {
-            GameSettings.setPlayerNickname(null);
-
-            assertEquals("", GameSettings.getPlayerNickname());
-        }
-    }
-
-    @Nested
     @DisplayName("Reset to Defaults Tests")
     class ResetToDefaultsTests {
 
@@ -300,16 +271,6 @@ class GameSettingsTest {
             assertEquals(1.0, GameSettings.getEnemyShootSpeedMultiplier());
             assertEquals(1.0, GameSettings.getSoundVolume());
             assertEquals(1.0, GameSettings.getMusicVolume());
-        }
-
-        @Test
-        @DisplayName("resetToDefaults should not reset nickname")
-        void resetToDefaultsShouldNotResetNickname() {
-            GameSettings.setPlayerNickname("MyNickname");
-
-            GameSettings.resetToDefaults();
-
-            assertEquals("MyNickname", GameSettings.getPlayerNickname());
         }
     }
 }

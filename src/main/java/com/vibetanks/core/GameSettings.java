@@ -15,7 +15,6 @@ public class GameSettings {
     private static final String KEY_ENEMY_SHOOT_SPEED = "enemy_shoot_speed";
     private static final String KEY_SOUND_VOLUME = "sound_volume";
     private static final String KEY_MUSIC_VOLUME = "music_volume";
-    private static final String KEY_NICKNAME = "player_nickname";
     private static final String KEY_ENEMY_COUNT = "enemy_count";
 
     // Default values
@@ -30,7 +29,6 @@ public class GameSettings {
     private static double enemyShootSpeedMultiplier;
     private static double soundVolume;
     private static double musicVolume;
-    private static String playerNickname;
     private static int enemyCount;
 
     // Host settings (for multiplayer - synced from host)
@@ -50,7 +48,6 @@ public class GameSettings {
         enemyShootSpeedMultiplier = prefs.getDouble(KEY_ENEMY_SHOOT_SPEED, DEFAULT_SPEED);
         soundVolume = prefs.getDouble(KEY_SOUND_VOLUME, DEFAULT_VOLUME);
         musicVolume = prefs.getDouble(KEY_MUSIC_VOLUME, DEFAULT_VOLUME);
-        playerNickname = prefs.get(KEY_NICKNAME, "");
         enemyCount = prefs.getInt(KEY_ENEMY_COUNT, DEFAULT_ENEMY_COUNT);
 
         // Log loaded settings for debugging speed differences between machines
@@ -67,7 +64,6 @@ public class GameSettings {
         prefs.putDouble(KEY_ENEMY_SHOOT_SPEED, enemyShootSpeedMultiplier);
         prefs.putDouble(KEY_SOUND_VOLUME, soundVolume);
         prefs.putDouble(KEY_MUSIC_VOLUME, musicVolume);
-        prefs.put(KEY_NICKNAME, playerNickname != null ? playerNickname : "");
         prefs.putInt(KEY_ENEMY_COUNT, enemyCount);
     }
 
@@ -101,13 +97,6 @@ public class GameSettings {
     public static double getMusicVolume() { return musicVolume; }
     public static void setMusicVolume(double volume) {
         musicVolume = Math.max(0.0, Math.min(1.0, volume));
-    }
-
-    // Player nickname
-    public static String getPlayerNickname() { return playerNickname; }
-    public static void setPlayerNickname(String nickname) {
-        playerNickname = nickname != null ? nickname.trim() : "";
-        saveSettings();
     }
 
     // Enemy count

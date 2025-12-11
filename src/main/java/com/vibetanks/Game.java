@@ -816,6 +816,10 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     PowerUpHandler.checkPlayerCollection(powerUp, playerTanks);
 
             if (playerResult.collected) {
+                // Award 1 point for collecting power-up
+                if (playerResult.collectorPlayerIndex >= 0) {
+                    addScore(playerResult.collectorPlayerIndex, 1);
+                }
                 // Handle game-level effects for special power-ups (via PowerUpEffectManager)
                 if (playerResult.activateShovel) {
                     powerUpEffectManager.activateBaseProtection(gameMap);
@@ -859,11 +863,12 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         if (eggResult.easterEggCollectedByPlayer) {
             int playerIndex = eggResult.easterEggCollectorIndex;
             Tank player = playerTanks.get(playerIndex);
-            // Give collecting player 3 extra lives
+            // Give collecting player 3 extra lives and 3 points
             for (int j = 0; j < 3; j++) {
                 player.addLife();
             }
-            LOG.info("Easter egg collected by Player {}! +3 lives!", playerIndex + 1);
+            addScore(playerIndex, 3);
+            LOG.info("Easter egg collected by Player {}! +3 lives, +3 points!", playerIndex + 1);
             GameLogic.applyEasterEggEffect(enemyTanks, true);
             // Turn base into cat if boss has spawned (remaining == 0 means boss was the last spawned)
             if (enemySpawner.getRemainingEnemies() == 0) {

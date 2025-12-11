@@ -18,6 +18,7 @@ public class PowerUpHandler {
     public static class PlayerCollectionResult {
         public boolean collected = false;
         public PowerUp.Type type = null;
+        public int collectorPlayerIndex = -1;         // 0-based index of player who collected
 
         // Special effects that need game-level handling
         public boolean activateShovel = false;        // Enable base protection
@@ -50,10 +51,12 @@ public class PowerUpHandler {
     public static PlayerCollectionResult checkPlayerCollection(PowerUp powerUp, List<Tank> playerTanks) {
         PlayerCollectionResult result = new PlayerCollectionResult();
 
-        for (Tank player : playerTanks) {
+        for (int i = 0; i < playerTanks.size(); i++) {
+            Tank player = playerTanks.get(i);
             if (player.isAlive() && powerUp.collidesWith(player)) {
                 result.collected = true;
                 result.type = powerUp.getType();
+                result.collectorPlayerIndex = i;
 
                 // Handle special power-ups that need game-level effects
                 switch (powerUp.getType()) {

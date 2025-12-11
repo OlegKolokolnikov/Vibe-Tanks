@@ -325,6 +325,10 @@ public class GameUpdateOrchestrator {
                 PowerUpHandler.checkPlayerCollection(powerUp, playerTanks);
 
             if (playerResult.collected) {
+                // Award 1 point for collecting power-up
+                if (playerResult.collectorPlayerIndex >= 0) {
+                    ctx.addScore(playerResult.collectorPlayerIndex, 1);
+                }
                 if (playerResult.activateShovel) {
                     effectManager.activateBaseProtection(gameMap);
                 } else if (playerResult.activateFreeze) {

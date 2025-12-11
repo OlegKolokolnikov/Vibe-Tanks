@@ -519,9 +519,11 @@ public class ServerGameState {
             boolean collected = false;
 
             // Check player collection
-            for (Tank player : playerTanks) {
+            for (int i = 0; i < playerTanks.size(); i++) {
+                Tank player = playerTanks.get(i);
                 if (player.isAlive() && powerUp.collidesWith(player)) {
                     applyPowerUp(powerUp, player);
+                    playerStats.addScore(i, 1); // +1 point for collecting power-up
                     iter.remove();
                     collected = true;
                     break;
@@ -610,6 +612,7 @@ public class ServerGameState {
             Tank player = playerTanks.get(playerIndex);
             GameLogic.applyEasterEggEffect(enemyTanks, true);
             player.setLives(player.getLives() + 3);
+            playerStats.addScore(playerIndex, 3); // +3 points for easter egg
             // Turn base into cat if boss has spawned (remaining == 0 means boss was the last spawned)
             if (enemySpawner.getRemainingEnemies() == 0) {
                 base.setCatMode(true);
@@ -617,7 +620,7 @@ public class ServerGameState {
             }
             easterEgg.collect();
             easterEgg = null;
-            LOG.info("Player collected Easter egg! Enemies transformed to POWER, +3 lives.");
+            LOG.info("Player collected Easter egg! Enemies transformed to POWER, +3 lives, +3 points.");
         } else if (collectionResult < 0) {
             // Enemy collected
             GameLogic.applyEasterEggEffect(enemyTanks, false);

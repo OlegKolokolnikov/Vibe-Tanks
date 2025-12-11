@@ -604,20 +604,12 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             } else if (player.isWaitingToRespawn()) {
                 // Player is waiting for respawn delay
                 player.updateRespawnTimer();
-            } else if (player.getLives() > 1) {
-                // Player died but has lives left - decrement life and start respawn timer
-                player.setLives(player.getLives() - 1);
+            } else if (player.getLives() > 0) {
+                // Player died but has lives left - respawn (lives already decremented by damage())
                 double respawnX = FIXED_START_POSITIONS[i][0];
                 double respawnY = FIXED_START_POSITIONS[i][1];
                 LOG.info("Player {} will respawn in 1 second at: {}, {} (lives left: {})",
                     i + 1, respawnX, respawnY, player.getLives());
-                player.respawn(respawnX, respawnY); // This now starts the timer
-            } else if (player.getLives() == 1) {
-                // Player on last displayed life (internal=1) - decrement and respawn one more time
-                player.setLives(0);
-                double respawnX = FIXED_START_POSITIONS[i][0];
-                double respawnY = FIXED_START_POSITIONS[i][1];
-                LOG.info("Player {} on last life, respawning at: {}, {}", i + 1, respawnX, respawnY);
                 player.respawn(respawnX, respawnY);
             }
             // When lives == 0 and player dies, they stay dead (game over check handles this)

@@ -426,8 +426,7 @@ public class ServerGameState {
                             && bullet.collidesWith(player)) {
                         player.damage();
                         if (!player.isAlive() && !player.isWaitingToRespawn() && player.getLives() > 0) {
-                            player.setLives(player.getLives() - 1);
-                            // Respawn even when lives becomes 0 (last life with 0 displayed)
+                            // Lives already decremented by damage() - just respawn
                             int idx = playerTanks.indexOf(player);
                             LOG.info("Player {} will respawn in 1 second (lives: {})", idx + 1, player.getLives());
                             double[] pos = GameConstants.getPlayerStartPosition(idx);
@@ -651,10 +650,8 @@ public class ServerGameState {
                         player.setShield(false);
                         player.setPauseShield(false);
                         player.damage();
-                        // Handle life decrement and respawn after bomb damage
+                        // Handle respawn after bomb damage (lives already decremented by damage())
                         if (!player.isAlive() && !player.isWaitingToRespawn() && player.getLives() > 0) {
-                            player.setLives(player.getLives() - 1);
-                            // Respawn even when lives becomes 0 (last life with 0 displayed)
                             LOG.info("Player {} will respawn in 1 second (lives: {})", i + 1, player.getLives());
                             double[] pos = GameConstants.getPlayerStartPosition(i);
                             player.respawn(pos[0], pos[1]);

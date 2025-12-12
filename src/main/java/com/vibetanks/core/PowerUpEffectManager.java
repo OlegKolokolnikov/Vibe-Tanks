@@ -111,18 +111,48 @@ public class PowerUpEffectManager {
 
     /**
      * Activate enemy freeze (called when player collects FREEZE).
+     * Duration varies by difficulty mode:
+     * - Hard: 10 seconds
+     * - Normal: 15 seconds
+     * - Easy: 15 seconds
+     * - Very Easy: 20 seconds
      */
     public void activateEnemyFreeze() {
-        enemyFreezeDuration = FREEZE_TIME;
-        LOG.info("FREEZE: Enemies frozen for 10 seconds!");
+        int seconds;
+        if (GameSettings.isHardModeActive()) {
+            seconds = 10;
+        } else if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {
+            seconds = 20;
+        } else if (GameSettings.isEasyModeActive(GameSettings.getCurrentLevel())) {
+            seconds = 15;
+        } else {
+            seconds = 15; // Normal mode
+        }
+        enemyFreezeDuration = seconds * 60; // 60 frames per second
+        LOG.info("FREEZE: Enemies frozen for {} seconds!", seconds);
     }
 
     /**
      * Activate player freeze (called when enemy collects FREEZE).
+     * Duration varies by difficulty mode:
+     * - Hard: 10 seconds
+     * - Normal: 15 seconds
+     * - Easy: 10 seconds
+     * - Very Easy: 10 seconds
      */
     public void activatePlayerFreeze() {
-        playerFreezeDuration = FREEZE_TIME;
-        LOG.info("FREEZE: Players frozen for 10 seconds! (can still shoot)");
+        int seconds;
+        if (GameSettings.isHardModeActive()) {
+            seconds = 10;
+        } else if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {
+            seconds = 10;
+        } else if (GameSettings.isEasyModeActive(GameSettings.getCurrentLevel())) {
+            seconds = 10;
+        } else {
+            seconds = 15; // Normal mode
+        }
+        playerFreezeDuration = seconds * 60; // 60 frames per second
+        LOG.info("FREEZE: Players frozen for {} seconds! (can still shoot)", seconds);
     }
 
     /**

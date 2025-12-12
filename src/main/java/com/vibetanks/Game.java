@@ -19,7 +19,7 @@ import com.vibetanks.network.PlayerInput;
 import com.vibetanks.ui.InputHandler;
 import com.vibetanks.ui.MenuScene;
 import com.vibetanks.util.GameLogger;
-import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.ImageView;
@@ -29,6 +29,9 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Game implements GameStateApplier.GameContext, LevelTransitionManager.LevelTransitionContext,
         HUDRenderer.PlayerNameProvider, HUDRenderer.EndGameStatsProvider, HUDRenderer.GameOverState,
@@ -67,9 +70,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     // Fixed start positions - use shared constants
     private static final double[][] FIXED_START_POSITIONS = GameConstants.PLAYER_START_POSITIONS;
 
-    private AnimationTimer gameLoop;
-    private long lastFrameTime = 0; // For frame rate limiting
-    private static final long FRAME_TIME = 16_666_667; // ~60 FPS in nanoseconds
+    // Game loop using ScheduledExecutorService for consistent 60 FPS on all platforms
+    // (AnimationTimer was tied to VSync which caused 30 FPS on some Windows systems)
+    private ScheduledExecutorService gameLoop;
+    private volatile boolean running = false;
+    private static final long FRAME_TIME_MS = 16; // ~60 FPS in milliseconds
 
     // FPS counter for debugging
     private int fpsFrameCount = 0;
@@ -441,17 +446,22 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     }
 
     public void start() {
-        gameLoop = new AnimationTimer() {
-            @Override
-            public void handle(long now) {
-                // Limit frame rate to ~60 FPS - skip if not enough time has passed
-                // This prevents the game from running too fast on high refresh rate displays (e.g., Mac 120Hz)
-                if (lastFrameTime != 0 && now - lastFrameTime < FRAME_TIME) {
-                    return;
-                }
-                lastFrameTime = now;
+        running = true;
+        gameLoop = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "GameLoop");
+            t.setDaemon(true);
+            return t;
+        });
 
-                // Always run exactly one update per frame - consistent speed
+        // Schedule game loop at fixed rate - completely decoupled from VSync
+        // This fixes the 30 FPS issue on Windows where AnimationTimer was tied to VSync
+        gameLoop.scheduleAtFixedRate(() -> {
+            if (!running) return;
+
+            // Run update and render on JavaFX Application Thread
+            Platform.runLater(() -> {
+                if (!running) return;
+
                 update();
                 render();
 
@@ -464,9 +474,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     fpsFrameCount = 0;
                     fpsLastTime = currentTime;
                 }
-            }
-        };
-        gameLoop.start();
+            });
+        }, 0, FRAME_TIME_MS, TimeUnit.MILLISECONDS);
     }
 
     private double[] getRandomPowerUpSpawnPosition() {
@@ -1113,8 +1122,14 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     }
 
     public void stop() {
+        running = false;
         if (gameLoop != null) {
-            gameLoop.stop();
+            gameLoop.shutdownNow();
+            try {
+                gameLoop.awaitTermination(100, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
         // Stop all sounds
         if (soundManager != null) {

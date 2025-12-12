@@ -41,16 +41,20 @@ public class PowerUp {
         this.x = x;
         this.y = y;
 
-        // Calculate lifetime based on difficulty mode
-        int baseLifetime = LIFETIME;
-        if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {
-            // Very Easy Mode: 20% longer (10% from easy + 10% extra)
-            baseLifetime = (int)(LIFETIME * 1.2);
+        // Calculate lifetime based on difficulty mode (60 frames = 1 second)
+        if (GameSettings.isHardModeActive()) {
+            // Hard Mode: 10 seconds
+            this.lifetime = 600;
+        } else if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {
+            // Very Easy Mode: 25 seconds
+            this.lifetime = 1500;
         } else if (GameSettings.isEasyModeActive(GameSettings.getCurrentLevel())) {
-            // Easy Mode: 10% longer
-            baseLifetime = (int)(LIFETIME * 1.1);
+            // Easy Mode: 20 seconds
+            this.lifetime = 1200;
+        } else {
+            // Normal Mode: 15 seconds
+            this.lifetime = 900;
         }
-        this.lifetime = baseLifetime;
 
         // Very Easy Mode: increased LASER (20%) and SHOVEL (20%) spawn chances
         if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {

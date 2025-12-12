@@ -296,6 +296,11 @@ public class TankPhysics {
             speed *= GameSettings.getEffectivePlayerSpeed();
         } else {
             speed *= GameSettings.getEffectiveEnemySpeed();
+
+            // Very Easy Mode: enemies are 10% slower
+            if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {
+                speed *= 0.9;
+            }
         }
 
         // Apply 2x speed when on ice

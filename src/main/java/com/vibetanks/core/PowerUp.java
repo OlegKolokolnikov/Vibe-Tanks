@@ -40,7 +40,17 @@ public class PowerUp {
         this.id = nextId++;
         this.x = x;
         this.y = y;
-        this.lifetime = LIFETIME;
+
+        // Calculate lifetime based on difficulty mode
+        int baseLifetime = LIFETIME;
+        if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {
+            // Very Easy Mode: 20% longer (10% from easy + 10% extra)
+            baseLifetime = (int)(LIFETIME * 1.2);
+        } else if (GameSettings.isEasyModeActive(GameSettings.getCurrentLevel())) {
+            // Easy Mode: 10% longer
+            baseLifetime = (int)(LIFETIME * 1.1);
+        }
+        this.lifetime = baseLifetime;
 
         // Very Easy Mode: increased LASER (20%) and SHOVEL (20%) spawn chances
         if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {

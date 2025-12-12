@@ -14,6 +14,8 @@ public class GameSettings {
     // Key = level number, Value = consecutive loss count
     private static final Map<Integer, Integer> consecutiveLosses = new HashMap<>();
     private static final int EASY_MODE_THRESHOLD = 3; // 3 losses to trigger easy mode
+    private static final int VERY_EASY_MODE_THRESHOLD = 5; // 5 losses to trigger very easy mode
+    private static int currentLevelNumber = 1; // Track current level for power-up spawning
 
     // Keys for persisting settings
     private static final String KEY_PLAYER_SPEED = "player_speed";
@@ -164,12 +166,19 @@ public class GameSettings {
     /**
      * Record a loss for a specific level. After 3 consecutive losses,
      * easy mode is activated where HEAVY tanks can't destroy steel.
+     * After 5 consecutive losses, very easy mode is activated with
+     * increased LASER and SHOVEL power-up spawn chances.
      */
     public static void recordLoss(int levelNumber) {
         int losses = consecutiveLosses.getOrDefault(levelNumber, 0) + 1;
         consecutiveLosses.put(levelNumber, losses);
-        System.out.println("[GameSettings] Level " + levelNumber + " loss #" + losses +
-            (losses >= EASY_MODE_THRESHOLD ? " - EASY MODE ACTIVATED!" : ""));
+        String modeMsg = "";
+        if (losses >= VERY_EASY_MODE_THRESHOLD) {
+            modeMsg = " - VERY EASY MODE ACTIVATED!";
+        } else if (losses >= EASY_MODE_THRESHOLD) {
+            modeMsg = " - EASY MODE ACTIVATED!";
+        }
+        System.out.println("[GameSettings] Level " + levelNumber + " loss #" + losses + modeMsg);
     }
 
     /**
@@ -195,10 +204,40 @@ public class GameSettings {
     }
 
     /**
+     * Check if very easy mode is active for a specific level.
+     * Very easy mode is active after 5 consecutive losses on the same level.
+     * In this mode, LASER and SHOVEL power-ups spawn more frequently.
+     */
+    public static boolean isVeryEasyModeActive(int levelNumber) {
+        return consecutiveLosses.getOrDefault(levelNumber, 0) >= VERY_EASY_MODE_THRESHOLD;
+    }
+
+    /**
      * Get the number of consecutive losses for a level.
      */
     public static int getConsecutiveLosses(int levelNumber) {
         return consecutiveLosses.getOrDefault(levelNumber, 0);
+    }
+
+    /**
+     * Set the current level number (used by PowerUp for adaptive difficulty).
+     */
+    public static void setCurrentLevel(int levelNumber) {
+        currentLevelNumber = levelNumber;
+    }
+
+    /**
+     * Get the current level number.
+     */
+    public static int getCurrentLevel() {
+        return currentLevelNumber;
+    }
+
+    /**
+     * Check if very easy mode is currently active (for the current level).
+     */
+    public static boolean isVeryEasyModeActiveForCurrentLevel() {
+        return isVeryEasyModeActive(currentLevelNumber);
     }
 
     /**

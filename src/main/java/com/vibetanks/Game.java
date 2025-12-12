@@ -208,6 +208,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         lasers = new ArrayList<>();
         powerUps = new ArrayList<>();
 
+        // Set current level for adaptive difficulty (PowerUp spawning)
+        GameSettings.setCurrentLevel(gameMap.getLevelNumber());
+
         // Initialize base at bottom center
         base = new Base(12 * 32, 24 * 32);
 

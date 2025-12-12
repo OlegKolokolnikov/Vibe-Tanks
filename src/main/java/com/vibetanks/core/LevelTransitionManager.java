@@ -103,6 +103,9 @@ public class LevelTransitionManager {
         // Reset UFO state for new level
         ctx.getUFOManager().reset();
 
+        // Update current level for adaptive difficulty (PowerUp spawning)
+        GameSettings.setCurrentLevel(gameMap.getLevelNumber());
+
         // Play intro sound for new level
         ctx.getSoundManager().playIntro();
 
@@ -153,6 +156,9 @@ public class LevelTransitionManager {
 
         // Reset UFO state for restart
         ctx.getUFOManager().reset();
+
+        // Update current level for adaptive difficulty (PowerUp spawning)
+        GameSettings.setCurrentLevel(gameMap.getLevelNumber());
 
         // Play intro sound for retry
         ctx.getSoundManager().playIntro();

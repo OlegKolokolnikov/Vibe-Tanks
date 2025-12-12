@@ -42,8 +42,28 @@ public class PowerUp {
         this.y = y;
         this.lifetime = LIFETIME;
 
-        // Randomly choose power-up type (LASER is rare - 5% chance)
-        if (GameConstants.RANDOM.nextInt(100) < 5) {
+        // Very Easy Mode: increased LASER (20%) and SHOVEL (20%) spawn chances
+        if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {
+            int roll = GameConstants.RANDOM.nextInt(100);
+            if (roll < 20) {
+                // 20% chance for LASER (up from 5%)
+                this.type = Type.LASER;
+            } else if (roll < 40) {
+                // 20% chance for SHOVEL (up from ~9%)
+                this.type = Type.SHOVEL;
+            } else {
+                // 60% chance for other power-ups (excluding LASER and SHOVEL)
+                Type[] types = Type.values();
+                Type chosen;
+                do {
+                    int index = GameConstants.RANDOM.nextInt(types.length);
+                    chosen = types[index];
+                } while (chosen == Type.LASER || chosen == Type.SHOVEL);
+                this.type = chosen;
+            }
+        }
+        // Normal mode: LASER is rare - 5% chance
+        else if (GameConstants.RANDOM.nextInt(100) < 5) {
             // 5% chance for LASER
             this.type = Type.LASER;
         } else {

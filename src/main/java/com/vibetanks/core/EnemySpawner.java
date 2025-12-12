@@ -115,6 +115,12 @@ public class EnemySpawner {
                 LOG.info("BOSS spawned with {} health (Level {})", bossHealth, levelNumber);
             }
 
+            // Easy mode: HEAVY tanks can't destroy steel after 3 consecutive losses on this level
+            if (type == Tank.EnemyType.HEAVY && GameSettings.isEasyModeActive(levelNumber)) {
+                enemy.setGun(false); // Remove steel-destroying ability (bulletPower = 1)
+                LOG.info("HEAVY tank spawned in EASY MODE - cannot destroy steel");
+            }
+
             enemyTanks.add(enemy);
             spawnedCount++;
         }

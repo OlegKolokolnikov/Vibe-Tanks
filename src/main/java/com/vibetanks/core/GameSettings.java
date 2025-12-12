@@ -1,5 +1,7 @@
 package com.vibetanks.core;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.prefs.Preferences;
 
 /**
@@ -7,6 +9,11 @@ import java.util.prefs.Preferences;
  */
 public class GameSettings {
     private static final Preferences prefs = Preferences.userNodeForPackage(GameSettings.class);
+
+    // Adaptive difficulty: track consecutive losses per level
+    // Key = level number, Value = consecutive loss count
+    private static final Map<Integer, Integer> consecutiveLosses = new HashMap<>();
+    private static final int EASY_MODE_THRESHOLD = 3; // 3 losses to trigger easy mode
 
     // Keys for persisting settings
     private static final String KEY_PLAYER_SPEED = "player_speed";
@@ -150,5 +157,54 @@ public class GameSettings {
         enemyCount = DEFAULT_ENEMY_COUNT;
         // Don't reset nickname
         saveSettings();
+    }
+
+    // ============ ADAPTIVE DIFFICULTY (Easy Mode) ============
+
+    /**
+     * Record a loss for a specific level. After 3 consecutive losses,
+     * easy mode is activated where HEAVY tanks can't destroy steel.
+     */
+    public static void recordLoss(int levelNumber) {
+        int losses = consecutiveLosses.getOrDefault(levelNumber, 0) + 1;
+        consecutiveLosses.put(levelNumber, losses);
+        System.out.println("[GameSettings] Level " + levelNumber + " loss #" + losses +
+            (losses >= EASY_MODE_THRESHOLD ? " - EASY MODE ACTIVATED!" : ""));
+    }
+
+    /**
+     * Record a win for a specific level. This resets the loss counter
+     * and deactivates easy mode for that level.
+     */
+    public static void recordWin(int levelNumber) {
+        if (consecutiveLosses.containsKey(levelNumber)) {
+            int previousLosses = consecutiveLosses.get(levelNumber);
+            consecutiveLosses.remove(levelNumber);
+            if (previousLosses >= EASY_MODE_THRESHOLD) {
+                System.out.println("[GameSettings] Level " + levelNumber + " won - easy mode deactivated");
+            }
+        }
+    }
+
+    /**
+     * Check if easy mode is active for a specific level.
+     * Easy mode is active after 3 consecutive losses on the same level.
+     */
+    public static boolean isEasyModeActive(int levelNumber) {
+        return consecutiveLosses.getOrDefault(levelNumber, 0) >= EASY_MODE_THRESHOLD;
+    }
+
+    /**
+     * Get the number of consecutive losses for a level.
+     */
+    public static int getConsecutiveLosses(int levelNumber) {
+        return consecutiveLosses.getOrDefault(levelNumber, 0);
+    }
+
+    /**
+     * Reset all adaptive difficulty tracking (e.g., when starting a new game from level 1).
+     */
+    public static void resetAdaptiveDifficulty() {
+        consecutiveLosses.clear();
     }
 }

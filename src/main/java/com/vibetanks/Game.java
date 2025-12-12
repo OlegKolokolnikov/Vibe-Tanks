@@ -730,6 +730,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     base.destroy();
                     soundManager.playBaseDestroyed();
                     gameOver = true;
+                    // Record loss for adaptive difficulty
+                    GameSettings.recordLoss(gameMap.getLevelNumber());
                 }
             }
         }
@@ -809,6 +811,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 base.destroy();
                 soundManager.playBaseDestroyed();
                 gameOver = true;
+                // Record loss for adaptive difficulty
+                GameSettings.recordLoss(gameMap.getLevelNumber());
             }
         }
 
@@ -905,6 +909,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 soundManager.playVictory();
                 queueSoundEvent(GameState.SoundType.VICTORY);
 
+                // Record win for adaptive difficulty (resets easy mode for this level)
+                GameSettings.recordWin(gameMap.getLevelNumber());
+
                 // Start cat escape animation if base is cat and protection was broken
                 if (base.isCatMode() && gameMap.isBaseProtectionBroken()) {
                     base.startCatEscape();
@@ -916,6 +923,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         // Check game over condition using shared GameLogic
         if (GameLogic.checkGameOver(base, playerTanks)) {
             gameOver = true;
+            // Record loss for adaptive difficulty
+            GameSettings.recordLoss(gameMap.getLevelNumber());
         }
     }
 

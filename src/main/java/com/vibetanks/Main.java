@@ -25,8 +25,10 @@ public class Main extends Application {
     }
 
     public static void main(String[] args) {
-        // Try to improve frame rate on systems with VSync issues
+        // Fix for 30 FPS on Windows - disable VSync lock and enable fullspeed mode
         System.setProperty("javafx.animation.pulse", "60");
+        System.setProperty("javafx.animation.fullspeed", "true");  // Bypass VSync timing
+        System.setProperty("prism.vsync", "false");                // Disable VSync
         System.setProperty("quantum.multithreaded", "false");
         launch(args);
     }

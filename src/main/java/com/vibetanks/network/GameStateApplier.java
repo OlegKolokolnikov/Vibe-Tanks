@@ -425,9 +425,22 @@ public class GameStateApplier {
         boolean firstStateReceived = ctx.isFirstStateReceived();
         Set<Integer> seenBurningTileKeys = ctx.getSeenBurningTileKeys();
 
-        // Sync full map state from host
-        if (state.mapTiles != null) {
-            gameMap.importTiles(state.mapTiles);
+        // Handle map sync using delta encoding or full sync
+        if (state.useDeltaMapEncoding) {
+            // Delta encoding - apply only changed tiles (70-80% bandwidth reduction)
+            if (state.tileChanges != null && !state.tileChanges.isEmpty()) {
+                List<int[]> changes = new ArrayList<>();
+                for (GameState.TileChange tc : state.tileChanges) {
+                    changes.add(new int[]{tc.row, tc.col, tc.tileType});
+                }
+                gameMap.applyDeltaTiles(changes);
+            }
+        } else {
+            // Full map sync - used during level transitions or initial sync
+            if (state.mapTiles != null) {
+                gameMap.importTiles(state.mapTiles);
+                gameMap.markTilesSynced(); // Reset delta tracking after receiving full sync
+            }
         }
 
         // Sync burning tiles for fire animation

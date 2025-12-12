@@ -47,7 +47,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     private GameMap gameMap;
     private List<Tank> playerTanks;
     private List<Tank> enemyTanks;
-    private List<Tank> allTanksCache = new ArrayList<>(); // Reusable list for collision detection
+    private List<Tank> allTanksCache = new ArrayList<>(50); // Reusable list for collision detection (pre-allocated)
     private double[] spawnPositionCache = new double[2]; // Reusable for power-up spawn positions
     private List<Bullet> bullets;
     private List<Laser> lasers;
@@ -342,6 +342,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         iconRenderer = gameRenderer.getIconRenderer();
         statsRenderer = new StatsRenderer(gc, iconRenderer, width);
         hudRenderer = new HUDRenderer(gc, iconRenderer, effectRenderer, statsRenderer, width, height);
+
+        // Initialize spatial grids for optimized collision detection
+        ProjectileHandler.initializeSpatialGrids(gameMap.getWidth() * 32, gameMap.getHeight() * 32);
     }
 
     private void returnToMenu() {
@@ -564,6 +567,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         allTanksCache.addAll(playerTanks);
         allTanksCache.addAll(enemyTanks);
         List<Tank> allTanks = allTanksCache;
+
+        // Update spatial grids for optimized collision detection (O(n) instead of O(n^2))
+        ProjectileHandler.updateSpatialGrids(allTanks, bullets);
 
         // Handle player input (local or host) - pass freeze state
         boolean isPlayerFrozen = powerUpEffectManager.arePlayersFrozen();

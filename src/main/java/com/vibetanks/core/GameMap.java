@@ -17,6 +17,8 @@ public class GameMap {
     private int width;
     private int height;
     private TileType[][] tiles;
+    private TileType[][] previousTiles; // For delta encoding - tracks last synced state
+    private boolean deltaEncodingEnabled = true;
     private final Random random = GameConstants.RANDOM; // Use shared Random instance
     private final LevelGenerator levelGenerator; // Extracted level generation logic
     private int levelNumber = 1;
@@ -25,6 +27,9 @@ public class GameMap {
 
     // Track burning trees: key = row*1000+col, value = frames remaining
     private Map<Integer, Integer> burningTiles = new HashMap<>();
+
+    // Delta encoding: list of tile changes since last sync
+    private final java.util.List<int[]> pendingChanges = new java.util.ArrayList<>(64);
 
     public enum TileType {
         EMPTY,
@@ -39,8 +44,11 @@ public class GameMap {
         this.width = width;
         this.height = height;
         this.tiles = new TileType[height][width];
+        this.previousTiles = new TileType[height][width];
         this.levelGenerator = new LevelGenerator(width, height, random);
         generateLevelForNumber(1);
+        // Initialize previousTiles with current state
+        copyTilesToPrevious();
     }
 
     public int getLevelNumber() {
@@ -265,7 +273,12 @@ public class GameMap {
 
     public void setTile(int row, int col, TileType type) {
         if (row >= 0 && row < height && col >= 0 && col < width) {
+            TileType oldType = tiles[row][col];
             tiles[row][col] = type;
+            // Track change for delta encoding
+            if (deltaEncodingEnabled && oldType != type) {
+                pendingChanges.add(new int[]{row, col, type.ordinal()});
+            }
         }
     }
 
@@ -288,6 +301,101 @@ public class GameMap {
                 tiles[row][col] = TileType.values()[tileData[row][col]];
             }
         }
+    }
+
+    // ============ DELTA ENCODING FOR NETWORK SYNC ============
+
+    /**
+     * Export only tiles that have changed since last sync.
+     * Returns list of [row, col, tileOrdinal] arrays.
+     * Much more efficient than full export when few tiles change.
+     */
+    public java.util.List<int[]> exportDeltaTiles() {
+        java.util.List<int[]> changes = new java.util.ArrayList<>();
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                if (tiles[row][col] != previousTiles[row][col]) {
+                    changes.add(new int[]{row, col, tiles[row][col].ordinal()});
+                }
+            }
+        }
+        return changes;
+    }
+
+    /**
+     * Get pending changes tracked via setTile().
+     * Returns a copy of the list and clears internal tracking.
+     */
+    public java.util.List<int[]> getPendingChanges() {
+        java.util.List<int[]> result = new java.util.ArrayList<>(pendingChanges);
+        pendingChanges.clear();
+        return result;
+    }
+
+    /**
+     * Check if there are any pending changes.
+     */
+    public boolean hasPendingChanges() {
+        return !pendingChanges.isEmpty();
+    }
+
+    /**
+     * Apply delta changes from network sync.
+     * @param changes List of [row, col, tileOrdinal] arrays
+     */
+    public void applyDeltaTiles(java.util.List<int[]> changes) {
+        if (changes == null) return;
+        // Temporarily disable change tracking during import
+        boolean wasEnabled = deltaEncodingEnabled;
+        deltaEncodingEnabled = false;
+        for (int[] change : changes) {
+            int row = change[0];
+            int col = change[1];
+            int ordinal = change[2];
+            if (row >= 0 && row < height && col >= 0 && col < width && ordinal >= 0 && ordinal < TileType.values().length) {
+                tiles[row][col] = TileType.values()[ordinal];
+            }
+        }
+        deltaEncodingEnabled = wasEnabled;
+    }
+
+    /**
+     * Mark current tiles as synced (for delta tracking).
+     * Call after sending/receiving full state.
+     */
+    public void markTilesSynced() {
+        copyTilesToPrevious();
+        pendingChanges.clear();
+    }
+
+    /**
+     * Check if full sync is needed (e.g., after level change).
+     * Returns true if more than 10% of tiles changed.
+     */
+    public boolean needsFullSync() {
+        int changes = 0;
+        int threshold = (width * height) / 10; // 10% threshold
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                if (tiles[row][col] != previousTiles[row][col]) {
+                    changes++;
+                    if (changes > threshold) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private void copyTilesToPrevious() {
+        for (int row = 0; row < height; row++) {
+            System.arraycopy(tiles[row], 0, previousTiles[row], 0, width);
+        }
+    }
+
+    public void setDeltaEncodingEnabled(boolean enabled) {
+        this.deltaEncodingEnabled = enabled;
     }
 
     // Export burning tiles for network sync

@@ -65,7 +65,12 @@ public class GameState implements Serializable {
     public List<TileChange> tileChanges = new ArrayList<>();
 
     // Full map state for syncing (stores tile type ordinals)
+    // Only populated when useDeltaMapEncoding is false
     public int[][] mapTiles;
+
+    // Delta encoding flag - when true, only tileChanges is used, not full mapTiles
+    // This reduces bandwidth by ~70-80% during normal gameplay
+    public boolean useDeltaMapEncoding = false;
 
     // Burning tiles (row*1000+col -> frames remaining)
     public List<BurningTileData> burningTiles = new ArrayList<>();

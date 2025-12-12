@@ -195,8 +195,25 @@ public class GameStateBuilder {
     }
 
     private static void buildMapData(GameState state, GameMap gameMap, List<GameState.TileChange> mapChanges) {
-        // Full map state for sync
-        state.mapTiles = gameMap.exportTiles();
+        // Use delta encoding for efficiency when few tiles changed
+        // Full sync when more than 10% of map changed (e.g., level transitions)
+        if (gameMap.needsFullSync()) {
+            // Full map sync
+            state.useDeltaMapEncoding = false;
+            state.mapTiles = gameMap.exportTiles();
+            gameMap.markTilesSynced(); // Reset delta tracking after full sync
+        } else {
+            // Delta encoding - only send changed tiles
+            state.useDeltaMapEncoding = true;
+            state.mapTiles = null; // Don't send full map
+
+            // Get tiles changed since last sync
+            java.util.List<int[]> deltaChanges = gameMap.exportDeltaTiles();
+            for (int[] change : deltaChanges) {
+                state.tileChanges.add(new GameState.TileChange(change[0], change[1], change[2]));
+            }
+            gameMap.markTilesSynced(); // Reset for next frame
+        }
 
         // Burning tiles for fire animation sync
         Map<Integer, Integer> burning = gameMap.exportBurningTiles();
@@ -207,7 +224,7 @@ public class GameStateBuilder {
             state.burningTiles.add(new GameState.BurningTileData(row, col, entry.getValue()));
         }
 
-        // Map changes (legacy, keeping for compatibility)
+        // Add any additional map changes from game events
         state.tileChanges.addAll(mapChanges);
     }
 

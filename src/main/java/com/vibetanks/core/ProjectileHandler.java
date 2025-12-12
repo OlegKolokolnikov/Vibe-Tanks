@@ -2,14 +2,53 @@ package com.vibetanks.core;
 
 import com.vibetanks.audio.SoundManager;
 
-import java.util.Iterator;
 import java.util.List;
 
 /**
  * Handles bullet and laser updates and collision detection.
  * Extracts projectile logic from Game.java to improve separation of concerns.
+ *
+ * Optimized with spatial partitioning for O(n) collision detection instead of O(n^2).
  */
 public class ProjectileHandler {
+
+    // Spatial grids for efficient collision detection
+    private static SpatialGrid<Tank> tankGrid;
+    private static SpatialGrid<Bullet> bulletGrid;
+
+    /**
+     * Initialize or resize spatial grids for collision detection.
+     * Call once at game start and when map size changes.
+     */
+    public static void initializeSpatialGrids(int mapWidth, int mapHeight) {
+        tankGrid = new SpatialGrid<>(mapWidth, mapHeight);
+        bulletGrid = new SpatialGrid<>(mapWidth, mapHeight);
+    }
+
+    /**
+     * Update spatial grids with current entity positions.
+     * Call at the start of each frame before collision detection.
+     */
+    public static void updateSpatialGrids(List<Tank> allTanks, List<Bullet> bullets) {
+        // Clear grids
+        if (tankGrid != null) {
+            tankGrid.clear();
+            // Insert all alive tanks
+            for (Tank tank : allTanks) {
+                if (tank.isAlive()) {
+                    tankGrid.insertWithSize(tank, tank.getX(), tank.getY(), tank.getSize());
+                }
+            }
+        }
+
+        if (bulletGrid != null) {
+            bulletGrid.clear();
+            // Insert all bullets
+            for (Bullet bullet : bullets) {
+                bulletGrid.insert(bullet, bullet.getX(), bullet.getY());
+            }
+        }
+    }
 
     /**
      * Result of bullet collision processing for a single bullet.
@@ -104,9 +143,18 @@ public class ProjectileHandler {
             }
         }
 
+        // Use spatial grid for efficient tank collision detection
+        List<Tank> nearbyTanks = tankGrid != null
+            ? tankGrid.getNearby(bullet.getX(), bullet.getY())
+            : null;
+
         // Player bullets hit enemies
         if (!bullet.isFromEnemy()) {
-            for (Tank enemy : enemyTanks) {
+            // Use spatial grid if available, fall back to full list
+            Iterable<Tank> tanksToCheck = nearbyTanks != null ? nearbyTanks : enemyTanks;
+            for (Tank enemy : tanksToCheck) {
+                // Skip player tanks when checking enemy collisions
+                if (enemy.isPlayer()) continue;
                 if (enemy.isAlive() && bullet.collidesWith(enemy)) {
                     result.hitEnemy = true;
                     boolean dropPowerUp = enemy.damage();
@@ -129,7 +177,11 @@ public class ProjectileHandler {
             }
         } else {
             // Enemy bullets hit players
-            for (Tank player : playerTanks) {
+            // Use spatial grid if available, fall back to full list
+            Iterable<Tank> tanksToCheck = nearbyTanks != null ? nearbyTanks : playerTanks;
+            for (Tank player : tanksToCheck) {
+                // Skip enemy tanks when checking player collisions
+                if (!player.isPlayer()) continue;
                 if (player.isAlive() && bullet.collidesWith(player)) {
                     if (!player.hasShield() && !player.hasPauseShield()) {
                         result.hitPlayer = true;
@@ -158,13 +210,60 @@ public class ProjectileHandler {
     }
 
     /**
-     * Process bullet-to-bullet collisions.
-     * Removes colliding bullets from the list.
+     * Process bullet-to-bullet collisions using spatial partitioning.
+     * Reduces complexity from O(n^2) to approximately O(n) by only checking nearby bullets.
      *
      * @param bullets List of bullets to check
      * @param playerTanks Player tanks for bullet destroyed notification
      */
     public static void processBulletToBulletCollisions(List<Bullet> bullets, List<Tank> playerTanks) {
+        if (bullets.size() < 2) return;
+
+        // Use spatial grid if available for O(n) collision detection
+        if (bulletGrid != null) {
+            processBulletCollisionsWithGrid(bullets, playerTanks);
+        } else {
+            // Fallback to original O(n^2) algorithm
+            processBulletCollisionsBruteForce(bullets, playerTanks);
+        }
+    }
+
+    /**
+     * Spatial grid-based bullet collision detection.
+     * Only checks bullets in nearby cells - O(n) average case.
+     */
+    private static void processBulletCollisionsWithGrid(List<Bullet> bullets, List<Tank> playerTanks) {
+        // Mark bullets for removal (can't modify list while iterating)
+        java.util.Set<Bullet> toRemove = new java.util.HashSet<>();
+
+        for (Bullet bullet1 : bullets) {
+            if (toRemove.contains(bullet1)) continue;
+
+            // Get nearby bullets from spatial grid
+            List<Bullet> nearby = bulletGrid.getNearby(bullet1.getX(), bullet1.getY());
+
+            for (Bullet bullet2 : nearby) {
+                if (bullet1 == bullet2) continue;
+                if (toRemove.contains(bullet2)) continue;
+
+                if (bullet1.collidesWith(bullet2)) {
+                    GameLogic.notifyBulletDestroyed(bullet1, playerTanks);
+                    GameLogic.notifyBulletDestroyed(bullet2, playerTanks);
+                    toRemove.add(bullet1);
+                    toRemove.add(bullet2);
+                    break;
+                }
+            }
+        }
+
+        // Remove collided bullets
+        bullets.removeAll(toRemove);
+    }
+
+    /**
+     * Original O(n^2) brute force algorithm - fallback when grid not initialized.
+     */
+    private static void processBulletCollisionsBruteForce(List<Bullet> bullets, List<Tank> playerTanks) {
         for (int i = 0; i < bullets.size(); i++) {
             Bullet bullet1 = bullets.get(i);
             for (int j = i + 1; j < bullets.size(); j++) {

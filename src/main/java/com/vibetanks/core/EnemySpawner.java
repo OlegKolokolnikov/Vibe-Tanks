@@ -112,7 +112,21 @@ public class EnemySpawner {
                 int bossHealth = BOSS_BASE_HEALTH + (levelNumber - 1);
                 enemy.setHealth(bossHealth);
                 enemy.setMaxHealth(bossHealth);
-                LOG.info("BOSS spawned with {} health (Level {})", bossHealth, levelNumber);
+
+                // Hard mode: BOSS is 10% faster
+                if (GameSettings.isHardModeActive()) {
+                    enemy.setSpeedMultiplier(enemy.getSpeedMultiplier() * 1.1);
+                    LOG.info("BOSS spawned with {} health (Level {}) - HARD MODE: 10% faster!", bossHealth, levelNumber);
+                } else {
+                    LOG.info("BOSS spawned with {} health (Level {})", bossHealth, levelNumber);
+                }
+            }
+
+            // Hard mode: POWER tanks get extra armor (+1 health)
+            if (type == Tank.EnemyType.POWER && GameSettings.isHardModeActive()) {
+                enemy.setMaxHealth(enemy.getMaxHealth() + 1);
+                enemy.setHealth(enemy.getMaxHealth());
+                LOG.info("POWER tank spawned in HARD MODE - extra armor (3 shots needed)");
             }
 
             // Easy mode: HEAVY tanks can't destroy steel after 3 consecutive losses on this level

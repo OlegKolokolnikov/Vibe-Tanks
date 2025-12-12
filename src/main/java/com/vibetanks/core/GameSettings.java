@@ -17,6 +17,10 @@ public class GameSettings {
     private static final int VERY_EASY_MODE_THRESHOLD = 5; // 5 losses to trigger very easy mode
     private static int currentLevelNumber = 1; // Track current level for power-up spawning
 
+    // Hard mode: track consecutive wins (global, not per-level)
+    private static int consecutiveWins = 0;
+    private static final int HARD_MODE_THRESHOLD = 5; // 5 wins to trigger hard mode
+
     // Keys for persisting settings
     private static final String KEY_PLAYER_SPEED = "player_speed";
     private static final String KEY_ENEMY_SPEED = "enemy_speed";
@@ -168,6 +172,7 @@ public class GameSettings {
      * easy mode is activated where HEAVY tanks can't destroy steel.
      * After 5 consecutive losses, very easy mode is activated with
      * increased LASER and SHOVEL power-up spawn chances.
+     * Also resets consecutive wins (hard mode).
      */
     public static void recordLoss(int levelNumber) {
         int losses = consecutiveLosses.getOrDefault(levelNumber, 0) + 1;
@@ -179,11 +184,18 @@ public class GameSettings {
             modeMsg = " - EASY MODE ACTIVATED!";
         }
         System.out.println("[GameSettings] Level " + levelNumber + " loss #" + losses + modeMsg);
+
+        // Reset consecutive wins on any loss
+        if (consecutiveWins > 0) {
+            System.out.println("[GameSettings] Consecutive wins reset (was " + consecutiveWins + ")");
+            consecutiveWins = 0;
+        }
     }
 
     /**
      * Record a win for a specific level. This resets the loss counter
-     * and deactivates easy mode for that level.
+     * and deactivates easy mode for that level. Also increments consecutive
+     * wins counter for hard mode.
      */
     public static void recordWin(int levelNumber) {
         if (consecutiveLosses.containsKey(levelNumber)) {
@@ -193,6 +205,11 @@ public class GameSettings {
                 System.out.println("[GameSettings] Level " + levelNumber + " won - easy mode deactivated");
             }
         }
+
+        // Increment consecutive wins
+        consecutiveWins++;
+        String modeMsg = consecutiveWins >= HARD_MODE_THRESHOLD ? " - HARD MODE ACTIVATED!" : "";
+        System.out.println("[GameSettings] Win #" + consecutiveWins + modeMsg);
     }
 
     /**
@@ -241,9 +258,26 @@ public class GameSettings {
     }
 
     /**
+     * Check if hard mode is active.
+     * Hard mode is active after 5 consecutive wins.
+     * In this mode, BOSS is 10% faster and POWER tanks have extra armor.
+     */
+    public static boolean isHardModeActive() {
+        return consecutiveWins >= HARD_MODE_THRESHOLD;
+    }
+
+    /**
+     * Get the number of consecutive wins.
+     */
+    public static int getConsecutiveWins() {
+        return consecutiveWins;
+    }
+
+    /**
      * Reset all adaptive difficulty tracking (e.g., when starting a new game from level 1).
      */
     public static void resetAdaptiveDifficulty() {
         consecutiveLosses.clear();
+        consecutiveWins = 0;
     }
 }

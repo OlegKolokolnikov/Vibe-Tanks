@@ -271,6 +271,19 @@ public class GameLogic {
                 enemy.setRandomColorOverride();
                 enemy.applyTank();
                 return type;
+            case LASER:
+                // Enemies don't get laser - instead become HEAVY or get speed boost
+                if (enemy.getEnemyType() == Tank.EnemyType.HEAVY) {
+                    // Already HEAVY - get speed boost
+                    enemy.applyCar();
+                } else {
+                    // Become HEAVY tank
+                    enemy.setEnemyType(Tank.EnemyType.HEAVY);
+                    enemy.setMaxHealth(3);
+                    enemy.setHealth(3);
+                    enemy.applyGun(); // HEAVY can destroy steel
+                }
+                break;
             default:
                 powerUp.applyEffect(enemy);
                 break;

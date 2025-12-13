@@ -684,6 +684,21 @@ public class ServerGameState {
                 }
                 LOG.info("CAR: All enemies get speed boost for 30 seconds!");
             }
+            case LASER -> {
+                // Enemies don't get laser - instead become HEAVY or get speed boost
+                if (enemy.getEnemyType() == Tank.EnemyType.HEAVY) {
+                    // Already HEAVY - get speed boost
+                    enemy.applyCar();
+                    LOG.info("LASER: HEAVY enemy gets speed boost!");
+                } else {
+                    // Become HEAVY tank
+                    enemy.setEnemyType(Tank.EnemyType.HEAVY);
+                    enemy.setMaxHealth(3);
+                    enemy.setHealth(3);
+                    enemy.applyGun(); // HEAVY can destroy steel
+                    LOG.info("LASER: Enemy becomes HEAVY tank!");
+                }
+            }
             default -> powerUp.applyEffect(enemy);
         }
     }

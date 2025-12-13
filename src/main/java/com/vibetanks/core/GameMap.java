@@ -162,46 +162,56 @@ public class GameMap {
     }
 
     public boolean checkBulletCollision(Bullet bullet, com.vibetanks.audio.SoundManager soundManager) {
-        int col = (int) (bullet.getX() + bullet.getSize() / 2) / TILE_SIZE;
-        int row = (int) (bullet.getY() + bullet.getSize() / 2) / TILE_SIZE;
+        // Check all tiles the bullet overlaps with (not just center)
+        // This prevents bullets from slipping through edges of solid tiles
+        int bulletSize = bullet.getSize();
+        int minCol = (int) bullet.getX() / TILE_SIZE;
+        int maxCol = (int) (bullet.getX() + bulletSize - 1) / TILE_SIZE;
+        int minRow = (int) bullet.getY() / TILE_SIZE;
+        int maxRow = (int) (bullet.getY() + bulletSize - 1) / TILE_SIZE;
 
-        if (row < 0 || row >= height || col < 0 || col >= width) {
-            return true; // out of bounds
-        }
-
-        TileType tile = tiles[row][col];
-
-        if (tile == TileType.BRICK) {
-            // Brick is destroyed by bullet
-            tiles[row][col] = TileType.EMPTY;
-            return true;
-        } else if (tile == TileType.STEEL) {
-            // Steel stops bullet but isn't destroyed (unless power bullet)
-            if (bullet.getPower() >= 2) {
-                tiles[row][col] = TileType.EMPTY;
-            }
-            return true;
-        } else if (tile == TileType.GROUND) {
-            // Ground is completely indestructible - stops all bullets
-            return true;
-        } else if (tile == TileType.TREES) {
-            // Check if tree is already burning - bullets pass through burning trees
-            long key = encodePosition(row, col);
-            if (burningTiles.containsKey(key)) {
-                // Tree is burning - bullets pass through
-                return false;
-            }
-            // Tree is not burning - only SAW bullets can start fire
-            if (bullet.canDestroyTrees()) {
-                burningTiles.put(key, BURN_DURATION);
-                // Play tree burn sound
-                if (soundManager != null) {
-                    soundManager.playTreeBurn();
+        // Check all overlapping tiles
+        for (int row = minRow; row <= maxRow; row++) {
+            for (int col = minCol; col <= maxCol; col++) {
+                if (row < 0 || row >= height || col < 0 || col >= width) {
+                    return true; // out of bounds
                 }
-                return true;
+
+                TileType tile = tiles[row][col];
+
+                if (tile == TileType.BRICK) {
+                    // Brick is destroyed by bullet
+                    tiles[row][col] = TileType.EMPTY;
+                    return true;
+                } else if (tile == TileType.STEEL) {
+                    // Steel stops bullet but isn't destroyed (unless power bullet)
+                    if (bullet.getPower() >= 2) {
+                        tiles[row][col] = TileType.EMPTY;
+                    }
+                    return true;
+                } else if (tile == TileType.GROUND) {
+                    // Ground is completely indestructible - stops all bullets
+                    return true;
+                } else if (tile == TileType.TREES) {
+                    // Check if tree is already burning - bullets pass through burning trees
+                    long key = encodePosition(row, col);
+                    if (burningTiles.containsKey(key)) {
+                        // Tree is burning - bullets pass through
+                        continue;
+                    }
+                    // Tree is not burning - only SAW bullets can start fire
+                    if (bullet.canDestroyTrees()) {
+                        burningTiles.put(key, BURN_DURATION);
+                        // Play tree burn sound
+                        if (soundManager != null) {
+                            soundManager.playTreeBurn();
+                        }
+                        return true;
+                    }
+                    // Normal bullets pass through non-burning trees
+                    continue;
+                }
             }
-            // Normal bullets pass through non-burning trees (trees provide cover but don't block bullets)
-            return false;
         }
 
         return false; // no collision

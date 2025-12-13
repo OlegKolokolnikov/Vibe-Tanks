@@ -37,20 +37,35 @@ public class LevelGenerator {
             }
         }
 
-        // Create border walls (steel on sides and top, ground or steel on bottom based on difficulty)
-        // In hard mode (5+ consecutive wins), bottom border is steel (original behavior)
-        GameMap.TileType bottomBorderType = GameSettings.isHardModeActive()
-            ? GameMap.TileType.STEEL
-            : GameMap.TileType.GROUND;
+        // Create border walls based on difficulty:
+        // - Hard mode: all borders are STEEL (original behavior)
+        // - Very easy mode (5 losses): all borders are GROUND (indestructible)
+        // - Normal/Easy mode: bottom is GROUND, others are STEEL
+        GameMap.TileType borderType;
+        GameMap.TileType bottomBorderType;
+
+        if (GameSettings.isHardModeActive()) {
+            // Hard mode: all steel borders
+            borderType = GameMap.TileType.STEEL;
+            bottomBorderType = GameMap.TileType.STEEL;
+        } else if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {
+            // Very easy mode (5 losses): all ground borders
+            borderType = GameMap.TileType.GROUND;
+            bottomBorderType = GameMap.TileType.GROUND;
+        } else {
+            // Normal/Easy mode: steel borders except bottom is ground
+            borderType = GameMap.TileType.STEEL;
+            bottomBorderType = GameMap.TileType.GROUND;
+        }
 
         for (int i = 0; i < width; i++) {
-            tiles[0][i] = GameMap.TileType.STEEL;
+            tiles[0][i] = borderType;
             tiles[height - 1][i] = bottomBorderType;
         }
-        // Side borders - all steel except bottom row follows bottomBorderType
+        // Side borders
         for (int i = 0; i < height - 1; i++) {
-            tiles[i][0] = GameMap.TileType.STEEL;
-            tiles[i][width - 1] = GameMap.TileType.STEEL;
+            tiles[i][0] = borderType;
+            tiles[i][width - 1] = borderType;
         }
 
         // Generate 2-4 main geometric structures
@@ -533,8 +548,8 @@ public class LevelGenerator {
 
         // Add wall above base to protect from center spawn
         // Random width 1-5 blocks, centered above base
-        // In very easy mode: use GROUND (indestructible earth), otherwise STEEL
-        GameMap.TileType wallType = GameSettings.isVeryEasyModeActiveForCurrentLevel()
+        // In easy mode (3 losses): use GROUND (indestructible earth), otherwise STEEL
+        GameMap.TileType wallType = GameSettings.isEasyModeActiveForCurrentLevel()
             ? GameMap.TileType.GROUND : GameMap.TileType.STEEL;
         int wallWidth = 1 + random.nextInt(5); // 1-5 blocks
         int startCol = 12 - wallWidth / 2; // Center around col 12-13

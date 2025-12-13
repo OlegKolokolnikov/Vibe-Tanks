@@ -255,6 +255,13 @@ public class GameSettings {
     }
 
     /**
+     * Check if easy mode is currently active (for the current level).
+     */
+    public static boolean isEasyModeActiveForCurrentLevel() {
+        return isEasyModeActive(currentLevelNumber);
+    }
+
+    /**
      * Check if very easy mode is currently active (for the current level).
      */
     public static boolean isVeryEasyModeActiveForCurrentLevel() {

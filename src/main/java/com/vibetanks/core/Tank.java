@@ -443,7 +443,10 @@ public class Tank {
     }
 
     public void applyStar() {
-        shootCooldownReduction++; // Each star reduces cooldown by 5 frames
+        // Each star reduces cooldown by 5 frames (max 3 stars)
+        if (shootCooldownReduction < 3) {
+            shootCooldownReduction++;
+        }
     }
 
     public void applyCar() {
@@ -480,8 +483,8 @@ public class Tank {
     }
 
     public void applyMachinegun() {
-        // Each MACHINEGUN adds one extra bullet (max 5 total bullets = 4 extra)
-        if (machinegunCount < 4) {
+        // Each MACHINEGUN adds one extra bullet (max 4 total bullets = 3 extra)
+        if (machinegunCount < 3) {
             machinegunCount++;
         }
     }

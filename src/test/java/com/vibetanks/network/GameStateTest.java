@@ -123,7 +123,7 @@ class GameStateTest {
         @Test
         @DisplayName("EnemyData should be serializable")
         void enemyDataShouldBeSerializable() throws IOException, ClassNotFoundException {
-            gameState.enemies.add(new GameState.EnemyData(100, 200, 1, true, 2, 3, 5, 1.2, 1.5));
+            gameState.enemies.add(new GameState.EnemyData(100, 200, 1, true, 2, 3, 5, 1.2, 1.5, -1));
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -205,7 +205,7 @@ class GameStateTest {
         @DisplayName("EnemyData constructor should set all fields")
         void enemyDataConstructorSetsFields() {
             GameState.EnemyData enemy = new GameState.EnemyData(
-                    100, 200, 1, true, 2, 3, 5, 1.2, 1.5
+                    100, 200, 1, true, 2, 3, 5, 1.2, 1.5, 2
             );
 
             assertEquals(100, enemy.x);
@@ -217,6 +217,7 @@ class GameStateTest {
             assertEquals(5, enemy.maxHealth);
             assertEquals(1.2, enemy.tempSpeedBoost);
             assertEquals(1.5, enemy.speedMultiplier);
+            assertEquals(2, enemy.colorOverrideIndex);
         }
 
         @Test

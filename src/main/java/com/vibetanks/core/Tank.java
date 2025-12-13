@@ -64,6 +64,10 @@ public class Tank {
     private int trackAnimationFrame;
     private boolean isMoving;
 
+    // Color override for enemies that collected LIFE/STEEL powerup
+    // -1 = no override, 0-6 = rainbow color index
+    private int colorOverrideIndex = -1;
+
     public Tank(double x, double y, Direction direction, boolean isPlayer, int playerNumber) {
         this(x, y, direction, isPlayer, playerNumber, EnemyType.REGULAR);
     }
@@ -286,6 +290,11 @@ public class Tank {
         // POWER type drops power-up on EVERY hit (including death)
         if (!isPlayer && enemyType == EnemyType.POWER) {
             dropPowerUp = true;
+        }
+
+        // Clear color override when enemy is shot (reverts to original color)
+        if (!isPlayer) {
+            clearColorOverride();
         }
 
         if (health <= 0) {
@@ -599,5 +608,32 @@ public class Tank {
         }
         this.x = x;
         this.y = y;
+    }
+
+    // Color override methods (for enemies that collected LIFE/STEEL powerup)
+    public int getColorOverrideIndex() {
+        return colorOverrideIndex;
+    }
+
+    public void setColorOverrideIndex(int index) {
+        this.colorOverrideIndex = index;
+    }
+
+    public boolean hasColorOverride() {
+        return colorOverrideIndex >= 0;
+    }
+
+    /**
+     * Set a random color override (used when enemy collects LIFE/STEEL powerup).
+     */
+    public void setRandomColorOverride() {
+        this.colorOverrideIndex = GameConstants.RANDOM.nextInt(7); // 0-6 for rainbow colors
+    }
+
+    /**
+     * Clear the color override (used when enemy is shot).
+     */
+    public void clearColorOverride() {
+        this.colorOverrideIndex = -1;
     }
 }

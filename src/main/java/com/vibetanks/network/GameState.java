@@ -231,7 +231,7 @@ public class GameState implements Serializable {
     }
 
     public static class EnemyData implements Serializable {
-        private static final long serialVersionUID = 1L;
+        private static final long serialVersionUID = 2L;  // Updated for new field
         public double x, y;
         public int direction;
         public boolean alive;
@@ -240,8 +240,9 @@ public class GameState implements Serializable {
         public int maxHealth;
         public double tempSpeedBoost; // Temporary speed boost from team CAR pickup
         public double speedMultiplier; // Permanent speed (from CAR pickup)
+        public int colorOverrideIndex; // -1 = no override, 0-6 = rainbow color
 
-        public EnemyData(double x, double y, int direction, boolean alive, int enemyType, int health, int maxHealth, double tempSpeedBoost, double speedMultiplier) {
+        public EnemyData(double x, double y, int direction, boolean alive, int enemyType, int health, int maxHealth, double tempSpeedBoost, double speedMultiplier, int colorOverrideIndex) {
             this.x = x;
             this.y = y;
             this.direction = direction;
@@ -251,6 +252,7 @@ public class GameState implements Serializable {
             this.maxHealth = maxHealth;
             this.tempSpeedBoost = tempSpeedBoost;
             this.speedMultiplier = speedMultiplier;
+            this.colorOverrideIndex = colorOverrideIndex;
         }
     }
 

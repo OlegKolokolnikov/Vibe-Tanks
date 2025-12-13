@@ -252,13 +252,23 @@ public class GameLogic {
 
         switch (type) {
             case SHOVEL:
+                // Set random color for enemy that collected SHOVEL (steel protection)
+                enemy.setRandomColorOverride();
+                // SHOVEL requires game-level handling
+                break;
             case FREEZE:
             case BOMB:
             case CAR:
                 // These require game-level handling
                 break;
+            case TANK:
+                // TANK gives extra life and changes color
+                enemy.setRandomColorOverride();
+                powerUp.applyEffect(enemy);
+                break;
             case SHIELD:
-                // Enemies get an extra life instead of shield
+                // Enemies get an extra life instead of shield, with color change
+                enemy.setRandomColorOverride();
                 enemy.applyTank();
                 return type;
             default:

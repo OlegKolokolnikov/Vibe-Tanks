@@ -275,7 +275,7 @@ class GameStateApplierTest {
         @DisplayName("EnemyData constructor should set all fields")
         void enemyDataConstructorShouldSetAllFields() {
             GameState.EnemyData data = new GameState.EnemyData(
-                100, 200, 1, true, 2, 3, 5, 0.5, 1.5
+                100, 200, 1, true, 2, 3, 5, 0.5, 1.5, 3
             );
 
             assertEquals(100, data.x);
@@ -287,6 +287,7 @@ class GameStateApplierTest {
             assertEquals(5, data.maxHealth);
             assertEquals(0.5, data.tempSpeedBoost);
             assertEquals(1.5, data.speedMultiplier);
+            assertEquals(3, data.colorOverrideIndex);
         }
     }
 

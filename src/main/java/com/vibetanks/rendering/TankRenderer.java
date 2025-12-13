@@ -48,8 +48,8 @@ public class TankRenderer {
             renderShipIndicator(gc, x, y, size, scale);
         }
 
-        // Get tank colors
-        Color[] colors = getTankColors(isPlayer, playerNumber, enemyType);
+        // Get tank colors (with color override for enemies that collected LIFE/STEEL)
+        Color[] colors = getTankColors(isPlayer, playerNumber, enemyType, tank.getColorOverrideIndex());
         Color tankColor = colors[0];
         Color darkColor = colors[1];
 
@@ -126,7 +126,7 @@ public class TankRenderer {
         );
     }
 
-    private static Color[] getTankColors(boolean isPlayer, int playerNumber, Tank.EnemyType enemyType) {
+    private static Color[] getTankColors(boolean isPlayer, int playerNumber, Tank.EnemyType enemyType, int colorOverrideIndex) {
         Color tankColor;
         Color darkColor;
 
@@ -134,24 +134,30 @@ public class TankRenderer {
             tankColor = Tank.getPlayerColor(playerNumber);
             darkColor = tankColor.darker();
         } else {
-            switch (enemyType) {
-                case REGULAR -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
-                case ARMORED -> { tankColor = Color.DARKRED; darkColor = Color.rgb(80, 0, 0); }
-                case FAST -> { tankColor = Color.rgb(255, 100, 100); darkColor = Color.rgb(200, 60, 60); }
-                case POWER -> {
-                    int frame = (int) (FrameTime.getFrameTime() / 100) % 7;
-                    tankColor = RAINBOW_COLORS[frame];
-                    darkColor = tankColor.darker();
+            // Check for color override (enemy collected LIFE/STEEL powerup)
+            if (colorOverrideIndex >= 0 && colorOverrideIndex < RAINBOW_COLORS.length) {
+                tankColor = RAINBOW_COLORS[colorOverrideIndex];
+                darkColor = tankColor.darker();
+            } else {
+                switch (enemyType) {
+                    case REGULAR -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
+                    case ARMORED -> { tankColor = Color.DARKRED; darkColor = Color.rgb(80, 0, 0); }
+                    case FAST -> { tankColor = Color.rgb(255, 100, 100); darkColor = Color.rgb(200, 60, 60); }
+                    case POWER -> {
+                        int frame = (int) (FrameTime.getFrameTime() / 100) % 7;
+                        tankColor = RAINBOW_COLORS[frame];
+                        darkColor = tankColor.darker();
+                    }
+                    case BOSS -> {
+                        double pulse = (Math.sin(FrameTime.getFrameTime() / 150.0) + 1) / 2;
+                        int red = (int) (150 + pulse * 105);
+                        int green = (int) (pulse * 50);
+                        tankColor = Color.rgb(red, green, 0);
+                        darkColor = Color.rgb((int)(red * 0.6), 0, 0);
+                    }
+                    case HEAVY -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
+                    default -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
                 }
-                case BOSS -> {
-                    double pulse = (Math.sin(FrameTime.getFrameTime() / 150.0) + 1) / 2;
-                    int red = (int) (150 + pulse * 105);
-                    int green = (int) (pulse * 50);
-                    tankColor = Color.rgb(red, green, 0);
-                    darkColor = Color.rgb((int)(red * 0.6), 0, 0);
-                }
-                case HEAVY -> { tankColor = Color.DARKGRAY; darkColor = Color.BLACK; }
-                default -> { tankColor = Color.RED; darkColor = Color.DARKRED; }
             }
         }
 

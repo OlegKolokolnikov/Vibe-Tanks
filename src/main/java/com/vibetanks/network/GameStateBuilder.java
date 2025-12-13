@@ -121,7 +121,8 @@ public class GameStateBuilder {
                     enemy.getHealth(),
                     enemy.getMaxHealth(),
                     enemy.getTempSpeedBoost(),
-                    enemy.getSpeedMultiplier()
+                    enemy.getSpeedMultiplier(),
+                    enemy.getColorOverrideIndex()
                 ));
             }
         }

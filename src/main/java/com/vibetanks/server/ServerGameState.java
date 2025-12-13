@@ -632,9 +632,20 @@ public class ServerGameState {
     private void applyEnemyPowerUp(PowerUp powerUp, Tank enemy) {
         switch (powerUp.getType()) {
             case SHOVEL -> {
-                // Enemy removes base protection
+                // Enemy removes base protection and gets color change
+                enemy.setRandomColorOverride();
                 gameMap.setBaseProtection(GameMap.TileType.EMPTY);
                 baseProtectionDuration = 0;
+            }
+            case TANK -> {
+                // TANK gives extra life and changes color
+                enemy.setRandomColorOverride();
+                powerUp.applyEffect(enemy);
+            }
+            case SHIELD -> {
+                // Enemies get an extra life instead of shield, with color change
+                enemy.setRandomColorOverride();
+                enemy.applyTank();
             }
             case FREEZE -> {
                 // Freeze players for 10 seconds
@@ -730,7 +741,8 @@ public class ServerGameState {
                 enemy.getHealth(),
                 enemy.getMaxHealth(),
                 enemy.getTempSpeedBoost(),
-                enemy.getSpeedMultiplier()
+                enemy.getSpeedMultiplier(),
+                enemy.getColorOverrideIndex()
             ));
         }
 

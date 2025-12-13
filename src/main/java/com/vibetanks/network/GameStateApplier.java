@@ -334,6 +334,7 @@ public class GameStateApplier {
             enemy.setMaxHealth(eData.maxHealth);
             enemy.applyTempSpeedBoost(eData.tempSpeedBoost);
             enemy.setSpeedMultiplier(eData.speedMultiplier);
+            enemy.setColorOverrideIndex(eData.colorOverrideIndex);
             if (eData.alive) {
                 enemy.setPosition(eData.x, eData.y);
                 enemy.setDirection(Direction.values()[eData.direction]);

@@ -132,7 +132,7 @@ public class SoundManager {
                 soundExecutor.shutdownNow();
             }
         } catch (Exception e) {
-            // Ignore errors during shutdown
+            LOG.debug("Error closing audio lines during shutdown: {}", e.getMessage());
         }
     }
 
@@ -146,7 +146,7 @@ public class SoundManager {
                 explosionLine.flush();
             }
         } catch (Exception e) {
-            // Ignore errors
+            LOG.debug("Error stopping gameplay sounds: {}", e.getMessage());
         }
     }
 
@@ -209,7 +209,7 @@ public class SoundManager {
                     line.write(soundData, 0, soundData.length);
                 }
             } catch (Exception e) {
-                // Ignore playback errors
+                LOG.debug("Sound playback error (direct): {}", e.getMessage());
             }
         });
     }
@@ -227,7 +227,7 @@ public class SoundManager {
                 line.write(soundData, 0, soundData.length);
                 line.drain();
             } catch (Exception e) {
-                // Ignore playback errors
+                LOG.debug("Sound playback error (new line): {}", e.getMessage());
             } finally {
                 if (line != null) {
                     line.close();
@@ -312,7 +312,7 @@ public class SoundManager {
 
                 line.drain();
             } catch (Exception e) {
-                // Ignore playback errors
+                LOG.debug("Music playback error: {}", e.getMessage());
             } finally {
                 if (line != null) {
                     line.stop();
@@ -331,7 +331,8 @@ public class SoundManager {
             try {
                 musicThread.join(500); // Wait up to 500ms for thread to stop
             } catch (InterruptedException e) {
-                // Ignore
+                LOG.debug("Interrupted while stopping music: {}", e.getMessage());
+                Thread.currentThread().interrupt(); // Preserve interrupt status
             }
         }
         musicPlaying = false;

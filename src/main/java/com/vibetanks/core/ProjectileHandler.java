@@ -9,12 +9,21 @@ import java.util.List;
  * Extracts projectile logic from Game.java to improve separation of concerns.
  *
  * Optimized with spatial partitioning for O(n) collision detection instead of O(n^2).
+ * Uses object pooling to reduce GC pressure in hot paths.
  */
 public class ProjectileHandler {
+    private static final com.vibetanks.util.GameLogger LOG = com.vibetanks.util.GameLogger.getLogger(ProjectileHandler.class);
 
     // Spatial grids for efficient collision detection
     private static SpatialGrid<Tank> tankGrid;
     private static SpatialGrid<Bullet> bulletGrid;
+
+    // Object pools for collision results (avoid allocation in hot path)
+    private static final BulletCollisionResult bulletResultPool = new BulletCollisionResult();
+    private static final LaserCollisionResult laserResultPool = new LaserCollisionResult();
+
+    // Pre-allocated set for bullet-to-bullet collision detection
+    private static final java.util.Set<Bullet> bulletRemovalSet = new java.util.HashSet<>(32);
 
     /**
      * Initialize or resize spatial grids for collision detection.
@@ -52,6 +61,7 @@ public class ProjectileHandler {
 
     /**
      * Result of bullet collision processing for a single bullet.
+     * Reusable - call reset() before each use to avoid allocation.
      */
     public static class BulletCollisionResult {
         public boolean shouldRemove = false;
@@ -66,10 +76,27 @@ public class ProjectileHandler {
         public boolean hitBase = false;
         public boolean hitUfo = false;
         public boolean ufoDestroyed = false;
+
+        /** Reset all fields to default values for reuse */
+        public void reset() {
+            shouldRemove = false;
+            hitEnemy = false;
+            enemyKilled = false;
+            killedEnemy = null;
+            killerPlayerNumber = -1;
+            shouldDropPowerUp = false;
+            hitPlayer = false;
+            playerKilled = false;
+            killedPlayer = null;
+            hitBase = false;
+            hitUfo = false;
+            ufoDestroyed = false;
+        }
     }
 
     /**
      * Result of laser collision processing.
+     * Reusable - call reset() before each use to avoid allocation.
      */
     public static class LaserCollisionResult {
         public boolean enemyKilled = false;
@@ -82,6 +109,20 @@ public class ProjectileHandler {
         public boolean playerKilled = false;
         public Tank killedPlayer = null;
         public boolean isBossKill = false;
+
+        /** Reset all fields to default values for reuse */
+        public void reset() {
+            enemyKilled = false;
+            killedEnemy = null;
+            killerPlayerNumber = -1;
+            shouldDropPowerUp = false;
+            hitBase = false;
+            hitUfo = false;
+            ufoDestroyed = false;
+            playerKilled = false;
+            killedPlayer = null;
+            isBossKill = false;
+        }
     }
 
     /**
@@ -109,7 +150,9 @@ public class ProjectileHandler {
             int mapHeight,
             SoundManager soundManager) {
 
-        BulletCollisionResult result = new BulletCollisionResult();
+        // Use pooled result object to avoid allocation (reset for reuse)
+        BulletCollisionResult result = bulletResultPool;
+        result.reset();
 
         // Update bullet position
         bullet.update();
@@ -231,33 +274,34 @@ public class ProjectileHandler {
     /**
      * Spatial grid-based bullet collision detection.
      * Only checks bullets in nearby cells - O(n) average case.
+     * Uses pre-allocated set to avoid allocation in hot path.
      */
     private static void processBulletCollisionsWithGrid(List<Bullet> bullets, List<Tank> playerTanks) {
-        // Mark bullets for removal (can't modify list while iterating)
-        java.util.Set<Bullet> toRemove = new java.util.HashSet<>();
+        // Use pre-allocated set (clear for reuse)
+        bulletRemovalSet.clear();
 
         for (Bullet bullet1 : bullets) {
-            if (toRemove.contains(bullet1)) continue;
+            if (bulletRemovalSet.contains(bullet1)) continue;
 
             // Get nearby bullets from spatial grid
             List<Bullet> nearby = bulletGrid.getNearby(bullet1.getX(), bullet1.getY());
 
             for (Bullet bullet2 : nearby) {
                 if (bullet1 == bullet2) continue;
-                if (toRemove.contains(bullet2)) continue;
+                if (bulletRemovalSet.contains(bullet2)) continue;
 
                 if (bullet1.collidesWith(bullet2)) {
                     GameLogic.notifyBulletDestroyed(bullet1, playerTanks);
                     GameLogic.notifyBulletDestroyed(bullet2, playerTanks);
-                    toRemove.add(bullet1);
-                    toRemove.add(bullet2);
+                    bulletRemovalSet.add(bullet1);
+                    bulletRemovalSet.add(bullet2);
                     break;
                 }
             }
         }
 
         // Remove collided bullets
-        bullets.removeAll(toRemove);
+        bullets.removeAll(bulletRemovalSet);
     }
 
     /**
@@ -299,7 +343,9 @@ public class ProjectileHandler {
             UFO ufo,
             SoundManager soundManager) {
 
-        LaserCollisionResult result = new LaserCollisionResult();
+        // Use pooled result object to avoid allocation (reset for reuse)
+        LaserCollisionResult result = laserResultPool;
+        result.reset();
 
         if (laser.isFromEnemy()) {
             // Enemy laser hits players

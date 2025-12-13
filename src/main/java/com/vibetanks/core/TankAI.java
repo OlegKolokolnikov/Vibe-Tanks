@@ -15,8 +15,8 @@ public class TankAI {
     private int stuckCounter; // Count frames stuck
 
     public TankAI(double initialX, double initialY) {
-        this.aiMoveCooldown = 60;
-        this.aiShootCooldown = 90;
+        this.aiMoveCooldown = GameConstants.AI_MOVE_COOLDOWN_BASE;
+        this.aiShootCooldown = GameConstants.AI_SHOOT_COOLDOWN_BASE + 30; // Initial offset
         this.lastX = initialX;
         this.lastY = initialY;
         this.stuckCounter = 0;
@@ -45,14 +45,16 @@ public class TankAI {
         // Randomly shoot
         if (aiShootCooldown <= 0) {
             tank.shoot(bullets, soundManager);
-            aiShootCooldown = 60 + GameConstants.RANDOM.nextInt(60);
+            aiShootCooldown = GameConstants.AI_SHOOT_COOLDOWN_BASE +
+                              GameConstants.RANDOM.nextInt(GameConstants.AI_SHOOT_COOLDOWN_RANDOM);
         }
 
         // Change direction occasionally
         if (aiMoveCooldown <= 0) {
             Direction decidedDirection = decideDirection(tank, base);
             tank.setDirection(decidedDirection);
-            aiMoveCooldown = 30 + GameConstants.RANDOM.nextInt(90);
+            aiMoveCooldown = GameConstants.AI_MOVE_COOLDOWN_BASE / 2 +
+                             GameConstants.RANDOM.nextInt(GameConstants.AI_MOVE_COOLDOWN_RANDOM);
         }
 
         // Move in current direction
@@ -69,7 +71,7 @@ public class TankAI {
     private Direction detectAndHandleStuck(Tank tank) {
         if (Math.abs(tank.getX() - lastX) < 0.1 && Math.abs(tank.getY() - lastY) < 0.1) {
             stuckCounter++;
-            if (stuckCounter > 3) { // Stuck for 3 frames - change direction immediately
+            if (stuckCounter > GameConstants.AI_STUCK_THRESHOLD) {
                 Direction[] directions = Direction.values();
                 Direction originalDirection = tank.getDirection();
                 Direction newDirection = originalDirection;
@@ -81,7 +83,8 @@ public class TankAI {
                     }
                 }
                 stuckCounter = 0;
-                aiMoveCooldown = 60 + GameConstants.RANDOM.nextInt(120); // Commit to new direction longer
+                aiMoveCooldown = GameConstants.AI_STUCK_COOLDOWN_BASE +
+                                 GameConstants.RANDOM.nextInt(GameConstants.AI_STUCK_COOLDOWN_RANDOM);
                 return newDirection;
             }
         } else {
@@ -92,10 +95,10 @@ public class TankAI {
 
     /**
      * Decide which direction to move.
-     * 70% chance to move towards base, 30% random.
+     * AI_TARGET_BASE_CHANCE to move towards base, remainder random.
      */
     private Direction decideDirection(Tank tank, Base base) {
-        if (GameConstants.RANDOM.nextDouble() < 0.7) {
+        if (GameConstants.RANDOM.nextDouble() < GameConstants.AI_TARGET_BASE_CHANCE) {
             return calculateDirectionTowardsBase(tank, base);
         } else {
             return Direction.values()[GameConstants.RANDOM.nextInt(4)];
@@ -123,8 +126,8 @@ public class TankAI {
     }
 
     public void resetCooldowns() {
-        this.aiMoveCooldown = 60;
-        this.aiShootCooldown = 90;
+        this.aiMoveCooldown = GameConstants.AI_MOVE_COOLDOWN_BASE;
+        this.aiShootCooldown = GameConstants.AI_SHOOT_COOLDOWN_BASE + 30;
         this.stuckCounter = 0;
     }
 }

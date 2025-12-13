@@ -82,6 +82,16 @@ public final class GameConstants {
     // Map burning
     public static final int BURN_DURATION = 60;           // 1 second burn time
 
+    // AI behavior constants
+    public static final int AI_MOVE_COOLDOWN_BASE = 60;      // Base frames between direction changes
+    public static final int AI_MOVE_COOLDOWN_RANDOM = 90;    // Random additional frames
+    public static final int AI_SHOOT_COOLDOWN_BASE = 60;     // Base frames between shots
+    public static final int AI_SHOOT_COOLDOWN_RANDOM = 60;   // Random additional frames
+    public static final int AI_STUCK_THRESHOLD = 3;          // Frames before considered stuck
+    public static final int AI_STUCK_COOLDOWN_BASE = 60;     // Base cooldown after unstuck
+    public static final int AI_STUCK_COOLDOWN_RANDOM = 120;  // Random additional cooldown
+    public static final double AI_TARGET_BASE_CHANCE = 0.7;  // 70% chance to move towards base
+
     // Scoring
     public static final int SCORE_REGULAR = 1;
     public static final int SCORE_ARMORED = 1;

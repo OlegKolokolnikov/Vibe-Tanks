@@ -1,24 +1,27 @@
 package com.vibetanks.core;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.prefs.Preferences;
 
 /**
  * Global game settings that can be modified via menu.
+ * Thread-safe implementation using concurrent data structures.
  */
 public class GameSettings {
     private static final Preferences prefs = Preferences.userNodeForPackage(GameSettings.class);
 
     // Adaptive difficulty: track consecutive losses per level
     // Key = level number, Value = consecutive loss count
-    private static final Map<Integer, Integer> consecutiveLosses = new HashMap<>();
+    // Thread-safe: using ConcurrentHashMap for atomic operations
+    private static final ConcurrentHashMap<Integer, Integer> consecutiveLosses = new ConcurrentHashMap<>();
     private static final int EASY_MODE_THRESHOLD = 3; // 3 losses to trigger easy mode
     private static final int VERY_EASY_MODE_THRESHOLD = 5; // 5 losses to trigger very easy mode
-    private static int currentLevelNumber = 1; // Track current level for power-up spawning
+    private static volatile int currentLevelNumber = 1; // Track current level for power-up spawning
 
     // Hard mode: track consecutive wins (global, not per-level)
-    private static int consecutiveWins = 0;
+    // Thread-safe: using AtomicInteger for atomic operations
+    private static final AtomicInteger consecutiveWins = new AtomicInteger(0);
     private static final int HARD_MODE_THRESHOLD = 5; // 5 wins to trigger hard mode
 
     // Keys for persisting settings
@@ -175,8 +178,8 @@ public class GameSettings {
      * Also resets consecutive wins (hard mode).
      */
     public static void recordLoss(int levelNumber) {
-        int losses = consecutiveLosses.getOrDefault(levelNumber, 0) + 1;
-        consecutiveLosses.put(levelNumber, losses);
+        // Thread-safe atomic increment using compute
+        int losses = consecutiveLosses.compute(levelNumber, (k, v) -> (v == null) ? 1 : v + 1);
         String modeMsg = "";
         if (losses >= VERY_EASY_MODE_THRESHOLD) {
             modeMsg = " - VERY EASY MODE ACTIVATED!";
@@ -185,10 +188,10 @@ public class GameSettings {
         }
         System.out.println("[GameSettings] Level " + levelNumber + " loss #" + losses + modeMsg);
 
-        // Reset consecutive wins on any loss
-        if (consecutiveWins > 0) {
-            System.out.println("[GameSettings] Consecutive wins reset (was " + consecutiveWins + ")");
-            consecutiveWins = 0;
+        // Reset consecutive wins on any loss (atomic operation)
+        int prevWins = consecutiveWins.getAndSet(0);
+        if (prevWins > 0) {
+            System.out.println("[GameSettings] Consecutive wins reset (was " + prevWins + ")");
         }
     }
 
@@ -198,18 +201,16 @@ public class GameSettings {
      * wins counter for hard mode.
      */
     public static void recordWin(int levelNumber) {
-        if (consecutiveLosses.containsKey(levelNumber)) {
-            int previousLosses = consecutiveLosses.get(levelNumber);
-            consecutiveLosses.remove(levelNumber);
-            if (previousLosses >= EASY_MODE_THRESHOLD) {
-                System.out.println("[GameSettings] Level " + levelNumber + " won - easy mode deactivated");
-            }
+        // Thread-safe removal with check
+        Integer previousLosses = consecutiveLosses.remove(levelNumber);
+        if (previousLosses != null && previousLosses >= EASY_MODE_THRESHOLD) {
+            System.out.println("[GameSettings] Level " + levelNumber + " won - easy mode deactivated");
         }
 
-        // Increment consecutive wins
-        consecutiveWins++;
-        String modeMsg = consecutiveWins >= HARD_MODE_THRESHOLD ? " - HARD MODE ACTIVATED!" : "";
-        System.out.println("[GameSettings] Win #" + consecutiveWins + modeMsg);
+        // Increment consecutive wins (atomic operation)
+        int wins = consecutiveWins.incrementAndGet();
+        String modeMsg = wins >= HARD_MODE_THRESHOLD ? " - HARD MODE ACTIVATED!" : "";
+        System.out.println("[GameSettings] Win #" + wins + modeMsg);
     }
 
     /**
@@ -263,14 +264,14 @@ public class GameSettings {
      * In this mode, BOSS is 10% faster and POWER tanks have extra armor.
      */
     public static boolean isHardModeActive() {
-        return consecutiveWins >= HARD_MODE_THRESHOLD;
+        return consecutiveWins.get() >= HARD_MODE_THRESHOLD;
     }
 
     /**
      * Get the number of consecutive wins.
      */
     public static int getConsecutiveWins() {
-        return consecutiveWins;
+        return consecutiveWins.get();
     }
 
     /**
@@ -278,6 +279,6 @@ public class GameSettings {
      */
     public static void resetAdaptiveDifficulty() {
         consecutiveLosses.clear();
-        consecutiveWins = 0;
+        consecutiveWins.set(0);
     }
 }

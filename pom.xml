@@ -15,21 +15,37 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>21.0.1</javafx.version>
+        <!-- Default JavaFX platform - override with -Djavafx.platform=mac for Intel -->
+        <javafx.platform>mac-aarch64</javafx.platform>
         <app.name>VibeTanks</app.name>
         <app.version>1.0.0</app.version>
     </properties>
 
     <dependencies>
-        <!-- JavaFX dependencies -->
+        <!-- JavaFX dependencies - platform-specific, controlled by profiles -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
+        </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-media</artifactId>
             <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
         </dependency>
 
         <!-- Test dependencies -->
@@ -134,6 +150,22 @@
     </build>
 
     <profiles>
+        <!--
+            JavaFX platform is set via -Djavafx.platform property on command line.
+            Default value is set in properties section above.
+
+            Usage:
+              ./build-mac.sh         - Auto-detects architecture
+              ./build-mac.sh intel   - Build for Intel Mac (-Djavafx.platform=mac)
+              ./build-mac.sh arm     - Build for ARM Mac (-Djavafx.platform=mac-aarch64)
+
+            Direct Maven:
+              mvn package -Djavafx.platform=mac          - Intel Mac
+              mvn package -Djavafx.platform=mac-aarch64  - ARM Mac
+              mvn package -Djavafx.platform=win          - Windows
+              mvn package -Djavafx.platform=linux        - Linux
+        -->
+
         <!-- Dedicated server profile -->
         <profile>
             <id>server</id>

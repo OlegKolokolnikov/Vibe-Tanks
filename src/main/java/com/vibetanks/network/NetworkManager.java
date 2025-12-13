@@ -108,41 +108,62 @@ public class NetworkManager {
         temp.killProcessOnPort(PORT);
     }
 
-    // Kill any process using the specified port
+    // Kill any process using the specified port (cross-platform)
     private void killProcessOnPort(int port) {
-        Process netstatProcess = null;
+        String os = System.getProperty("os.name").toLowerCase();
+        Process findProcess = null;
         Process killProcess = null;
-        try {
-            LOG.debug("Checking for process on port {}...", port);
 
-            // Find process using the port
-            netstatProcess = Runtime.getRuntime().exec("netstat -ano");
+        try {
+            LOG.debug("Checking for process on port {} (OS: {})...", port, os);
             String pid = null;
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(netstatProcess.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.contains(":" + port + " ") && line.contains("LISTENING")) {
-                        // Extract PID from the end of the line
-                        String[] parts = line.trim().split("\\s+");
-                        pid = parts[parts.length - 1];
-                        break;
+
+            if (os.contains("win")) {
+                // Windows: use netstat
+                findProcess = Runtime.getRuntime().exec("netstat -ano");
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(findProcess.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (line.contains(":" + port + " ") && line.contains("LISTENING")) {
+                            String[] parts = line.trim().split("\\s+");
+                            pid = parts[parts.length - 1];
+                            break;
+                        }
                     }
                 }
+                findProcess.waitFor();
+
+                if (pid != null && !pid.isEmpty()) {
+                    LOG.info("Found process {} using port {}, killing it...", pid, port);
+                    killProcess = Runtime.getRuntime().exec(
+                        "powershell -Command \"Stop-Process -Id " + pid + " -Force\""
+                    );
+                    killProcess.waitFor();
+                }
+            } else if (os.contains("mac") || os.contains("nix") || os.contains("nux")) {
+                // macOS/Linux: use lsof
+                findProcess = Runtime.getRuntime().exec(new String[]{"lsof", "-t", "-i:" + port});
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(findProcess.getInputStream()))) {
+                    pid = reader.readLine();
+                }
+                findProcess.waitFor();
+
+                if (pid != null && !pid.trim().isEmpty()) {
+                    pid = pid.trim();
+                    LOG.info("Found process {} using port {}, killing it...", pid, port);
+                    killProcess = Runtime.getRuntime().exec(new String[]{"kill", "-9", pid});
+                    killProcess.waitFor();
+                }
+            } else {
+                LOG.warn("Unknown OS '{}', cannot check port usage", os);
+                return;
             }
-            netstatProcess.waitFor();
 
             if (pid != null && !pid.isEmpty()) {
-                LOG.info("Found process {} using port {}, killing it...", pid, port);
-
-                // Kill the process using PowerShell
-                killProcess = Runtime.getRuntime().exec(
-                    "powershell -Command \"Stop-Process -Id " + pid + " -Force\""
-                );
-                killProcess.waitFor();
-
                 LOG.debug("Process killed, waiting for port release...");
-                Thread.sleep(1000); // Wait for port to be released
+                Thread.sleep(1000);
                 LOG.debug("Port should now be available");
             } else {
                 LOG.debug("No process found using port {}", port);
@@ -151,8 +172,8 @@ public class NetworkManager {
             LOG.error("Error checking/killing process on port: {}", e.getMessage());
         } finally {
             // Ensure processes are destroyed to prevent zombie processes
-            if (netstatProcess != null) {
-                netstatProcess.destroyForcibly();
+            if (findProcess != null) {
+                findProcess.destroyForcibly();
             }
             if (killProcess != null) {
                 killProcess.destroyForcibly();

@@ -292,6 +292,12 @@ public class Tank {
             dropPowerUp = true;
         }
 
+        // ARMORED becomes REGULAR when shot once (health drops to 1)
+        if (!isPlayer && enemyType == EnemyType.ARMORED && health == 1) {
+            enemyType = EnemyType.REGULAR;
+            maxHealth = 1;
+        }
+
         // Clear color override when enemy is shot (reverts to original color)
         if (!isPlayer) {
             clearColorOverride();

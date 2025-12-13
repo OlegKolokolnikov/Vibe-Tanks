@@ -14,9 +14,10 @@ public class EnemySpawner {
     private static final int SPAWN_DELAY = GameConstants.SPAWN_DELAY;
     private static final int BOSS_BASE_HEALTH = GameConstants.BOSS_BASE_HEALTH;
 
-    // Minimum POWER tanks in easy modes
-    private static final int EASY_MODE_MIN_POWER_TANKS = 10;
-    private static final int VERY_EASY_MODE_MIN_POWER_TANKS = 15;
+    // POWER tank limits based on difficulty
+    private static final int EASY_MODE_MIN_POWER_TANKS = 15;
+    private static final int VERY_EASY_MODE_MIN_POWER_TANKS = 20;
+    private static final int HARD_MODE_MAX_POWER_TANKS = 10;
 
     private final Random random = GameConstants.RANDOM; // Use shared Random instance
     private GameMap map;
@@ -62,18 +63,23 @@ public class EnemySpawner {
         int remaining = totalEnemies - spawnedCount;
         double rand = random.nextDouble();
 
-        // Calculate minimum POWER tanks needed based on difficulty
+        // Calculate POWER tank limits based on difficulty
         int minPowerTanks = 0;
+        int maxPowerTanks = Integer.MAX_VALUE;
         if (GameSettings.isVeryEasyModeActive(levelNumber)) {
             minPowerTanks = VERY_EASY_MODE_MIN_POWER_TANKS;
         } else if (GameSettings.isEasyModeActive(levelNumber)) {
             minPowerTanks = EASY_MODE_MIN_POWER_TANKS;
+        } else if (GameSettings.isHardModeActive()) {
+            maxPowerTanks = HARD_MODE_MAX_POWER_TANKS;
         }
 
         // Calculate how many more POWER tanks we need
         int powerTanksNeeded = minPowerTanks - powerTanksSpawned;
         // Reserve slots for HEAVY (getHeavyThreshold) and BOSS (1)
         int nonPowerSlotsRemaining = remaining - getHeavyThreshold() - 1;
+        // Check if we've hit the hard mode max
+        boolean atPowerMax = powerTanksSpawned >= maxPowerTanks;
 
         if (remaining == 1) {
             // Last enemy is the BOSS (4x bigger)
@@ -93,6 +99,9 @@ public class EnemySpawner {
             type = Tank.EnemyType.FAST;
         } else if (rand < GameConstants.SPAWN_ARMORED_THRESHOLD) {
             // 15% ARMORED
+            type = Tank.EnemyType.ARMORED;
+        } else if (atPowerMax) {
+            // Hard mode: at POWER limit, spawn ARMORED instead
             type = Tank.EnemyType.ARMORED;
         } else {
             // 15% POWER

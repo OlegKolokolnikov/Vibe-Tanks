@@ -292,6 +292,12 @@ public class Tank {
             dropPowerUp = true;
         }
 
+        // HEAVY becomes ARMORED when shot once (health drops to 2)
+        if (!isPlayer && enemyType == EnemyType.HEAVY && health == 2) {
+            enemyType = EnemyType.ARMORED;
+            maxHealth = 2;
+        }
+
         // ARMORED becomes REGULAR when shot once (health drops to 1)
         if (!isPlayer && enemyType == EnemyType.ARMORED && health == 1) {
             enemyType = EnemyType.REGULAR;

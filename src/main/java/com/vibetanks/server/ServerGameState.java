@@ -400,7 +400,12 @@ public class ServerGameState {
             if (!bullet.isFromEnemy()) {
                 for (Tank enemy : enemyTanks) {
                     if (enemy.isAlive() && bullet.collidesWith(enemy)) {
-                        boolean dropPowerUp = enemy.damage();
+                        // Power bullets (can break steel) deal 2 damage, normal bullets deal 1
+                        int damageCount = bullet.getPower() >= 2 ? 2 : 1;
+                        boolean dropPowerUp = false;
+                        for (int i = 0; i < damageCount && enemy.isAlive(); i++) {
+                            dropPowerUp = enemy.damage() || dropPowerUp;
+                        }
 
                         // Handle power-up drops (POWER type drops on each hit, others on death with 30% chance)
                         if (dropPowerUp || (!enemy.isAlive() && Math.random() < 0.3)) {

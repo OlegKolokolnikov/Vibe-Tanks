@@ -200,7 +200,13 @@ public class ProjectileHandler {
                 if (enemy.isPlayer()) continue;
                 if (enemy.isAlive() && bullet.collidesWith(enemy)) {
                     result.hitEnemy = true;
-                    boolean dropPowerUp = enemy.damage();
+
+                    // Power bullets (can break steel) deal 2 damage, normal bullets deal 1
+                    int damageCount = bullet.getPower() >= 2 ? 2 : 1;
+                    boolean dropPowerUp = false;
+                    for (int i = 0; i < damageCount && enemy.isAlive(); i++) {
+                        dropPowerUp = enemy.damage() || dropPowerUp;
+                    }
 
                     // Check for power-up drop
                     if (dropPowerUp || (!enemy.isAlive() && GameConstants.RANDOM.nextDouble() < 0.3)) {

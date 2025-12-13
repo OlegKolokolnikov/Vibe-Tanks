@@ -10,8 +10,13 @@ public class EnemySpawner {
     private int maxOnScreen;
     private int spawnedCount;
     private int spawnCooldown;
+    private int powerTanksSpawned; // Track POWER tanks for easy mode guarantees
     private static final int SPAWN_DELAY = GameConstants.SPAWN_DELAY;
     private static final int BOSS_BASE_HEALTH = GameConstants.BOSS_BASE_HEALTH;
+
+    // Minimum POWER tanks in easy modes
+    private static final int EASY_MODE_MIN_POWER_TANKS = 10;
+    private static final int VERY_EASY_MODE_MIN_POWER_TANKS = 15;
 
     private final Random random = GameConstants.RANDOM; // Use shared Random instance
     private GameMap map;
@@ -29,6 +34,7 @@ public class EnemySpawner {
         this.maxOnScreen = maxOnScreen;
         this.spawnedCount = 0;
         this.spawnCooldown = SPAWN_DELAY;
+        this.powerTanksSpawned = 0;
         this.map = map;
         this.levelNumber = map.getLevelNumber();
     }
@@ -56,6 +62,19 @@ public class EnemySpawner {
         int remaining = totalEnemies - spawnedCount;
         double rand = random.nextDouble();
 
+        // Calculate minimum POWER tanks needed based on difficulty
+        int minPowerTanks = 0;
+        if (GameSettings.isVeryEasyModeActive(levelNumber)) {
+            minPowerTanks = VERY_EASY_MODE_MIN_POWER_TANKS;
+        } else if (GameSettings.isEasyModeActive(levelNumber)) {
+            minPowerTanks = EASY_MODE_MIN_POWER_TANKS;
+        }
+
+        // Calculate how many more POWER tanks we need
+        int powerTanksNeeded = minPowerTanks - powerTanksSpawned;
+        // Reserve slots for HEAVY (getHeavyThreshold) and BOSS (1)
+        int nonPowerSlotsRemaining = remaining - getHeavyThreshold() - 1;
+
         if (remaining == 1) {
             // Last enemy is the BOSS (4x bigger)
             type = Tank.EnemyType.BOSS;
@@ -63,6 +82,9 @@ public class EnemySpawner {
             // Last N enemies (except the very last) are HEAVY
             // Single player local: 6 (5 HEAVY + 1 BOSS), otherwise: 10 (9 HEAVY + 1 BOSS)
             type = Tank.EnemyType.HEAVY;
+        } else if (powerTanksNeeded > 0 && nonPowerSlotsRemaining <= powerTanksNeeded) {
+            // Force POWER tank to meet minimum quota before HEAVY/BOSS phase
+            type = Tank.EnemyType.POWER;
         } else if (rand < GameConstants.SPAWN_REGULAR_THRESHOLD) {
             // 50% REGULAR
             type = Tank.EnemyType.REGULAR;
@@ -133,6 +155,11 @@ public class EnemySpawner {
 
             enemyTanks.add(enemy);
             spawnedCount++;
+
+            // Track POWER tanks for easy mode guarantees
+            if (type == Tank.EnemyType.POWER) {
+                powerTanksSpawned++;
+            }
         }
     }
 
@@ -155,6 +182,7 @@ public class EnemySpawner {
         this.totalEnemies = newTotalEnemies;
         this.spawnedCount = 0;
         this.spawnCooldown = SPAWN_DELAY;
+        this.powerTanksSpawned = 0;
         this.map = newMap;
         this.levelNumber = newMap.getLevelNumber();
     }

@@ -154,7 +154,7 @@ public class TankPhysics {
         double offsetX = tankX % tileSize;
         double offsetY = tankY % tileSize;
 
-        double slideAmount = Math.min(speed, 2.0); // Limit slide speed
+        double slideAmount = Math.min(speed, 0.5); // Reduced slide speed for subtler adjustment
 
         if (direction.getDx() != 0) {
             // Moving horizontally - try to slide vertically to align with gaps
@@ -441,7 +441,7 @@ public class TankPhysics {
         }
     }
 
-    // Check if steel blocks the path for BOSS tank
+    // Check if steel or ground blocks the path for BOSS tank
     private boolean hasBlockingSteel(GameMap map, double newX, double newY, int tankSize) {
         int startCol = (int) newX / 32;
         int endCol = (int) (newX + tankSize - 1) / 32;
@@ -450,7 +450,8 @@ public class TankPhysics {
 
         for (int row = startRow; row <= endRow; row++) {
             for (int col = startCol; col <= endCol; col++) {
-                if (map.getTile(row, col) == GameMap.TileType.STEEL) {
+                GameMap.TileType tile = map.getTile(row, col);
+                if (tile == GameMap.TileType.STEEL || tile == GameMap.TileType.GROUND) {
                     return true;
                 }
             }

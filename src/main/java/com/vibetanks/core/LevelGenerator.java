@@ -37,12 +37,12 @@ public class LevelGenerator {
             }
         }
 
-        // Create border walls (steel)
+        // Create border walls (steel on sides and top, ground on bottom)
         for (int i = 0; i < width; i++) {
             tiles[0][i] = GameMap.TileType.STEEL;
-            tiles[height - 1][i] = GameMap.TileType.STEEL;
+            tiles[height - 1][i] = GameMap.TileType.GROUND;  // Bottom border is ground
         }
-        for (int i = 0; i < height; i++) {
+        for (int i = 0; i < height - 1; i++) {  // Don't overwrite bottom corners
             tiles[i][0] = GameMap.TileType.STEEL;
             tiles[i][width - 1] = GameMap.TileType.STEEL;
         }
@@ -509,17 +509,14 @@ public class LevelGenerator {
 
     private void createBaseProtection() {
         // Base is at row 24, cols 12-13 (2x2 area typically)
-        // Surround with bricks in a U-shape
+        // Surround with bricks in a U-shape (row 25 is GROUND border, no need to set)
         tiles[23][11] = GameMap.TileType.BRICK;
         tiles[23][12] = GameMap.TileType.BRICK;
         tiles[23][13] = GameMap.TileType.BRICK;
         tiles[23][14] = GameMap.TileType.BRICK;
         tiles[24][11] = GameMap.TileType.BRICK;
         tiles[24][14] = GameMap.TileType.BRICK;
-        tiles[25][11] = GameMap.TileType.BRICK;
-        tiles[25][12] = GameMap.TileType.BRICK;
-        tiles[25][13] = GameMap.TileType.BRICK;
-        tiles[25][14] = GameMap.TileType.BRICK;
+        // Note: Row 25 is the bottom GROUND border - no need for brick protection there
 
         // Add steel wall above base to protect from center spawn
         // Random width 1-5 blocks, centered above base
@@ -554,15 +551,15 @@ public class LevelGenerator {
             }
         }
 
-        // Clear player spawn points (bottom)
-        for (int row = 23; row <= 25; row++) {
+        // Clear player spawn points (bottom) - but not the bottom border (height-1)
+        for (int row = 23; row <= height - 2; row++) {
             for (int col = 7; col <= 10; col++) {
                 if (tiles[row][col] != GameMap.TileType.BRICK || row < 23 || col < 11) {
                     tiles[row][col] = GameMap.TileType.EMPTY;
                 }
             }
         }
-        for (int row = 23; row <= 25; row++) {
+        for (int row = 23; row <= height - 2; row++) {
             for (int col = 15; col <= 18; col++) {
                 if (tiles[row][col] != GameMap.TileType.BRICK || row < 23 || col > 14) {
                     tiles[row][col] = GameMap.TileType.EMPTY;

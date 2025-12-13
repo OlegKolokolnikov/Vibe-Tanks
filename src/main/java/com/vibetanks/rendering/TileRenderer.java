@@ -28,6 +28,7 @@ public class TileRenderer {
             case WATER -> renderWater(gc, x, y);
             case TREES -> renderTrees(gc, x, y);
             case ICE -> renderIce(gc, x, y);
+            case GROUND -> renderGround(gc, x, y);
             default -> {
                 // Empty tile - already black background
             }
@@ -89,6 +90,31 @@ public class TileRenderer {
         // Draw diagonal lines to represent ice texture
         gc.strokeLine(x, y, x + TILE_SIZE, y + TILE_SIZE);
         gc.strokeLine(x + TILE_SIZE, y, x, y + TILE_SIZE);
+    }
+
+    private static void renderGround(GraphicsContext gc, double x, double y) {
+        // Base color: khaki/olive green mix
+        gc.setFill(Color.rgb(107, 142, 35)); // Olive drab
+        gc.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+        // Add brown/tan patches for texture variety
+        gc.setFill(Color.rgb(139, 119, 101)); // Khaki brown
+        gc.fillRect(x + 2, y + 2, 8, 6);
+        gc.fillRect(x + 18, y + 12, 10, 8);
+        gc.fillRect(x + 6, y + 20, 7, 7);
+
+        // Add darker green patches
+        gc.setFill(Color.rgb(85, 107, 47)); // Dark olive green
+        gc.fillRect(x + 14, y + 3, 6, 5);
+        gc.fillRect(x + 4, y + 12, 8, 6);
+        gc.fillRect(x + 22, y + 22, 6, 6);
+
+        // Add subtle grass-like strokes
+        gc.setStroke(Color.rgb(60, 90, 40)); // Darker green for grass texture
+        gc.setLineWidth(1);
+        gc.strokeLine(x + 8, y + 8, x + 10, y + 4);
+        gc.strokeLine(x + 20, y + 18, x + 22, y + 14);
+        gc.strokeLine(x + 26, y + 6, x + 28, y + 2);
     }
 
     /**

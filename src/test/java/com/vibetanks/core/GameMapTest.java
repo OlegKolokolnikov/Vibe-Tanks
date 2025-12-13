@@ -498,7 +498,7 @@ class GameMapTest {
         @Test
         @DisplayName("All expected tile types should exist")
         void allTileTypesExist() {
-            assertEquals(6, GameMap.TileType.values().length);
+            assertEquals(7, GameMap.TileType.values().length);  // EMPTY, BRICK, STEEL, WATER, TREES, ICE, GROUND
         }
 
         @Test
@@ -510,6 +510,7 @@ class GameMapTest {
             assertEquals(3, GameMap.TileType.WATER.ordinal());
             assertEquals(4, GameMap.TileType.TREES.ordinal());
             assertEquals(5, GameMap.TileType.ICE.ordinal());
+            assertEquals(6, GameMap.TileType.GROUND.ordinal());
         }
     }
 

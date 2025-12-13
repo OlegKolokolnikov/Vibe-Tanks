@@ -50,7 +50,8 @@ public class GameMap {
         STEEL,
         WATER,
         TREES,
-        ICE
+        ICE,
+        GROUND  // Indestructible ground at bottom of map
     }
 
     public GameMap(int width, int height) {
@@ -144,7 +145,7 @@ public class GameMap {
                     return true; // collision with boundary
                 }
                 TileType tile = tiles[row][col];
-                if (tile == TileType.BRICK || tile == TileType.STEEL) {
+                if (tile == TileType.BRICK || tile == TileType.STEEL || tile == TileType.GROUND) {
                     return true; // collision with solid tile
                 }
                 // Check water collision only if tank cannot swim
@@ -179,6 +180,9 @@ public class GameMap {
             if (bullet.getPower() >= 2) {
                 tiles[row][col] = TileType.EMPTY;
             }
+            return true;
+        } else if (tile == TileType.GROUND) {
+            // Ground is completely indestructible - stops all bullets
             return true;
         } else if (tile == TileType.TREES) {
             // Check if tree is already burning - bullets pass through burning trees

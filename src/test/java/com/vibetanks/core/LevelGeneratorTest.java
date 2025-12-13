@@ -75,17 +75,22 @@ class LevelGeneratorTest {
             for (int col = 0; col < WIDTH; col++) {
                 assertEquals(GameMap.TileType.STEEL, tiles[0][col], "Top border at col " + col);
             }
-            // Corners should always be STEEL
+            // Top corners should be STEEL
             assertEquals(GameMap.TileType.STEEL, tiles[0][0], "Top-left corner");
             assertEquals(GameMap.TileType.STEEL, tiles[0][WIDTH - 1], "Top-right corner");
-            assertEquals(GameMap.TileType.STEEL, tiles[HEIGHT - 1][0], "Bottom-left corner");
-            assertEquals(GameMap.TileType.STEEL, tiles[HEIGHT - 1][WIDTH - 1], "Bottom-right corner");
-            // Left border at column 0 - always STEEL
-            for (int row = 0; row < HEIGHT; row++) {
+            // Bottom corners should be GROUND
+            assertEquals(GameMap.TileType.GROUND, tiles[HEIGHT - 1][0], "Bottom-left corner");
+            assertEquals(GameMap.TileType.GROUND, tiles[HEIGHT - 1][WIDTH - 1], "Bottom-right corner");
+            // Left border at column 0 - STEEL except bottom row which is GROUND
+            for (int row = 0; row < HEIGHT - 1; row++) {
                 assertEquals(GameMap.TileType.STEEL, tiles[row][0], "Left border at row " + row);
             }
+            assertEquals(GameMap.TileType.GROUND, tiles[HEIGHT - 1][0], "Left border at bottom row");
+            // Bottom border is GROUND
+            for (int col = 0; col < WIDTH; col++) {
+                assertEquals(GameMap.TileType.GROUND, tiles[HEIGHT - 1][col], "Bottom border at col " + col);
+            }
             // Note: Right border at WIDTH-1 may have spawn openings at rows 1-2
-            // Note: Bottom border at HEIGHT-1 may have spawn openings
         }
 
         @Test
@@ -339,8 +344,15 @@ class LevelGeneratorTest {
             }
 
             // Verify left border only (right border has spawn openings)
-            for (int row = 0; row < HEIGHT; row++) {
+            // Bottom row is GROUND, rest is STEEL
+            for (int row = 0; row < HEIGHT - 1; row++) {
                 assertEquals(GameMap.TileType.STEEL, testTiles[row][0]);
+            }
+            assertEquals(GameMap.TileType.GROUND, testTiles[HEIGHT - 1][0]);
+
+            // Verify bottom border is GROUND
+            for (int col = 0; col < WIDTH; col++) {
+                assertEquals(GameMap.TileType.GROUND, testTiles[HEIGHT - 1][col]);
             }
 
             // Verify spawn areas are clear

@@ -171,6 +171,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         this.network = network;
         this.isNetworkGame = (network != null);
 
+        // Set single player local game flag (affects HEAVY tank spawn count)
+        GameSettings.setSinglePlayerLocalGame(playerCount == 1 && !isNetworkGame);
+
         canvas = new Canvas(width, height);
         gc = canvas.getGraphicsContext2D();
         canvas.setFocusTraversable(false); // Canvas should not take focus

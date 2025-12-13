@@ -53,6 +53,9 @@ public class GameSettings {
     private static Double hostPlayerShootSpeed = null;
     private static Double hostEnemyShootSpeed = null;
 
+    // Single player local game flag (affects HEAVY tank spawn count)
+    private static volatile boolean singlePlayerLocalGame = false;
+
     static {
         loadSettings();
     }
@@ -280,5 +283,20 @@ public class GameSettings {
     public static void resetAdaptiveDifficulty() {
         consecutiveLosses.clear();
         consecutiveWins.set(0);
+    }
+
+    /**
+     * Set whether this is a single player local game.
+     * Affects HEAVY tank spawn count (5 instead of 9 in single player).
+     */
+    public static void setSinglePlayerLocalGame(boolean singlePlayer) {
+        singlePlayerLocalGame = singlePlayer;
+    }
+
+    /**
+     * Check if this is a single player local game.
+     */
+    public static boolean isSinglePlayerLocalGame() {
+        return singlePlayerLocalGame;
     }
 }

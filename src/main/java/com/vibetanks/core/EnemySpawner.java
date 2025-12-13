@@ -59,8 +59,9 @@ public class EnemySpawner {
         if (remaining == 1) {
             // Last enemy is the BOSS (4x bigger)
             type = Tank.EnemyType.BOSS;
-        } else if (remaining <= 10) {
-            // Last 10 enemies (except the very last) are HEAVY
+        } else if (remaining <= getHeavyThreshold()) {
+            // Last N enemies (except the very last) are HEAVY
+            // Single player local: 6 (5 HEAVY + 1 BOSS), otherwise: 10 (9 HEAVY + 1 BOSS)
             type = Tank.EnemyType.HEAVY;
         } else if (rand < GameConstants.SPAWN_REGULAR_THRESHOLD) {
             // 50% REGULAR
@@ -156,5 +157,14 @@ public class EnemySpawner {
         this.spawnCooldown = SPAWN_DELAY;
         this.map = newMap;
         this.levelNumber = newMap.getLevelNumber();
+    }
+
+    /**
+     * Get the threshold for HEAVY tank spawning.
+     * In single player local games: 6 (5 HEAVY + 1 BOSS)
+     * In multiplayer/network games: 10 (9 HEAVY + 1 BOSS)
+     */
+    private int getHeavyThreshold() {
+        return GameSettings.isSinglePlayerLocalGame() ? 6 : 10;
     }
 }

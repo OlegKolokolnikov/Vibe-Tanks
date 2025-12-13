@@ -1,5 +1,6 @@
 package com.vibetanks.rendering;
 
+import com.vibetanks.core.FrameTime;
 import com.vibetanks.core.Tank;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -36,7 +37,7 @@ public class EffectRenderer {
         }
 
         // Pulsing effect
-        double pulse = 1.0 + Math.sin(System.currentTimeMillis() / 100.0) * 0.1;
+        double pulse = 1.0 + Math.sin(FrameTime.getFrameTime() / 100.0) * 0.1;
         int fontSize = (int)(50 * pulse);
 
         // Draw "Lost it!" message in the center of the screen
@@ -89,10 +90,11 @@ public class EffectRenderer {
         // Explosion effect around text (pulsing particles)
         double centerX = width / 2;
         double centerY = height / 3 - 40;
+        long time = FrameTime.getFrameTime();
         gc.setFill(Color.rgb(255, 200, 50, alpha * 0.6));
         for (int i = 0; i < 8; i++) {
-            double angle = (System.currentTimeMillis() / 50.0 + i * Math.PI / 4) % (2 * Math.PI);
-            double dist = 50 + Math.sin(System.currentTimeMillis() / 100.0 + i) * 10;
+            double angle = (time / 50.0 + i * Math.PI / 4) % (2 * Math.PI);
+            double dist = 50 + Math.sin(time / 100.0 + i) * 10;
             double starX = centerX + Math.cos(angle) * dist;
             double starY = centerY + Math.sin(angle) * dist * 0.5;
             gc.fillOval(starX - 5, starY - 5, 10, 10);
@@ -135,7 +137,7 @@ public class EffectRenderer {
         double healthWidth = barWidth * healthPercent;
 
         // Pulsing red color matching BOSS tank
-        double pulse = (Math.sin(System.currentTimeMillis() / 150.0) + 1) / 2;
+        double pulse = (Math.sin(FrameTime.getFrameTime() / 150.0) + 1) / 2;
         int red = (int) (150 + pulse * 105);
         int green = (int) (pulse * 50);
         gc.setFill(Color.rgb(red, green, 0));
@@ -178,7 +180,7 @@ public class EffectRenderer {
      */
     public void renderLaughingSkull(double centerX, double centerY) {
         double scale = 3.0;
-        double time = System.currentTimeMillis() / 100.0;
+        double time = FrameTime.getFrameTime() / 100.0;
 
         // Laughing animation - skull bobs up and down
         double bobY = Math.sin(time * 0.5) * 5;

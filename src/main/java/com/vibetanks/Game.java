@@ -461,6 +461,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         gameLoop.scheduleAtFixedRate(() -> {
             if (!running) return;
 
+            // Update cached frame timestamp for consistent timing during rendering
+            FrameTime.updateFrameTime();
+
             // Run update and render on JavaFX Application Thread
             Platform.runLater(() -> {
                 if (!running) return;

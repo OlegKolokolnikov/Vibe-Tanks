@@ -314,10 +314,7 @@ public class Tank {
     }
 
     public boolean collidesWith(double otherX, double otherY, int otherSize) {
-        return x < otherX + otherSize &&
-               x + size > otherX &&
-               y < otherY + otherSize &&
-               y + size > otherY;
+        return Collider.checkSquare(x, y, size, otherX, otherY, otherSize);
     }
 
     // Get player color based on player number

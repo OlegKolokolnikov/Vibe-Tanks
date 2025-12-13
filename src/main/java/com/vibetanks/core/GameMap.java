@@ -25,8 +25,21 @@ public class GameMap {
     private long currentLevelSeed; // Seed used for current level (for restart)
     private LevelData customLevelData; // Custom level data (if using custom level)
 
-    // Track burning trees: key = row*1000+col, value = frames remaining
-    private Map<Integer, Integer> burningTiles = new HashMap<>();
+    // Track burning trees: key = encoded position, value = frames remaining
+    private Map<Long, Integer> burningTiles = new HashMap<>();
+
+    // Safe position encoding that works for any map size (uses long to avoid overflow)
+    private static long encodePosition(int row, int col) {
+        return ((long) row << 16) | (col & 0xFFFF);
+    }
+
+    private static int decodeRow(long key) {
+        return (int) (key >> 16);
+    }
+
+    private static int decodeCol(long key) {
+        return (int) (key & 0xFFFF);
+    }
 
     // Delta encoding: list of tile changes since last sync
     private final java.util.List<int[]> pendingChanges = new java.util.ArrayList<>(64);
@@ -169,7 +182,7 @@ public class GameMap {
             return true;
         } else if (tile == TileType.TREES) {
             // Check if tree is already burning - bullets pass through burning trees
-            int key = row * 1000 + col;
+            long key = encodePosition(row, col);
             if (burningTiles.containsKey(key)) {
                 // Tree is burning - bullets pass through
                 return false;
@@ -228,15 +241,15 @@ public class GameMap {
 
     // Update burning tiles
     public void update() {
-        Iterator<Map.Entry<Integer, Integer>> it = burningTiles.entrySet().iterator();
+        Iterator<Map.Entry<Long, Integer>> it = burningTiles.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry<Integer, Integer> entry = it.next();
+            Map.Entry<Long, Integer> entry = it.next();
             int framesLeft = entry.getValue() - 1;
             if (framesLeft <= 0) {
                 // Burn complete - destroy the tree
-                int key = entry.getKey();
-                int row = key / 1000;
-                int col = key % 1000;
+                long key = entry.getKey();
+                int row = decodeRow(key);
+                int col = decodeCol(key);
                 tiles[row][col] = TileType.EMPTY;
                 it.remove();
             } else {
@@ -247,11 +260,11 @@ public class GameMap {
 
     // Render fire on burning tiles
     public void renderBurningTiles(GraphicsContext gc) {
-        long time = System.currentTimeMillis();
-        for (Map.Entry<Integer, Integer> entry : burningTiles.entrySet()) {
-            int key = entry.getKey();
-            int row = key / 1000;
-            int col = key % 1000;
+        long time = FrameTime.getFrameTime();
+        for (Map.Entry<Long, Integer> entry : burningTiles.entrySet()) {
+            long key = entry.getKey();
+            int row = decodeRow(key);
+            int col = decodeCol(key);
             double x = col * TILE_SIZE;
             double y = row * TILE_SIZE;
             TileRenderer.renderBurningTree(gc, x, y, time);
@@ -399,12 +412,12 @@ public class GameMap {
     }
 
     // Export burning tiles for network sync
-    public Map<Integer, Integer> exportBurningTiles() {
+    public Map<Long, Integer> exportBurningTiles() {
         return new HashMap<>(burningTiles);
     }
 
     // Import burning tiles from network sync
-    public void importBurningTiles(Map<Integer, Integer> data) {
+    public void importBurningTiles(Map<Long, Integer> data) {
         burningTiles.clear();
         if (data != null) {
             burningTiles.putAll(data);
@@ -416,7 +429,7 @@ public class GameMap {
         burningTiles.clear();
         if (tiles != null) {
             for (int[] tile : tiles) {
-                int key = tile[0] * 1000 + tile[1];
+                long key = encodePosition(tile[0], tile[1]);
                 burningTiles.put(key, tile[2]);
             }
         }

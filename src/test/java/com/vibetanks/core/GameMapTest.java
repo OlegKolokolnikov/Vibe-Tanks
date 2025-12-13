@@ -223,15 +223,17 @@ class GameMapTest {
         @Test
         @DisplayName("exportBurningTiles should return burning tile data")
         void exportBurningTilesReturnsData() {
-            Map<Integer, Integer> data = gameMap.exportBurningTiles();
+            Map<Long, Integer> data = gameMap.exportBurningTiles();
             assertNotNull(data);
         }
 
         @Test
         @DisplayName("importBurningTiles should restore burning tiles")
         void importBurningTilesRestoresData() {
-            Map<Integer, Integer> data = new HashMap<>();
-            data.put(5005, 30); // row 5, col 5, 30 frames remaining
+            Map<Long, Integer> data = new HashMap<>();
+            // New encoding: key = (row << 16) | col
+            long key = (5L << 16) | 5; // row 5, col 5
+            data.put(key, 30); // 30 frames remaining
 
             gameMap.importBurningTiles(data);
 
@@ -241,8 +243,10 @@ class GameMapTest {
         @Test
         @DisplayName("update should decrease burning time")
         void updateDecreasesBurningTime() {
-            Map<Integer, Integer> data = new HashMap<>();
-            data.put(5005, 5); // 5 frames remaining
+            Map<Long, Integer> data = new HashMap<>();
+            // New encoding: key = (row << 16) | col
+            long key = (5L << 16) | 5; // row 5, col 5
+            data.put(key, 5); // 5 frames remaining
 
             gameMap.importBurningTiles(data);
             assertTrue(gameMap.hasBurningTiles());

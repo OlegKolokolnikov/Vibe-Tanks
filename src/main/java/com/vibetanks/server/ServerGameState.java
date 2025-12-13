@@ -775,11 +775,11 @@ public class ServerGameState {
         state.mapTiles = gameMap.exportTiles();
 
         // Burning tiles for fire animation
-        java.util.Map<Integer, Integer> burning = gameMap.exportBurningTiles();
-        for (java.util.Map.Entry<Integer, Integer> entry : burning.entrySet()) {
-            int key = entry.getKey();
-            int row = key / 1000;
-            int col = key % 1000;
+        java.util.Map<Long, Integer> burning = gameMap.exportBurningTiles();
+        for (java.util.Map.Entry<Long, Integer> entry : burning.entrySet()) {
+            long key = entry.getKey();
+            int row = (int) (key >> 16);
+            int col = (int) (key & 0xFFFF);
             state.burningTiles.add(new GameState.BurningTileData(row, col, entry.getValue()));
         }
 

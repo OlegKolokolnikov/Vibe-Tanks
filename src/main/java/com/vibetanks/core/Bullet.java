@@ -74,24 +74,15 @@ public class Bullet {
     }
 
     public boolean collidesWith(Tank tank) {
-        return x < tank.getX() + tank.getSize() &&
-               x + size > tank.getX() &&
-               y < tank.getY() + tank.getSize() &&
-               y + size > tank.getY();
+        return Collider.checkSquare(x, y, size, tank.getX(), tank.getY(), tank.getSize());
     }
 
     public boolean collidesWith(Base base) {
-        return x < base.getX() + base.getSize() &&
-               x + size > base.getX() &&
-               y < base.getY() + base.getSize() &&
-               y + size > base.getY();
+        return Collider.checkSquare(x, y, size, base.getX(), base.getY(), base.getSize());
     }
 
     public boolean collidesWith(Bullet other) {
-        return x < other.x + other.size &&
-               x + size > other.x &&
-               y < other.y + other.size &&
-               y + size > other.y;
+        return Collider.checkSquare(x, y, size, other.x, other.y, other.size);
     }
 
     public boolean isOutOfBounds(int width, int height) {

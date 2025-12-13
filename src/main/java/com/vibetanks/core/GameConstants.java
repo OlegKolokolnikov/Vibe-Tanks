@@ -100,6 +100,12 @@ public final class GameConstants {
     public static final int SCORE_HEAVY = 5;
     public static final int SCORE_BOSS = 10;
 
+    // Enemy spawn probabilities (cumulative thresholds)
+    public static final double SPAWN_REGULAR_THRESHOLD = 0.5;   // 50% REGULAR (0.0 - 0.5)
+    public static final double SPAWN_FAST_THRESHOLD = 0.7;      // 20% FAST (0.5 - 0.7)
+    public static final double SPAWN_ARMORED_THRESHOLD = 0.85;  // 15% ARMORED (0.7 - 0.85)
+    // Remaining 15% is POWER (0.85 - 1.0)
+
     /**
      * Get score for killing an enemy type.
      */

@@ -216,11 +216,11 @@ public class GameStateBuilder {
         }
 
         // Burning tiles for fire animation sync
-        Map<Integer, Integer> burning = gameMap.exportBurningTiles();
-        for (Map.Entry<Integer, Integer> entry : burning.entrySet()) {
-            int key = entry.getKey();
-            int row = key / 1000;
-            int col = key % 1000;
+        Map<Long, Integer> burning = gameMap.exportBurningTiles();
+        for (Map.Entry<Long, Integer> entry : burning.entrySet()) {
+            long key = entry.getKey();
+            int row = (int) (key >> 16);
+            int col = (int) (key & 0xFFFF);
             state.burningTiles.add(new GameState.BurningTileData(row, col, entry.getValue()));
         }
 

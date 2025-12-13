@@ -98,6 +98,9 @@ public class GameLoop {
         if (!running) return;
 
         try {
+            // Update cached frame timestamp for consistent timing during rendering
+            FrameTime.updateFrameTime();
+
             // Update FPS counter
             updateFpsCounter();
 

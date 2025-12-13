@@ -7,8 +7,9 @@ import java.util.List;
  * Extracted from Tank.java for better separation of concerns.
  */
 public class TankPhysics {
-    private static final double SPEED = 2.0;
-    private static final double SLIDE_DISTANCE = 32.0; // One tile
+    // Use constants from GameConstants to avoid duplication
+    private static final double SPEED = GameConstants.TANK_BASE_SPEED;
+    private static final double SLIDE_DISTANCE = GameConstants.SLIDE_DISTANCE;
 
     // Ice sliding state
     private boolean isSliding;
@@ -46,13 +47,13 @@ public class TankPhysics {
         WrapResult wrapResult = handleWraparound(newX, newY, tank.getX(), tank.getY(),
             tankSize, map, mapWidth, mapHeight);
 
-        if (!wrapResult.canMove) {
+        if (!wrapResult.canMove()) {
             stopSliding();
             return false;
         }
 
-        newX = wrapResult.newX;
-        newY = wrapResult.newY;
+        newX = wrapResult.newX();
+        newY = wrapResult.newY();
 
         // Check collision with other tanks
         if (checkTankCollisions(newX, newY, tankSize, tank, allTanks)) {
@@ -103,12 +104,12 @@ public class TankPhysics {
         WrapResult wrapResult = handleWraparound(newX, newY, tank.getX(), tank.getY(),
             tankSize, map, mapWidth, mapHeight);
 
-        if (!wrapResult.canMove) {
+        if (!wrapResult.canMove()) {
             return false;
         }
 
-        newX = wrapResult.newX;
-        newY = wrapResult.newY;
+        newX = wrapResult.newX();
+        newY = wrapResult.newY();
 
         // Check collision with other tanks (with BOSS special handling)
         if (!handleTankCollisions(tank, newX, newY, otherTanks)) {
@@ -474,24 +475,11 @@ public class TankPhysics {
         }
     }
 
-    // AABB collision check
+    // AABB collision check - delegates to Collider utility
     public static boolean checkCollision(double x1, double y1, double x2, double y2, int size1, int size2) {
-        return x1 < x2 + size2 &&
-               x1 + size1 > x2 &&
-               y1 < y2 + size2 &&
-               y1 + size1 > y2;
+        return Collider.checkSquare(x1, y1, size1, x2, y2, size2);
     }
 
-    // Result of wraparound calculation
-    private static class WrapResult {
-        final double newX;
-        final double newY;
-        final boolean canMove;
-
-        WrapResult(double newX, double newY, boolean canMove) {
-            this.newX = newX;
-            this.newY = newY;
-            this.canMove = canMove;
-        }
-    }
+    // Result of wraparound calculation (using record for cleaner code)
+    private record WrapResult(double newX, double newY, boolean canMove) {}
 }

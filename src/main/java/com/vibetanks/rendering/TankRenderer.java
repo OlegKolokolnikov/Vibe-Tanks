@@ -1,6 +1,7 @@
 package com.vibetanks.rendering;
 
 import com.vibetanks.core.Direction;
+import com.vibetanks.core.FrameTime;
 import com.vibetanks.core.Tank;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -10,6 +11,13 @@ import javafx.scene.paint.Color;
  * Extracted from Tank.java to separate rendering from game logic.
  */
 public class TankRenderer {
+    // Pre-allocated color result array to avoid allocation in hot path
+    private static final Color[] colorResult = new Color[2];
+
+    // Static rainbow colors for POWER tank (avoid allocation each frame)
+    private static final Color[] RAINBOW_COLORS = {
+        Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.PURPLE
+    };
 
     /**
      * Render a tank to the given graphics context.
@@ -78,7 +86,7 @@ public class TankRenderer {
     private static void renderShields(GraphicsContext gc, Tank tank, double x, double y, int size, double scale) {
         // Draw shield if active (animated waving circle)
         if (tank.hasShield()) {
-            long time = System.currentTimeMillis();
+            long time = FrameTime.getFrameTime();
 
             for (int i = 0; i < 3; i++) {
                 double phase = time / 150.0 + i * Math.PI * 2 / 3;
@@ -96,7 +104,7 @@ public class TankRenderer {
 
         // Draw pause shield (yellow/orange pulsing)
         if (tank.hasPauseShield()) {
-            int pulse = (int) (System.currentTimeMillis() / 200) % 2;
+            int pulse = (int) (FrameTime.getFrameTime() / 200) % 2;
             gc.setStroke(pulse == 0 ? Color.YELLOW : Color.ORANGE);
             gc.setLineWidth(3 * scale);
             gc.strokeOval(x - 6 * scale, y - 6 * scale, size + 12 * scale, size + 12 * scale);
@@ -131,13 +139,12 @@ public class TankRenderer {
                 case ARMORED -> { tankColor = Color.DARKRED; darkColor = Color.rgb(80, 0, 0); }
                 case FAST -> { tankColor = Color.rgb(255, 100, 100); darkColor = Color.rgb(200, 60, 60); }
                 case POWER -> {
-                    int frame = (int) (System.currentTimeMillis() / 100) % 7;
-                    Color[] rainbow = { Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.PURPLE };
-                    tankColor = rainbow[frame];
+                    int frame = (int) (FrameTime.getFrameTime() / 100) % 7;
+                    tankColor = RAINBOW_COLORS[frame];
                     darkColor = tankColor.darker();
                 }
                 case BOSS -> {
-                    double pulse = (Math.sin(System.currentTimeMillis() / 150.0) + 1) / 2;
+                    double pulse = (Math.sin(FrameTime.getFrameTime() / 150.0) + 1) / 2;
                     int red = (int) (150 + pulse * 105);
                     int green = (int) (pulse * 50);
                     tankColor = Color.rgb(red, green, 0);
@@ -148,7 +155,10 @@ public class TankRenderer {
             }
         }
 
-        return new Color[]{tankColor, darkColor};
+        // Reuse pre-allocated array to avoid allocation in hot path
+        colorResult[0] = tankColor;
+        colorResult[1] = darkColor;
+        return colorResult;
     }
 
     private static void applyRotation(GraphicsContext gc, Direction direction) {

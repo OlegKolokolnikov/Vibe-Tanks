@@ -62,13 +62,13 @@ public class EnemySpawner {
         } else if (remaining <= 10) {
             // Last 10 enemies (except the very last) are HEAVY
             type = Tank.EnemyType.HEAVY;
-        } else if (rand < 0.5) {
+        } else if (rand < GameConstants.SPAWN_REGULAR_THRESHOLD) {
             // 50% REGULAR
             type = Tank.EnemyType.REGULAR;
-        } else if (rand < 0.7) {
+        } else if (rand < GameConstants.SPAWN_FAST_THRESHOLD) {
             // 20% FAST
             type = Tank.EnemyType.FAST;
-        } else if (rand < 0.85) {
+        } else if (rand < GameConstants.SPAWN_ARMORED_THRESHOLD) {
             // 15% ARMORED
             type = Tank.EnemyType.ARMORED;
         } else {
@@ -92,13 +92,8 @@ public class EnemySpawner {
         boolean positionClear = true;
         for (Tank tank : enemyTanks) {
             // Check collision using the size of the tank we're about to spawn
-            double otherX = tank.getX();
-            double otherY = tank.getY();
-            int otherSize = tank.getSize();
-            if (spawnPos[0] < otherX + otherSize &&
-                spawnPos[0] + tankSize > otherX &&
-                spawnPos[1] < otherY + otherSize &&
-                spawnPos[1] + tankSize > otherY) {
+            if (Collider.checkSquare(spawnPos[0], spawnPos[1], tankSize,
+                                     tank.getX(), tank.getY(), tank.getSize())) {
                 positionClear = false;
                 break;
             }

@@ -25,7 +25,7 @@ public class EffectRenderer {
     }
 
     /**
-     * Render "Lost it!" message when UFO escapes.
+     * Render "Invasion begins!" message when UFO escapes.
      */
     public void renderUfoLostMessage(int ufoLostMessageTimer) {
         gc.save();
@@ -40,16 +40,16 @@ public class EffectRenderer {
         double pulse = 1.0 + Math.sin(FrameTime.getFrameTime() / 100.0) * 0.1;
         int fontSize = (int)(50 * pulse);
 
-        // Draw "Lost it!" message in the center of the screen
+        // Draw "Invasion begins!" message in the center of the screen
         gc.setFont(Font.font("Arial", FontWeight.BOLD, fontSize));
 
         // Shadow/outline effect
         gc.setFill(Color.rgb(0, 0, 0, alpha * 0.7));
-        gc.fillText("Lost it!", width / 2 - 85 + 3, height / 3 + 3);
+        gc.fillText("Invasion begins!", width / 2 - 140 + 3, height / 3 + 3);
 
         // Main text with red color
         gc.setFill(Color.rgb(255, 50, 50, alpha));
-        gc.fillText("Lost it!", width / 2 - 85, height / 3);
+        gc.fillText("Invasion begins!", width / 2 - 140, height / 3);
 
         // UFO icon above the text
         double iconX = width / 2;

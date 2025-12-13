@@ -106,7 +106,7 @@ public class UFOManager {
                 // UFO escaped (wasn't killed by player)
                 if (!ufoWasKilled) {
                     ufoLostMessageTimer = UFO_MESSAGE_DURATION;
-                    LOG.info("UFO escaped! Lost it!");
+                    LOG.info("UFO escaped! Invasion begins!");
                     escaped = true;
                 }
                 ufo = null;

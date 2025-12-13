@@ -930,7 +930,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         }
 
         // Check game over condition using shared GameLogic
-        if (GameLogic.checkGameOver(base, playerTanks)) {
+        // Only record loss if gameOver wasn't already set (prevents double-counting)
+        if (!gameOver && GameLogic.checkGameOver(base, playerTanks)) {
             gameOver = true;
             // Record loss for adaptive difficulty
             GameSettings.recordLoss(gameMap.getLevelNumber());

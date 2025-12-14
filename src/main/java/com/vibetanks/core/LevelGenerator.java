@@ -666,63 +666,44 @@ public class LevelGenerator {
     }
 
     private void clearSpawnAreas() {
-        // Clear enemy spawn points (top of map)
-        // Normal tanks are ~1 tile, BOSS is ~4 tiles wide
-        // Clear enough space for tanks to spawn and move
+        // Clear only the immediate spawn points - just enough for tanks to spawn
+        // Tanks will navigate through obstacles using their AI
 
-        // Spawn 1 (left): cols 1-4, rows 1-5 (for normal tanks)
+        // Enemy spawn 1 (left): cols 1-3, rows 1-3 (minimal for normal tanks)
+        for (int row = 1; row <= 3; row++) {
+            for (int col = 1; col <= 3; col++) {
+                tiles[row][col] = GameMap.TileType.EMPTY;
+            }
+        }
+
+        // Enemy spawn 2 (center): cols 10-16, rows 1-5 (wider for BOSS tank which is 4x size)
         for (int row = 1; row <= 5; row++) {
-            for (int col = 1; col <= 4; col++) {
+            for (int col = 10; col <= 16; col++) {
                 tiles[row][col] = GameMap.TileType.EMPTY;
             }
         }
 
-        // Spawn 2 (center): cols 9-17, rows 1-6 (extra wide for BOSS tank which is 4x size)
-        for (int row = 1; row <= 6; row++) {
-            for (int col = 9; col <= 17; col++) {
+        // Enemy spawn 3 (right): cols 23-25, rows 1-3 (minimal for normal tanks)
+        for (int row = 1; row <= 3; row++) {
+            for (int col = 23; col <= 25; col++) {
                 tiles[row][col] = GameMap.TileType.EMPTY;
             }
         }
 
-        // Spawn 3 (right): cols 22-25, rows 1-5 (for normal tanks)
-        for (int row = 1; row <= 5; row++) {
-            for (int col = 22; col <= 25; col++) {
+        // Player spawn points (bottom) - minimal clearance around spawn positions
+        // Player 1 spawn area (left side)
+        for (int row = 23; row <= height - 2; row++) {
+            for (int col = 7; col <= 10; col++) {
+                tiles[row][col] = GameMap.TileType.EMPTY;
+            }
+        }
+        // Player 2 spawn area (right side)
+        for (int row = 23; row <= height - 2; row++) {
+            for (int col = 15; col <= 18; col++) {
                 tiles[row][col] = GameMap.TileType.EMPTY;
             }
         }
 
-        // Clear player spawn points (bottom) - but not the bottom border (height-1)
-        // and preserve base protection bricks
-        for (int row = 22; row <= height - 2; row++) {
-            for (int col = 5; col <= 10; col++) {
-                tiles[row][col] = GameMap.TileType.EMPTY;
-            }
-        }
-        for (int row = 22; row <= height - 2; row++) {
-            for (int col = 15; col <= 20; col++) {
-                tiles[row][col] = GameMap.TileType.EMPTY;
-            }
-        }
-
-        // Ensure vertical paths from enemy spawns are clear (for movement after spawn)
-        for (int row = 1; row <= 7; row++) {
-            tiles[row][2] = GameMap.TileType.EMPTY;
-            tiles[row][3] = GameMap.TileType.EMPTY;
-            tiles[row][12] = GameMap.TileType.EMPTY;
-            tiles[row][13] = GameMap.TileType.EMPTY;
-            tiles[row][14] = GameMap.TileType.EMPTY;
-            tiles[row][23] = GameMap.TileType.EMPTY;
-            tiles[row][24] = GameMap.TileType.EMPTY;
-        }
-
-        // Ensure vertical paths to player spawns are clear
-        for (int row = 18; row <= 24; row++) {
-            tiles[row][7] = GameMap.TileType.EMPTY;
-            tiles[row][8] = GameMap.TileType.EMPTY;
-            tiles[row][9] = GameMap.TileType.EMPTY;
-            tiles[row][16] = GameMap.TileType.EMPTY;
-            tiles[row][17] = GameMap.TileType.EMPTY;
-            tiles[row][18] = GameMap.TileType.EMPTY;
-        }
+        // No forced vertical paths - tanks navigate using AI
     }
 }

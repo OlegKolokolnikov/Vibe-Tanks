@@ -6,7 +6,8 @@ A classic tank battle game using JavaFX.
 
 - **Start Menu** with game mode selection
 - **Single-player mode** - Battle enemy tanks solo
-- **Online multiplayer** - 2 players can team up over the network
+- **Local 2-player mode** - Two players on the same keyboard
+- **Online multiplayer** - Up to 4 players can team up over the network
 - **Auto-generated sound effects** - Sounds are created automatically on first run
 - 25 AI enemy tanks per level (max 5 on screen at once)
 - 6 different enemy tank types with varying abilities
@@ -36,10 +37,16 @@ A classic tank battle game using JavaFX.
 
 ### Single Player
 1. **Start Menu**: When you launch the game, you'll see a start menu
-2. **Select "1 PLAYER"**: Start a solo game against enemy tanks
+2. **Select "PLAY"**: Start a solo game against enemy tanks
 3. **Defend Your Base**: Destroy all enemy tanks before they destroy your base
 4. **Press ENTER**: Continue to next level after victory, or restart after game over
 5. **Return to Menu**: Press **ESC** to return to menu
+
+### Local 2 Players (Same Keyboard)
+1. **Select "PLAY 2 PLAYERS"**: Start a local co-op game
+2. **Player 1 Controls**: WASD to move, SPACE to shoot
+3. **Player 2 Controls**: Arrow keys to move, ENTER to shoot
+4. **Team Up**: Work together on the same computer to defend the base!
 
 ### Online Multiplayer (2-4 Players)
 1. **Host**: One player clicks "HOST GAME (ONLINE)" and shares their IP address
@@ -81,11 +88,17 @@ java -cp target/classes com.vibetanks.DedicatedServer 12345  # Custom port
 
 ## Controls
 
-**All Players** (both local and online):
+### Single Player / Online Multiplayer
 - **Arrow Keys or WASD**: Move tank
-- **Space**: Shoot
+- **SPACE**: Shoot
 - **ENTER**: Take life from teammate (when dead) / Next level / Restart
 - **ESC**: Pause (single player) / Pause with shield (multiplayer) / Return to menu
+
+### Local 2 Players
+| | Player 1 | Player 2 |
+|---|---|---|
+| **Move** | WASD | Arrow Keys |
+| **Shoot** | SPACE | ENTER |
 
 ## Installation
 
@@ -198,7 +211,7 @@ Some power-ups are stackable (STAR, CAR, MACHINEGUN) - collect multiple for enha
 ### Network Multiplayer
 - Host runs the authoritative game logic
 - Client-authoritative movement for smooth gameplay
-- Supports 2 players cooperating
+- Supports up to 4 players cooperating
 - Works best on local network (LAN)
 - Uses TCP on port 25565
 - Per-player pause with shield protection

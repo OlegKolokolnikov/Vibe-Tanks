@@ -644,16 +644,20 @@ public class ServerGameState {
             }
             case TANK -> {
                 // Hard mode: extra life and color change
-                // Other modes: become POWER tank
+                // Other modes: become POWER tank (FAST keeps speed)
                 enemy.setRandomColorOverride();
                 if (GameSettings.isHardModeActive()) {
                     powerUp.applyEffect(enemy);
                     LOG.info("TANK: Enemy got extra life (hard mode)!");
                 } else {
+                    // Preserve speed if FAST tank (1.5x speed)
+                    double speed = enemy.getSpeedMultiplier();
+                    boolean wasFast = enemy.getEnemyType() == Tank.EnemyType.FAST;
                     enemy.setEnemyType(Tank.EnemyType.POWER);
                     enemy.setMaxHealth(2);
                     enemy.setHealth(2);
-                    LOG.info("TANK: Enemy became POWER tank!");
+                    enemy.setSpeedMultiplier(speed); // Restore speed (FAST becomes fast POWER)
+                    LOG.info("TANK: Enemy became {}POWER tank!", wasFast ? "fast " : "");
                 }
             }
             case SHIELD -> {

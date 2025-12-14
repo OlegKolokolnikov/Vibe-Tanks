@@ -263,14 +263,17 @@ public class GameLogic {
                 break;
             case TANK:
                 // Hard mode: extra life and color change
-                // Other modes: become POWER tank
+                // Other modes: become POWER tank (FAST keeps speed)
                 enemy.setRandomColorOverride();
                 if (GameSettings.isHardModeActive()) {
                     powerUp.applyEffect(enemy);
                 } else {
+                    // Preserve speed if FAST tank (1.5x speed)
+                    double speed = enemy.getSpeedMultiplier();
                     enemy.setEnemyType(Tank.EnemyType.POWER);
                     enemy.setMaxHealth(2);
                     enemy.setHealth(2);
+                    enemy.setSpeedMultiplier(speed); // Restore speed (FAST becomes fast POWER)
                 }
                 break;
             case SHIELD:

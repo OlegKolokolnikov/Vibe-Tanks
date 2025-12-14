@@ -451,18 +451,18 @@ public class GameMap {
 
     // Base protection management (for SHOVEL power-up)
     public void setBaseProtection(TileType protectionType) {
-        // Top wall
-        tiles[23][11] = protectionType;
-        tiles[23][12] = protectionType;
-        tiles[23][13] = protectionType;
-        // Left wall
-        tiles[24][11] = protectionType;
-        // Right wall
-        tiles[24][13] = protectionType;
-        // Bottom wall
-        tiles[25][11] = protectionType;
-        tiles[25][12] = protectionType;
-        tiles[25][13] = protectionType;
+        // Set protection tiles, but preserve GROUND (indestructible) tiles
+        int[][] protectionPositions = {
+            {23, 11}, {23, 12}, {23, 13},  // Top wall
+            {24, 11}, {24, 13},             // Left and right walls
+            {25, 11}, {25, 12}, {25, 13}    // Bottom wall
+        };
+        for (int[] pos : protectionPositions) {
+            // Don't replace GROUND tiles - they're already indestructible
+            if (tiles[pos[0]][pos[1]] != TileType.GROUND) {
+                tiles[pos[0]][pos[1]] = protectionType;
+            }
+        }
     }
 
     public void resetBaseProtection() {

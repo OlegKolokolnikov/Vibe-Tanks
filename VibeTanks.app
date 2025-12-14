@@ -1,0 +1,1 @@
+/Users/olegkolokolnikov/Documents/projects/Vibe-Tanks/target/dist/VibeTanks.app

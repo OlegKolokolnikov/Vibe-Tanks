@@ -337,10 +337,6 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 tryTakeLifeFromTeammate();
             }
 
-            // TEST MODE: Press B to spawn BOSS tank that shoots at player
-            if (event.getCode() == KeyCode.B && !gameOver && !victory) {
-                spawnTestBoss();
-            }
         });
 
         // Initialize sound manager
@@ -592,14 +588,6 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         // Handle player input (local or host) - pass freeze state
         boolean isPlayerFrozen = powerUpEffectManager.arePlayersFrozen();
         inputHandler.handleInput(gameMap, bullets, lasers, soundManager, allTanks, base, isPlayerFrozen);
-
-        // Check for H key to toggle hard mode (for testing)
-        if (inputHandler.consumeHardModeToggle()) {
-            boolean hardMode = GameSettings.toggleForceHardMode();
-            // Regenerate level to see the effect immediately
-            gameMap.regenerateCurrentLevel();
-            System.out.println("Hard mode " + (hardMode ? "ON" : "OFF") + " - Level regenerated");
-        }
 
         // Update base protection from SHOVEL power-up (via PowerUpEffectManager)
         powerUpEffectManager.updateBaseProtection(gameMap);

@@ -296,6 +296,7 @@ public class Tank {
         if (!isPlayer && enemyType == EnemyType.HEAVY && health == 2) {
             enemyType = EnemyType.ARMORED;
             maxHealth = 2;
+            setGun(false); // Lose steel-destroying ability
         }
 
         // ARMORED becomes REGULAR when shot once (health drops to 1)

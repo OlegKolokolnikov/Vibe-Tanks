@@ -312,7 +312,7 @@ public class GameSettings {
 
     /**
      * Set whether this is local multiplayer mode (2 players on same keyboard).
-     * Player 1: WASD + CTRL, Player 2: Arrows + SPACE
+     * Player 1: WASD + SPACE, Player 2: Arrows + ENTER
      */
     public static void setLocalMultiplayerMode(boolean localMultiplayer) {
         localMultiplayerMode = localMultiplayer;

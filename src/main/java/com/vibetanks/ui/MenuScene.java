@@ -102,7 +102,7 @@ public class MenuScene {
         instructions.setFont(Font.font("Arial", FontWeight.NORMAL, 14));
         instructions.setTextFill(Color.LIGHTGRAY);
 
-        Label controls = new Label("1P: Arrows/WASD + SPACE | 2P Local: P1=WASD+CTRL, P2=Arrows+SPACE");
+        Label controls = new Label("1P: Arrows/WASD + SPACE | 2P Local: P1=WASD+SPACE, P2=Arrows+ENTER");
         controls.setFont(Font.font("Arial", FontWeight.NORMAL, 11));
         controls.setTextFill(Color.LIGHTGRAY);
 

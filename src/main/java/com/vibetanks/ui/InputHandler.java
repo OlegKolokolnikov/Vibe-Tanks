@@ -146,7 +146,7 @@ public class InputHandler {
         }
     }
 
-    // Player 1 input handler for local multiplayer (WASD + CTRL)
+    // Player 1 input handler for local multiplayer (WASD + SPACE)
     private void handlePlayer1Input(Tank player, GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
         if (!player.isAlive()) return;
 
@@ -168,8 +168,8 @@ public class InputHandler {
             wasMovingPlayer1 = isMoving;
         }
 
-        // Shooting with CTRL (allowed even when frozen)
-        if (pressedKeys.contains(KeyCode.CONTROL)) {
+        // Shooting with SPACE (allowed even when frozen)
+        if (pressedKeys.contains(KeyCode.SPACE)) {
             if (player.hasLaser()) {
                 Laser laser = player.shootLaser(soundManager);
                 if (laser != null) {
@@ -181,7 +181,7 @@ public class InputHandler {
         }
     }
 
-    // Player 2 input handler for local multiplayer (Arrows + SPACE)
+    // Player 2 input handler for local multiplayer (Arrows + ENTER)
     private void handlePlayer2Input(Tank player, GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
         if (!player.isAlive()) return;
 
@@ -203,8 +203,8 @@ public class InputHandler {
             wasMovingPlayer2 = isMoving;
         }
 
-        // Shooting with SPACE (allowed even when frozen)
-        if (pressedKeys.contains(KeyCode.SPACE)) {
+        // Shooting with ENTER (allowed even when frozen)
+        if (pressedKeys.contains(KeyCode.ENTER)) {
             if (player.hasLaser()) {
                 Laser laser = player.shootLaser(soundManager);
                 if (laser != null) {

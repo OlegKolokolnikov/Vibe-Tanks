@@ -120,8 +120,8 @@ public class LevelGenerator {
 
     private void placeTile(int row, int col, GameMap.TileType type) {
         if (row > 0 && row < height - 1 && col > 0 && col < width - 1) {
-            // Don't overwrite base area (rows 22-24, cols 11-14)
-            if (row >= 22 && row <= 24 && col >= 11 && col <= 14) {
+            // Don't overwrite base area (rows 23-24, cols 11-13)
+            if (row >= 23 && row <= 24 && col >= 11 && col <= 13) {
                 return;
             }
             tiles[row][col] = type;
@@ -529,21 +529,19 @@ public class LevelGenerator {
     }
 
     private void createBaseProtection() {
-        // Base is at row 24, cols 12-13 (2x2 area typically)
-        // Surround with bricks in a U-shape
-        tiles[23][11] = GameMap.TileType.BRICK;
-        tiles[23][12] = GameMap.TileType.BRICK;
-        tiles[23][13] = GameMap.TileType.BRICK;
-        tiles[23][14] = GameMap.TileType.BRICK;
-        tiles[24][11] = GameMap.TileType.BRICK;
-        tiles[24][14] = GameMap.TileType.BRICK;
+        // Base is at row 24, col 12 (1 tile, 32x32)
+        // Surround with bricks in a U-shape (no gaps)
+        tiles[23][11] = GameMap.TileType.BRICK;  // Top-left
+        tiles[23][12] = GameMap.TileType.BRICK;  // Top (above base)
+        tiles[23][13] = GameMap.TileType.BRICK;  // Top-right
+        tiles[24][11] = GameMap.TileType.BRICK;  // Left of base
+        tiles[24][13] = GameMap.TileType.BRICK;  // Right of base
         // In hard mode, bottom is STEEL so we need brick protection at row 25
         // In normal mode, bottom is GROUND (indestructible) so no need
         if (GameSettings.isHardModeActive()) {
-            tiles[25][11] = GameMap.TileType.BRICK;
-            tiles[25][12] = GameMap.TileType.BRICK;
-            tiles[25][13] = GameMap.TileType.BRICK;
-            tiles[25][14] = GameMap.TileType.BRICK;
+            tiles[25][11] = GameMap.TileType.BRICK;  // Bottom-left
+            tiles[25][12] = GameMap.TileType.BRICK;  // Bottom (below base)
+            tiles[25][13] = GameMap.TileType.BRICK;  // Bottom-right
         }
 
         // Add wall above base to protect from center spawn

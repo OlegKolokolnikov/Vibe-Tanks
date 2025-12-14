@@ -76,7 +76,11 @@ build_for_arch() {
 
     echo ""
     echo "Step 3: Creating native app image ($APP_NAME)..."
-    jpackage --name "$APP_NAME" --app-version 1.0.0 --vendor VibeTanks --dest target/dist --input target/jpackage-input --main-jar vibe-tanks-1.0-SNAPSHOT-shaded.jar --main-class com.vibetanks.Launcher --type app-image --mac-package-identifier com.vibetanks.app
+    ICON_PARAM=""
+    if [ -f "VibeTanks.icns" ]; then
+        ICON_PARAM="--icon VibeTanks.icns"
+    fi
+    jpackage --name "$APP_NAME" --app-version 1.0.0 --vendor VibeTanks --dest target/dist --input target/jpackage-input --main-jar vibe-tanks-1.0-SNAPSHOT-shaded.jar --main-class com.vibetanks.Launcher --type app-image --mac-package-identifier com.vibetanks.app $ICON_PARAM
 
     if [ $? -ne 0 ]; then
         echo "Native packaging failed!"

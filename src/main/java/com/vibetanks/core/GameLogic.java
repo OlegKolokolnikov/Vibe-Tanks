@@ -262,9 +262,16 @@ public class GameLogic {
                 // These require game-level handling
                 break;
             case TANK:
-                // TANK gives extra life and changes color
+                // Hard mode: extra life and color change
+                // Other modes: become POWER tank
                 enemy.setRandomColorOverride();
-                powerUp.applyEffect(enemy);
+                if (GameSettings.isHardModeActive()) {
+                    powerUp.applyEffect(enemy);
+                } else {
+                    enemy.setEnemyType(Tank.EnemyType.POWER);
+                    enemy.setMaxHealth(2);
+                    enemy.setHealth(2);
+                }
                 break;
             case SHIELD:
                 // Enemies upgrade tank type: REGULAR → ARMORED → HEAVY

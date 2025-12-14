@@ -643,9 +643,18 @@ public class ServerGameState {
                 baseProtectionDuration = 0;
             }
             case TANK -> {
-                // TANK gives extra life and changes color
+                // Hard mode: extra life and color change
+                // Other modes: become POWER tank
                 enemy.setRandomColorOverride();
-                powerUp.applyEffect(enemy);
+                if (GameSettings.isHardModeActive()) {
+                    powerUp.applyEffect(enemy);
+                    LOG.info("TANK: Enemy got extra life (hard mode)!");
+                } else {
+                    enemy.setEnemyType(Tank.EnemyType.POWER);
+                    enemy.setMaxHealth(2);
+                    enemy.setHealth(2);
+                    LOG.info("TANK: Enemy became POWER tank!");
+                }
             }
             case SHIELD -> {
                 // Enemies upgrade tank type: REGULAR → ARMORED → HEAVY

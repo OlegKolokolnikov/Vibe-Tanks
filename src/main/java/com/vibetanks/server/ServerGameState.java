@@ -325,7 +325,17 @@ public class ServerGameState {
 
         for (Tank player : playerTanks) {
             player.update(gameMap, bullets, soundManager, allTanks, base);
+            // Track if player completes respawn this frame
+            boolean wasWaiting = player.isWaitingToRespawn();
             player.updateRespawnTimer(); // Handle respawn delay
+            // Check if player just respawned (was waiting, now alive)
+            if (wasWaiting && player.isAlive()) {
+                // Clear freeze in very easy mode when player respawns
+                if (GameSettings.isVeryEasyModeActiveForCurrentLevel() && playerFreezeDuration > 0) {
+                    playerFreezeDuration = 0;
+                    LOG.info("VERY EASY MODE: Player freeze cleared on respawn");
+                }
+            }
         }
 
         // Update enemy AI

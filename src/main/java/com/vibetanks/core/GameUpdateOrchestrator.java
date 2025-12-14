@@ -85,7 +85,14 @@ public class GameUpdateOrchestrator {
             if (player.isAlive()) {
                 player.update(gameMap, bullets, soundManager, allTanks, base);
             } else if (player.isWaitingToRespawn()) {
+                // Track if player completes respawn this frame
+                boolean wasWaiting = player.isWaitingToRespawn();
                 player.updateRespawnTimer();
+                // Check if player just respawned (was waiting, now alive)
+                if (wasWaiting && player.isAlive()) {
+                    // Clear freeze in very easy mode when player respawns
+                    ctx.getPowerUpEffectManager().clearPlayerFreezeOnRespawnIfVeryEasy();
+                }
             } else if (player.getLives() > 0) {
                 // Lives already decremented by damage(), just respawn
                 double respawnX = respawnPositions[i][0];

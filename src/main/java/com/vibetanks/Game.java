@@ -623,7 +623,13 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 player.update(gameMap, bullets, soundManager, allTanks, base);
             } else if (player.isWaitingToRespawn()) {
                 // Player is waiting for respawn delay
+                boolean wasWaiting = player.isWaitingToRespawn();
                 player.updateRespawnTimer();
+                // Check if player just respawned (was waiting, now alive)
+                if (wasWaiting && player.isAlive()) {
+                    // Clear freeze in very easy mode when player respawns
+                    powerUpEffectManager.clearPlayerFreezeOnRespawnIfVeryEasy();
+                }
             } else if (player.getLives() > 0) {
                 // Player died but has lives left - respawn (lives already decremented by damage())
                 double respawnX = FIXED_START_POSITIONS[i][0];

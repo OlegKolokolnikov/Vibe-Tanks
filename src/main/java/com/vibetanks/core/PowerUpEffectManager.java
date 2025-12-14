@@ -194,6 +194,17 @@ public class PowerUpEffectManager {
         return playerFreezeDuration > 0;
     }
 
+    /**
+     * Clear player freeze on respawn in very easy mode.
+     * In very easy mode, frozen players who die get unfrozen when they respawn.
+     */
+    public void clearPlayerFreezeOnRespawnIfVeryEasy() {
+        if (GameSettings.isVeryEasyModeActiveForCurrentLevel() && playerFreezeDuration > 0) {
+            playerFreezeDuration = 0;
+            LOG.info("VERY EASY MODE: Player freeze cleared on respawn");
+        }
+    }
+
     // ========== Enemy Speed Boost (CAR) ==========
 
     /**

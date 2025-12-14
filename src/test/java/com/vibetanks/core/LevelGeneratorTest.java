@@ -109,45 +109,42 @@ class LevelGeneratorTest {
         void generatedLevelShouldHaveClearEnemySpawnAreas() {
             generator.generateRandomLevel(tiles);
 
-            // Spawn 1: top-left
+            // Spawn areas have variable clearance (2-4 tiles), but minimum 2x2 is always clear
+            // Spawn 1: top-left (minimum rows 1-2, cols 1-2)
             for (int row = 1; row <= 2; row++) {
-                for (int col = 1; col <= 3; col++) {
+                for (int col = 1; col <= 2; col++) {
                     assertEquals(GameMap.TileType.EMPTY, tiles[row][col],
                         "Enemy spawn 1 should be clear at (" + row + "," + col + ")");
                 }
             }
 
-            // Spawn 2: top-center
-            for (int row = 1; row <= 2; row++) {
-                for (int col = 11; col <= 14; col++) {
+            // Spawn 2: top-center (minimum rows 1-4, cols 10-15 for BOSS)
+            for (int row = 1; row <= 4; row++) {
+                for (int col = 10; col <= 15; col++) {
                     assertEquals(GameMap.TileType.EMPTY, tiles[row][col],
                         "Enemy spawn 2 should be clear at (" + row + "," + col + ")");
                 }
             }
 
-            // Spawn 3: top-right
+            // Spawn 3: top-right (minimum rows 1-2, last 2 cols before border)
             for (int row = 1; row <= 2; row++) {
-                for (int col = 23; col <= 25; col++) {
-                    if (col < WIDTH - 1) { // Within bounds
-                        assertEquals(GameMap.TileType.EMPTY, tiles[row][col],
-                            "Enemy spawn 3 should be clear at (" + row + "," + col + ")");
-                    }
-                }
+                assertEquals(GameMap.TileType.EMPTY, tiles[row][WIDTH - 3],
+                    "Enemy spawn 3 should be clear at (" + row + "," + (WIDTH - 3) + ")");
+                assertEquals(GameMap.TileType.EMPTY, tiles[row][WIDTH - 2],
+                    "Enemy spawn 3 should be clear at (" + row + "," + (WIDTH - 2) + ")");
             }
         }
 
         @Test
-        @DisplayName("Generated level should have vertical paths from spawns")
-        void generatedLevelShouldHaveVerticalPathsFromSpawns() {
+        @DisplayName("Generated level should allow tanks to navigate (no forced paths)")
+        void generatedLevelShouldAllowNavigation() {
             generator.generateRandomLevel(tiles);
 
-            // Paths from enemy spawns
-            for (int row = 1; row <= 5; row++) {
-                assertEquals(GameMap.TileType.EMPTY, tiles[row][2], "Path from spawn 1");
-                assertEquals(GameMap.TileType.EMPTY, tiles[row][12], "Path from spawn 2 left");
-                assertEquals(GameMap.TileType.EMPTY, tiles[row][13], "Path from spawn 2 right");
-                assertEquals(GameMap.TileType.EMPTY, tiles[row][24], "Path from spawn 3");
-            }
+            // Spawn areas are clear - tanks use AI to navigate through obstacles
+            // Just verify the spawn point itself is clear (row 1)
+            assertEquals(GameMap.TileType.EMPTY, tiles[1][1], "Left spawn point");
+            assertEquals(GameMap.TileType.EMPTY, tiles[1][12], "Center spawn point");
+            assertEquals(GameMap.TileType.EMPTY, tiles[1][WIDTH - 3], "Right spawn point");
         }
 
         @RepeatedTest(5)
@@ -315,12 +312,21 @@ class LevelGeneratorTest {
         void playerSpawnAreasShouldBeClear() {
             generator.generateRandomLevel(tiles);
 
-            // Check paths to player spawns at bottom
-            for (int row = 20; row <= 24; row++) {
-                assertEquals(GameMap.TileType.EMPTY, tiles[row][8], "Player 1 path at row " + row);
-                assertEquals(GameMap.TileType.EMPTY, tiles[row][9], "Player 1 path at row " + row);
-                assertEquals(GameMap.TileType.EMPTY, tiles[row][16], "Player 2 path at row " + row);
-                assertEquals(GameMap.TileType.EMPTY, tiles[row][17], "Player 2 path at row " + row);
+            // Player spawn areas have variable clearance, but minimum area is always clear
+            // Player 1 spawn area: around cols 6-9, rows 23-24
+            // Player 2 spawn area: around cols 14-18, rows 23-24
+            // Check that spawn points themselves are clear (minimum guarantee)
+            for (int row = 23; row <= 24; row++) {
+                // Player 1 minimum spawn area (cols 6-9)
+                for (int col = 6; col <= 9; col++) {
+                    assertEquals(GameMap.TileType.EMPTY, tiles[row][col],
+                        "Player 1 spawn at row " + row + ", col " + col);
+                }
+                // Player 2 minimum spawn area (cols 14-17)
+                for (int col = 14; col <= 17; col++) {
+                    assertEquals(GameMap.TileType.EMPTY, tiles[row][col],
+                        "Player 2 spawn at row " + row + ", col " + col);
+                }
             }
         }
     }

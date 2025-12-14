@@ -666,44 +666,66 @@ public class LevelGenerator {
     }
 
     private void clearSpawnAreas() {
-        // Clear only the immediate spawn points - just enough for tanks to spawn
-        // Tanks will navigate through obstacles using their AI
+        // Clear spawn points with some randomness to avoid predictable patterns
+        // Add random variation to clearance size (2-4 tiles in each direction)
 
-        // Enemy spawn 1 (left): cols 1-3, rows 1-3 (minimal for normal tanks)
-        for (int row = 1; row <= 3; row++) {
-            for (int col = 1; col <= 3; col++) {
+        // Enemy spawn 1 (left): variable clearance
+        int leftRows = 2 + random.nextInt(3); // 2-4 rows
+        int leftCols = 2 + random.nextInt(3); // 2-4 cols
+        for (int row = 1; row <= leftRows; row++) {
+            for (int col = 1; col <= leftCols; col++) {
                 tiles[row][col] = GameMap.TileType.EMPTY;
             }
         }
 
-        // Enemy spawn 2 (center): cols 10-16, rows 1-5 (wider for BOSS tank which is 4x size)
-        for (int row = 1; row <= 5; row++) {
-            for (int col = 10; col <= 16; col++) {
+        // Enemy spawn 2 (center): wider for BOSS tank, but still some variation
+        int centerRows = 4 + random.nextInt(2); // 4-5 rows
+        int centerColStart = 9 + random.nextInt(2); // 9-10
+        int centerColEnd = 16 - random.nextInt(2); // 15-16
+        for (int row = 1; row <= centerRows; row++) {
+            for (int col = centerColStart; col <= centerColEnd; col++) {
                 tiles[row][col] = GameMap.TileType.EMPTY;
             }
         }
 
-        // Enemy spawn 3 (right): cols 23-25, rows 1-3 (minimal for normal tanks)
-        for (int row = 1; row <= 3; row++) {
-            for (int col = 23; col <= 25; col++) {
+        // Enemy spawn 3 (right): variable clearance
+        int rightRows = 2 + random.nextInt(3); // 2-4 rows
+        int rightCols = 2 + random.nextInt(3); // 2-4 cols
+        for (int row = 1; row <= rightRows; row++) {
+            for (int col = width - 2 - rightCols; col <= width - 2; col++) {
                 tiles[row][col] = GameMap.TileType.EMPTY;
             }
         }
 
-        // Player spawn points (bottom) - minimal clearance around spawn positions
-        // Player 1 spawn area (left side)
-        for (int row = 23; row <= height - 2; row++) {
-            for (int col = 7; col <= 10; col++) {
-                tiles[row][col] = GameMap.TileType.EMPTY;
-            }
-        }
-        // Player 2 spawn area (right side)
-        for (int row = 23; row <= height - 2; row++) {
-            for (int col = 15; col <= 18; col++) {
+        // Player spawn points (bottom) - variable clearance
+        // Avoid base protection area (cols 11-13, rows 23-25)
+        int p1ColStart = 6 + random.nextInt(2); // 6-7
+        int p1ColEnd = 9 + random.nextInt(2); // 9-10 (stay away from col 11)
+        int p1RowStart = 22 + random.nextInt(2); // 22-23
+        for (int row = p1RowStart; row <= height - 2; row++) {
+            for (int col = p1ColStart; col <= p1ColEnd; col++) {
+                // Skip base protection area
+                if (row >= 23 && row <= 25 && col >= 11 && col <= 13) continue;
                 tiles[row][col] = GameMap.TileType.EMPTY;
             }
         }
 
-        // No forced vertical paths - tanks navigate using AI
+        int p2ColStart = 14 + random.nextInt(2); // 14-15 (stay away from col 13)
+        int p2ColEnd = 18 + random.nextInt(2); // 18-19
+        int p2RowStart = 22 + random.nextInt(2); // 22-23
+        for (int row = p2RowStart; row <= height - 2; row++) {
+            for (int col = p2ColStart; col <= p2ColEnd; col++) {
+                // Skip base protection area
+                if (row >= 23 && row <= 25 && col >= 11 && col <= 13) continue;
+                tiles[row][col] = GameMap.TileType.EMPTY;
+            }
+        }
+
+        // Re-apply base protection to ensure it's never cleared
+        tiles[23][11] = GameMap.TileType.BRICK;
+        tiles[23][12] = GameMap.TileType.BRICK;
+        tiles[23][13] = GameMap.TileType.BRICK;
+        tiles[24][11] = GameMap.TileType.BRICK;
+        tiles[24][13] = GameMap.TileType.BRICK;
     }
 }

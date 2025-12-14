@@ -134,6 +134,11 @@ public class GameMap {
     }
 
     public boolean checkTankCollision(double x, double y, int tankSize, boolean canSwim) {
+        // Check map boundaries directly (integer division can miss negative values)
+        if (x < 0 || y < 0 || x + tankSize > width * TILE_SIZE || y + tankSize > height * TILE_SIZE) {
+            return true; // collision with boundary
+        }
+
         int startCol = (int) x / TILE_SIZE;
         int endCol = (int) (x + tankSize - 1) / TILE_SIZE;
         int startRow = (int) y / TILE_SIZE;
@@ -142,7 +147,7 @@ public class GameMap {
         for (int row = startRow; row <= endRow; row++) {
             for (int col = startCol; col <= endCol; col++) {
                 if (row < 0 || row >= height || col < 0 || col >= width) {
-                    return true; // collision with boundary
+                    return true; // collision with boundary (shouldn't happen now but keep as safety)
                 }
                 TileType tile = tiles[row][col];
                 if (tile == TileType.BRICK || tile == TileType.STEEL || tile == TileType.GROUND) {

@@ -267,9 +267,23 @@ public class GameLogic {
                 powerUp.applyEffect(enemy);
                 break;
             case SHIELD:
-                // Enemies get an extra life instead of shield, with color change
+                // Enemies upgrade tank type: REGULAR → ARMORED → HEAVY
                 enemy.setRandomColorOverride();
-                enemy.applyTank();
+                if (enemy.getEnemyType() == Tank.EnemyType.REGULAR) {
+                    // REGULAR becomes ARMORED
+                    enemy.setEnemyType(Tank.EnemyType.ARMORED);
+                    enemy.setMaxHealth(2);
+                    enemy.setHealth(2);
+                } else if (enemy.getEnemyType() == Tank.EnemyType.ARMORED) {
+                    // ARMORED becomes HEAVY
+                    enemy.setEnemyType(Tank.EnemyType.HEAVY);
+                    enemy.setMaxHealth(3);
+                    enemy.setHealth(3);
+                    enemy.applyGun(); // HEAVY can destroy steel
+                } else {
+                    // Other types (HEAVY, FAST, POWER, BOSS) get extra life
+                    enemy.applyTank();
+                }
                 return type;
             case LASER:
                 // Enemies don't get laser - instead become HEAVY or get speed boost

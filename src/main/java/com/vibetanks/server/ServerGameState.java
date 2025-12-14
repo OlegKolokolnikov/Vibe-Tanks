@@ -648,9 +648,26 @@ public class ServerGameState {
                 powerUp.applyEffect(enemy);
             }
             case SHIELD -> {
-                // Enemies get an extra life instead of shield, with color change
+                // Enemies upgrade tank type: REGULAR → ARMORED → HEAVY
                 enemy.setRandomColorOverride();
-                enemy.applyTank();
+                if (enemy.getEnemyType() == Tank.EnemyType.REGULAR) {
+                    // REGULAR becomes ARMORED
+                    enemy.setEnemyType(Tank.EnemyType.ARMORED);
+                    enemy.setMaxHealth(2);
+                    enemy.setHealth(2);
+                    LOG.info("SHIELD: REGULAR enemy upgraded to ARMORED!");
+                } else if (enemy.getEnemyType() == Tank.EnemyType.ARMORED) {
+                    // ARMORED becomes HEAVY
+                    enemy.setEnemyType(Tank.EnemyType.HEAVY);
+                    enemy.setMaxHealth(3);
+                    enemy.setHealth(3);
+                    enemy.applyGun(); // HEAVY can destroy steel
+                    LOG.info("SHIELD: ARMORED enemy upgraded to HEAVY!");
+                } else {
+                    // Other types (HEAVY, FAST, POWER, BOSS) get extra life
+                    enemy.applyTank();
+                    LOG.info("SHIELD: Enemy got extra life!");
+                }
             }
             case FREEZE -> {
                 // Freeze players for 10 seconds

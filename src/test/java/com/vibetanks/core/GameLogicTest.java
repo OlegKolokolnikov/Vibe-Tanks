@@ -503,9 +503,35 @@ class GameLogicTest {
     class ApplyEnemyPowerUpTests {
 
         @Test
-        @DisplayName("SHIELD gives enemy extra life instead")
-        void shieldGivesEnemyExtraLife() {
+        @DisplayName("SHIELD upgrades REGULAR enemy to ARMORED")
+        void shieldUpgradesRegularToArmored() {
             Tank enemy = new Tank(100, 100, Direction.UP, false, 0, Tank.EnemyType.REGULAR);
+            PowerUp powerUp = new PowerUp(100, 100, PowerUp.Type.SHIELD);
+
+            GameLogic.applyEnemyPowerUp(powerUp, enemy);
+
+            assertEquals(Tank.EnemyType.ARMORED, enemy.getEnemyType());
+            assertEquals(2, enemy.getHealth());
+            assertEquals(2, enemy.getMaxHealth());
+        }
+
+        @Test
+        @DisplayName("SHIELD upgrades ARMORED enemy to HEAVY")
+        void shieldUpgradesArmoredToHeavy() {
+            Tank enemy = new Tank(100, 100, Direction.UP, false, 0, Tank.EnemyType.ARMORED);
+            PowerUp powerUp = new PowerUp(100, 100, PowerUp.Type.SHIELD);
+
+            GameLogic.applyEnemyPowerUp(powerUp, enemy);
+
+            assertEquals(Tank.EnemyType.HEAVY, enemy.getEnemyType());
+            assertEquals(3, enemy.getHealth());
+            assertEquals(3, enemy.getMaxHealth());
+        }
+
+        @Test
+        @DisplayName("SHIELD gives HEAVY enemy extra life")
+        void shieldGivesHeavyExtraLife() {
+            Tank enemy = new Tank(100, 100, Direction.UP, false, 0, Tank.EnemyType.HEAVY);
             int initialLives = enemy.getLives();
             PowerUp powerUp = new PowerUp(100, 100, PowerUp.Type.SHIELD);
 

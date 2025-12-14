@@ -278,7 +278,6 @@ public class GameLogic {
                 break;
             case SHIELD:
                 // Enemies upgrade tank type: REGULAR → ARMORED → HEAVY
-                enemy.setRandomColorOverride();
                 if (enemy.getEnemyType() == Tank.EnemyType.REGULAR) {
                     // REGULAR becomes ARMORED
                     enemy.setEnemyType(Tank.EnemyType.ARMORED);

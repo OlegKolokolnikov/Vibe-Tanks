@@ -268,13 +268,26 @@ public class GameSettings {
         return isVeryEasyModeActive(currentLevelNumber);
     }
 
+    // Force hard mode flag for testing/debugging
+    private static boolean forceHardMode = false;
+
     /**
      * Check if hard mode is active.
      * Hard mode is active after 5 consecutive wins.
      * In this mode, BOSS is 10% faster and POWER tanks have extra armor.
      */
     public static boolean isHardModeActive() {
-        return consecutiveWins.get() >= HARD_MODE_THRESHOLD;
+        return forceHardMode || consecutiveWins.get() >= HARD_MODE_THRESHOLD;
+    }
+
+    /**
+     * Toggle forced hard mode (for testing/debugging).
+     * @return true if hard mode is now forced on
+     */
+    public static boolean toggleForceHardMode() {
+        forceHardMode = !forceHardMode;
+        System.out.println("[GameSettings] Force hard mode: " + forceHardMode);
+        return forceHardMode;
     }
 
     /**

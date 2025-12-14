@@ -5,6 +5,7 @@ import com.vibetanks.core.Base;
 import com.vibetanks.core.Bullet;
 import com.vibetanks.core.Direction;
 import com.vibetanks.core.GameMap;
+import com.vibetanks.core.GameSettings;
 import com.vibetanks.core.Laser;
 import com.vibetanks.core.Tank;
 import com.vibetanks.network.PlayerInput;
@@ -23,6 +24,7 @@ public class InputHandler {
     private Direction lastDirection;
     private boolean wasMoving;
     private GameMap gameMap;
+    private boolean hardModeTogglePending = false; // Flag for H key toggle
 
     // Direction keys for priority tracking
     private static final Set<KeyCode> DIRECTION_KEYS = Set.of(
@@ -45,6 +47,10 @@ public class InputHandler {
             if (DIRECTION_KEYS.contains(code)) {
                 directionKeyOrder.remove(code); // Remove if already present
                 directionKeyOrder.addLast(code); // Add as most recent
+            }
+            // H key toggles hard mode (for testing)
+            if (code == KeyCode.H) {
+                hardModeTogglePending = true;
             }
             event.consume();
         });
@@ -152,5 +158,14 @@ public class InputHandler {
     // Check if ENTER is pressed (for life request)
     public boolean isEnterPressed() {
         return pressedKeys.contains(KeyCode.ENTER);
+    }
+
+    // Check if H was pressed to toggle hard mode (consumes the flag)
+    public boolean consumeHardModeToggle() {
+        if (hardModeTogglePending) {
+            hardModeTogglePending = false;
+            return true;
+        }
+        return false;
     }
 }

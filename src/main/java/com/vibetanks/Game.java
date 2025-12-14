@@ -593,6 +593,14 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         boolean isPlayerFrozen = powerUpEffectManager.arePlayersFrozen();
         inputHandler.handleInput(gameMap, bullets, lasers, soundManager, allTanks, base, isPlayerFrozen);
 
+        // Check for H key to toggle hard mode (for testing)
+        if (inputHandler.consumeHardModeToggle()) {
+            boolean hardMode = GameSettings.toggleForceHardMode();
+            // Regenerate level to see the effect immediately
+            gameMap.regenerateCurrentLevel();
+            System.out.println("Hard mode " + (hardMode ? "ON" : "OFF") + " - Level regenerated");
+        }
+
         // Update base protection from SHOVEL power-up (via PowerUpEffectManager)
         powerUpEffectManager.updateBaseProtection(gameMap);
 

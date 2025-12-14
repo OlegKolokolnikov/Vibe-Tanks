@@ -20,7 +20,9 @@ copy /Y target\vibe-tanks-1.0-SNAPSHOT-shaded.jar target\jpackage-input\
 
 echo.
 echo Step 3: Creating native app image...
-jpackage --name VibeTanks --app-version 1.0.0 --vendor VibeTanks --dest target\dist --input target\jpackage-input --main-jar vibe-tanks-1.0-SNAPSHOT-shaded.jar --main-class com.vibetanks.Launcher --type app-image
+set ICON_PARAM=
+if exist VibeTanks.ico set ICON_PARAM=--icon VibeTanks.ico
+jpackage --name VibeTanks --app-version 1.0.0 --vendor VibeTanks --dest target\dist --input target\jpackage-input --main-jar vibe-tanks-1.0-SNAPSHOT-shaded.jar --main-class com.vibetanks.Launcher --type app-image %ICON_PARAM%
 
 if %ERRORLEVEL% neq 0 (
     echo Native packaging failed!

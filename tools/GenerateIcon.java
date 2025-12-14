@@ -1,17 +1,17 @@
 import java.awt.*;
 import java.awt.geom.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
+import java.io.*;
 import javax.imageio.ImageIO;
 
 /**
- * Generates app icon for VibeTanks.
+ * Generates app icons for VibeTanks (macOS and Windows).
  * Run with: java tools/GenerateIcon.java
  */
 public class GenerateIcon {
 
     public static void main(String[] args) throws Exception {
-        // Create iconset directory
+        // Create iconset directory for macOS
         File iconsetDir = new File("VibeTanks.iconset");
         iconsetDir.mkdirs();
 
@@ -31,8 +31,75 @@ public class GenerateIcon {
             }
         }
 
-        System.out.println("Icon set created in VibeTanks.iconset/");
+        System.out.println("macOS icon set created in VibeTanks.iconset/");
         System.out.println("Run: iconutil -c icns VibeTanks.iconset");
+
+        // Generate Windows ICO file
+        generateWindowsIco();
+        System.out.println("Windows icon created: VibeTanks.ico");
+    }
+
+    /**
+     * Generate Windows ICO file with multiple sizes.
+     * ICO format: Header + Directory entries + Image data (PNG format)
+     */
+    private static void generateWindowsIco() throws Exception {
+        // Windows icon sizes (standard sizes for best compatibility)
+        int[] icoSizes = {16, 32, 48, 64, 128, 256};
+
+        // Generate PNG data for each size
+        byte[][] pngData = new byte[icoSizes.length][];
+        for (int i = 0; i < icoSizes.length; i++) {
+            BufferedImage img = createIcon(icoSizes[i]);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(img, "PNG", baos);
+            pngData[i] = baos.toByteArray();
+        }
+
+        // Write ICO file
+        try (DataOutputStream dos = new DataOutputStream(
+                new BufferedOutputStream(new FileOutputStream("VibeTanks.ico")))) {
+
+            // ICO Header (6 bytes)
+            dos.writeShort(swapShort(0));     // Reserved, must be 0
+            dos.writeShort(swapShort(1));     // Image type: 1 = ICO
+            dos.writeShort(swapShort(icoSizes.length)); // Number of images
+
+            // Calculate offset to first image data
+            int dataOffset = 6 + (icoSizes.length * 16); // Header + directory entries
+
+            // Write directory entries (16 bytes each)
+            for (int i = 0; i < icoSizes.length; i++) {
+                int size = icoSizes[i];
+                dos.writeByte(size == 256 ? 0 : size); // Width (0 = 256)
+                dos.writeByte(size == 256 ? 0 : size); // Height (0 = 256)
+                dos.writeByte(0);              // Color palette (0 = no palette)
+                dos.writeByte(0);              // Reserved
+                dos.writeShort(swapShort(1));  // Color planes
+                dos.writeShort(swapShort(32)); // Bits per pixel
+                dos.writeInt(swapInt(pngData[i].length)); // Image data size
+                dos.writeInt(swapInt(dataOffset));        // Offset to image data
+
+                dataOffset += pngData[i].length;
+            }
+
+            // Write image data (PNG format)
+            for (byte[] data : pngData) {
+                dos.write(data);
+            }
+        }
+    }
+
+    // Swap bytes for little-endian (ICO uses little-endian)
+    private static short swapShort(int value) {
+        return (short) (((value & 0xFF) << 8) | ((value >> 8) & 0xFF));
+    }
+
+    private static int swapInt(int value) {
+        return ((value & 0xFF) << 24) |
+               ((value & 0xFF00) << 8) |
+               ((value >> 8) & 0xFF00) |
+               ((value >> 24) & 0xFF);
     }
 
     private static BufferedImage createIcon(int size) {

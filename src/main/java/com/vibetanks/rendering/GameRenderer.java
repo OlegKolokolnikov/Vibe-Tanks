@@ -117,21 +117,19 @@ public class GameRenderer {
             ufo.render(gc);
         }
 
-        // Render "Lost it!" message when UFO escapes
-        if (ufoLostMessageTimer > 0) {
-            effectRenderer.renderUfoLostMessage(ufoLostMessageTimer);
-        }
-
-        // Render "Poor ALF :(" message when UFO is killed
-        if (ufoKilledMessageTimer > 0) {
-            effectRenderer.renderUfoKilledMessage(ufoKilledMessageTimer);
-        }
-
         // Render trees ON TOP of tanks to make tanks partially visible in forest
         gameMap.renderTrees(gc);
 
         // Render burning trees with fire animation (on top of everything)
         gameMap.renderBurningTiles(gc);
+
+        // Render UFO messages AFTER trees so text is visible above forest
+        if (ufoLostMessageTimer > 0) {
+            effectRenderer.renderUfoLostMessage(ufoLostMessageTimer);
+        }
+        if (ufoKilledMessageTimer > 0) {
+            effectRenderer.renderUfoKilledMessage(ufoKilledMessageTimer);
+        }
     }
 
     /**

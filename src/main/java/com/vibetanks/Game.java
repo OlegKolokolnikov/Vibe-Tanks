@@ -1004,19 +1004,19 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             ufo.render(gc);
         }
 
-        // Render UFO messages via UFOManager
+        // Render trees ON TOP of tanks to make tanks partially visible in forest
+        gameMap.renderTrees(gc);
+
+        // Render burning trees with fire animation (on top of everything)
+        gameMap.renderBurningTiles(gc);
+
+        // Render UFO messages AFTER trees so text is visible above forest
         if (ufoManager.getUfoLostMessageTimer() > 0) {
             effectRenderer.renderUfoLostMessage(ufoManager.getUfoLostMessageTimer());
         }
         if (ufoManager.getUfoKilledMessageTimer() > 0) {
             effectRenderer.renderUfoKilledMessage(ufoManager.getUfoKilledMessageTimer());
         }
-
-        // Render trees ON TOP of tanks to make tanks partially visible in forest
-        gameMap.renderTrees(gc);
-
-        // Render burning trees with fire animation (on top of everything)
-        gameMap.renderBurningTiles(gc);
 
         // Render UI
         renderUI();

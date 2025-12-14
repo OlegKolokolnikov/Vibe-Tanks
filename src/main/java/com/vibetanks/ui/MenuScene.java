@@ -60,7 +60,13 @@ public class MenuScene {
         // Play button
         Button playButton = new Button("PLAY");
         styleButton(playButton);
-        playButton.setOnAction(e -> startGame(1, GameSettings.getEnemyCount()));
+        playButton.setOnAction(e -> startGame(1, GameSettings.getEnemyCount(), false));
+
+        // Play 2 Players button (Local multiplayer)
+        Button play2PlayersButton = new Button("PLAY 2 PLAYERS");
+        styleButton(play2PlayersButton);
+        ButtonStyler.applyCyanTheme(play2PlayersButton);
+        play2PlayersButton.setOnAction(e -> startGame(2, GameSettings.getEnemyCount(), true));
 
         // Host Game button (Online Multiplayer)
         Button hostButton = new Button("HOST GAME (ONLINE)");
@@ -96,11 +102,11 @@ public class MenuScene {
         instructions.setFont(Font.font("Arial", FontWeight.NORMAL, 14));
         instructions.setTextFill(Color.LIGHTGRAY);
 
-        Label controls = new Label("Controls: Arrow Keys or WASD + SPACE to shoot");
-        controls.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
+        Label controls = new Label("1P: Arrows/WASD + SPACE | 2P Local: P1=WASD+CTRL, P2=Arrows+SPACE");
+        controls.setFont(Font.font("Arial", FontWeight.NORMAL, 11));
         controls.setTextFill(Color.LIGHTGRAY);
 
-        Label multiplayerInfo = new Label("Online: Host or join a game with 2 players!");
+        Label multiplayerInfo = new Label("Online: Host or join a game with up to 4 players!");
         multiplayerInfo.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
         multiplayerInfo.setTextFill(Color.LIGHTBLUE);
 
@@ -141,6 +147,7 @@ public class MenuScene {
             title,
             subtitle,
             playButton,
+            play2PlayersButton,
             hostButton,
             joinButton,
             editorButton,
@@ -185,7 +192,10 @@ public class MenuScene {
         ));
     }
 
-    private void startGame(int playerCount, int totalEnemies) {
+    private void startGame(int playerCount, int totalEnemies, boolean localMultiplayer) {
+        // Set local multiplayer mode flag
+        GameSettings.setLocalMultiplayerMode(localMultiplayer);
+
         javafx.scene.layout.Pane gameRoot = new javafx.scene.layout.Pane();
         Scene gameScene = new Scene(gameRoot, windowWidth, windowHeight);
 

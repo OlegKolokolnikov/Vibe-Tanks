@@ -56,6 +56,9 @@ public class GameSettings {
     // Single player local game flag (affects HEAVY tank spawn count)
     private static volatile boolean singlePlayerLocalGame = false;
 
+    // Local multiplayer mode (2 players on same keyboard)
+    private static volatile boolean localMultiplayerMode = false;
+
     static {
         loadSettings();
     }
@@ -305,5 +308,20 @@ public class GameSettings {
      */
     public static boolean isSinglePlayerLocalGame() {
         return singlePlayerLocalGame;
+    }
+
+    /**
+     * Set whether this is local multiplayer mode (2 players on same keyboard).
+     * Player 1: WASD + CTRL, Player 2: Arrows + SPACE
+     */
+    public static void setLocalMultiplayerMode(boolean localMultiplayer) {
+        localMultiplayerMode = localMultiplayer;
+    }
+
+    /**
+     * Check if this is local multiplayer mode.
+     */
+    public static boolean isLocalMultiplayerMode() {
+        return localMultiplayerMode;
     }
 }

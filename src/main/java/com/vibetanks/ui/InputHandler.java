@@ -5,6 +5,7 @@ import com.vibetanks.core.Base;
 import com.vibetanks.core.Bullet;
 import com.vibetanks.core.Direction;
 import com.vibetanks.core.GameMap;
+import com.vibetanks.core.GameSettings;
 import com.vibetanks.core.Laser;
 import com.vibetanks.core.Tank;
 import com.vibetanks.network.PlayerInput;
@@ -18,25 +19,41 @@ import java.util.Set;
 
 public class InputHandler {
     private Set<KeyCode> pressedKeys;
-    private LinkedList<KeyCode> directionKeyOrder; // Track order of direction key presses
+    private LinkedList<KeyCode> directionKeyOrder; // Track order of direction key presses (single player / player 2)
+    private LinkedList<KeyCode> player1DirectionKeyOrder; // Track order of direction key presses (player 1 in local multiplayer)
     private List<Tank> playerTanks;
     private Direction lastDirection;
+    private Direction lastDirectionPlayer1;
+    private Direction lastDirectionPlayer2;
     private boolean wasMoving;
+    private boolean wasMovingPlayer1;
+    private boolean wasMovingPlayer2;
     private GameMap gameMap;
 
-    // Direction keys for priority tracking
+    // Direction keys for single player / player 2 (arrows)
     private static final Set<KeyCode> DIRECTION_KEYS = Set.of(
         KeyCode.UP, KeyCode.DOWN, KeyCode.LEFT, KeyCode.RIGHT,
         KeyCode.W, KeyCode.S, KeyCode.A, KeyCode.D
     );
 
-    // All players use: Arrow keys + Space
+    // Direction keys for player 1 in local multiplayer (WASD only)
+    private static final Set<KeyCode> PLAYER1_DIRECTION_KEYS = Set.of(
+        KeyCode.W, KeyCode.S, KeyCode.A, KeyCode.D
+    );
+
+    // Direction keys for player 2 in local multiplayer (arrows only)
+    private static final Set<KeyCode> PLAYER2_DIRECTION_KEYS = Set.of(
+        KeyCode.UP, KeyCode.DOWN, KeyCode.LEFT, KeyCode.RIGHT
+    );
 
     public InputHandler(Pane pane, List<Tank> playerTanks) {
         this.playerTanks = playerTanks;
         this.pressedKeys = new HashSet<>();
         this.directionKeyOrder = new LinkedList<>();
+        this.player1DirectionKeyOrder = new LinkedList<>();
         this.wasMoving = false;
+        this.wasMovingPlayer1 = false;
+        this.wasMovingPlayer2 = false;
 
         pane.setOnKeyPressed(event -> {
             KeyCode code = event.getCode();
@@ -46,6 +63,11 @@ public class InputHandler {
                 directionKeyOrder.remove(code); // Remove if already present
                 directionKeyOrder.addLast(code); // Add as most recent
             }
+            // Also track player 1 specific keys in local multiplayer
+            if (PLAYER1_DIRECTION_KEYS.contains(code)) {
+                player1DirectionKeyOrder.remove(code);
+                player1DirectionKeyOrder.addLast(code);
+            }
             event.consume();
         });
 
@@ -53,6 +75,7 @@ public class InputHandler {
             KeyCode code = event.getCode();
             pressedKeys.remove(code);
             directionKeyOrder.remove(code);
+            player1DirectionKeyOrder.remove(code);
             event.consume();
         });
 
@@ -65,6 +88,7 @@ public class InputHandler {
             if (isFocused) {
                 pressedKeys.clear();
                 directionKeyOrder.clear();
+                player1DirectionKeyOrder.clear();
             }
         });
     }
@@ -74,12 +98,18 @@ public class InputHandler {
     }
 
     public void handleInput(GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
-        // Handle single local player with arrow keys + space
-        if (playerTanks.size() >= 1) {
+        // Check if local multiplayer mode
+        if (GameSettings.isLocalMultiplayerMode() && playerTanks.size() >= 2) {
+            // Local 2-player mode: Player 1 = WASD + CTRL, Player 2 = Arrows + SPACE
+            handlePlayer1Input(playerTanks.get(0), map, bullets, lasers, soundManager, allTanks, base, movementFrozen);
+            handlePlayer2Input(playerTanks.get(1), map, bullets, lasers, soundManager, allTanks, base, movementFrozen);
+        } else if (playerTanks.size() >= 1) {
+            // Single player mode: Arrow keys or WASD + SPACE
             handlePlayerInput(playerTanks.get(0), map, bullets, lasers, soundManager, allTanks, base, movementFrozen);
         }
     }
 
+    // Single player input handler (arrows or WASD + SPACE)
     private void handlePlayerInput(Tank player, GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
         if (!player.isAlive()) return;
 
@@ -116,7 +146,77 @@ public class InputHandler {
         }
     }
 
-    // Get the most recently pressed direction (last in the order list)
+    // Player 1 input handler for local multiplayer (WASD + CTRL)
+    private void handlePlayer1Input(Tank player, GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
+        if (!player.isAlive()) return;
+
+        boolean isMoving = false;
+
+        // Movement with WASD only (skip if frozen)
+        if (!movementFrozen) {
+            Direction moveDirection = getMostRecentPlayer1Direction();
+            if (moveDirection != null) {
+                player.move(moveDirection, map, allTanks, base);
+                lastDirectionPlayer1 = moveDirection;
+                isMoving = true;
+            }
+
+            // Check if just stopped moving on ice - trigger sliding
+            if (wasMovingPlayer1 && !isMoving && lastDirectionPlayer1 != null) {
+                player.startSliding(lastDirectionPlayer1, map);
+            }
+            wasMovingPlayer1 = isMoving;
+        }
+
+        // Shooting with CTRL (allowed even when frozen)
+        if (pressedKeys.contains(KeyCode.CONTROL)) {
+            if (player.hasLaser()) {
+                Laser laser = player.shootLaser(soundManager);
+                if (laser != null) {
+                    lasers.add(laser);
+                }
+            } else {
+                player.shoot(bullets, soundManager);
+            }
+        }
+    }
+
+    // Player 2 input handler for local multiplayer (Arrows + SPACE)
+    private void handlePlayer2Input(Tank player, GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
+        if (!player.isAlive()) return;
+
+        boolean isMoving = false;
+
+        // Movement with arrow keys only (skip if frozen)
+        if (!movementFrozen) {
+            Direction moveDirection = getMostRecentPlayer2Direction();
+            if (moveDirection != null) {
+                player.move(moveDirection, map, allTanks, base);
+                lastDirectionPlayer2 = moveDirection;
+                isMoving = true;
+            }
+
+            // Check if just stopped moving on ice - trigger sliding
+            if (wasMovingPlayer2 && !isMoving && lastDirectionPlayer2 != null) {
+                player.startSliding(lastDirectionPlayer2, map);
+            }
+            wasMovingPlayer2 = isMoving;
+        }
+
+        // Shooting with SPACE (allowed even when frozen)
+        if (pressedKeys.contains(KeyCode.SPACE)) {
+            if (player.hasLaser()) {
+                Laser laser = player.shootLaser(soundManager);
+                if (laser != null) {
+                    lasers.add(laser);
+                }
+            } else {
+                player.shoot(bullets, soundManager);
+            }
+        }
+    }
+
+    // Get the most recently pressed direction (last in the order list) - for single player
     private Direction getMostRecentDirection() {
         if (directionKeyOrder.isEmpty()) {
             return null;
@@ -126,12 +226,53 @@ public class InputHandler {
         return keyCodeToDirection(mostRecent);
     }
 
+    // Get the most recently pressed direction for Player 1 (WASD only)
+    private Direction getMostRecentPlayer1Direction() {
+        if (player1DirectionKeyOrder.isEmpty()) {
+            return null;
+        }
+        KeyCode mostRecent = player1DirectionKeyOrder.getLast();
+        return keyCodeToPlayer1Direction(mostRecent);
+    }
+
+    // Get the most recently pressed direction for Player 2 (arrows only)
+    private Direction getMostRecentPlayer2Direction() {
+        // Filter directionKeyOrder to only include arrow keys
+        for (int i = directionKeyOrder.size() - 1; i >= 0; i--) {
+            KeyCode code = directionKeyOrder.get(i);
+            if (PLAYER2_DIRECTION_KEYS.contains(code)) {
+                return keyCodeToPlayer2Direction(code);
+            }
+        }
+        return null;
+    }
+
     private Direction keyCodeToDirection(KeyCode code) {
         return switch (code) {
             case UP, W -> Direction.UP;
             case DOWN, S -> Direction.DOWN;
             case LEFT, A -> Direction.LEFT;
             case RIGHT, D -> Direction.RIGHT;
+            default -> null;
+        };
+    }
+
+    private Direction keyCodeToPlayer1Direction(KeyCode code) {
+        return switch (code) {
+            case W -> Direction.UP;
+            case S -> Direction.DOWN;
+            case A -> Direction.LEFT;
+            case D -> Direction.RIGHT;
+            default -> null;
+        };
+    }
+
+    private Direction keyCodeToPlayer2Direction(KeyCode code) {
+        return switch (code) {
+            case UP -> Direction.UP;
+            case DOWN -> Direction.DOWN;
+            case LEFT -> Direction.LEFT;
+            case RIGHT -> Direction.RIGHT;
             default -> null;
         };
     }

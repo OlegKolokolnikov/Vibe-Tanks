@@ -782,6 +782,7 @@ public class ServerGameState {
         state.victory = victory;
         state.baseAlive = base.isAlive();
         state.remainingEnemies = enemySpawner.getRemainingEnemies();
+        state.totalEnemiesLeft = enemySpawner.getRemainingEnemies() + enemyTanks.size();
         state.connectedPlayers = actualConnectedPlayers;
 
         // Players - use array assignment

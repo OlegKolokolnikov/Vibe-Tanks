@@ -61,6 +61,7 @@ public class GameStateBuilder {
         state.gameOver = gameOver;
         state.victory = victory;
         state.remainingEnemies = enemySpawner.getRemainingEnemies();
+        state.totalEnemiesLeft = enemySpawner.getRemainingEnemies() + enemyTanks.size();
         state.levelNumber = gameMap.getLevelNumber();
 
         // Build base state

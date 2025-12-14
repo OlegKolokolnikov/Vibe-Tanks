@@ -142,7 +142,8 @@ public class GameRenderer {
                           int[] playerKills, int[] playerScores,
                           PlayerDisplayNameProvider nameProvider) {
         gc.setFill(Color.WHITE);
-        gc.fillText("Level: " + gameMap.getLevelNumber() + "  Enemies: " + enemySpawner.getRemainingEnemies(), 10, 20);
+        int totalEnemiesLeft = enemySpawner.getRemainingEnemies() + enemyTanks.size();
+        gc.fillText("Level: " + gameMap.getLevelNumber() + "  Enemies: " + totalEnemiesLeft, 10, 20);
 
         // Display player info and power-ups
         for (int i = 0; i < displayCount && i < playerTanks.size(); i++) {

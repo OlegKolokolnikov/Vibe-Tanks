@@ -31,7 +31,8 @@ public class GameState implements Serializable {
     // Game state
     public boolean gameOver;
     public boolean victory;
-    public int remainingEnemies;
+    public int remainingEnemies; // Enemies left to spawn (for spawner sync)
+    public int totalEnemiesLeft; // Total enemies left (to spawn + on screen) for display
     public int connectedPlayers; // Number of connected players (1-4)
     public int levelNumber; // Current level number for sync
 

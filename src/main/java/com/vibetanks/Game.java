@@ -1082,7 +1082,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
 
     private void renderUI() {
         // Render main HUD (level info, player stats, power-ups)
-        hudRenderer.renderHUD(gameMap.getLevelNumber(), enemySpawner.getRemainingEnemies(),
+        // Total enemies left = enemies to spawn + enemies on screen
+        int totalEnemiesLeft = enemySpawner.getRemainingEnemies() + enemyTanks.size();
+        hudRenderer.renderHUD(gameMap.getLevelNumber(), totalEnemiesLeft,
                 getDisplayPlayerCount(), playerTanks, playerKills, playerScores, this);
 
         // Render BOSS health indicator if BOSS is alive

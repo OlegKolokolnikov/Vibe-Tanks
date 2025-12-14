@@ -219,10 +219,16 @@ public class LevelTransitionManager {
 
     /**
      * Clear all projectiles and power-ups.
+     * Also reset ID counters to stay in sync with server.
      */
     private static void clearProjectilesAndPowerUps(LevelTransitionContext ctx) {
         ctx.getBullets().clear();
         ctx.getLasers().clear();
         ctx.getPowerUps().clear();
+
+        // Reset ID counters to stay in sync with server (which also resets on level transitions)
+        Bullet.resetIdCounter();
+        Laser.resetIdCounter();
+        PowerUp.resetIdCounter();
     }
 }

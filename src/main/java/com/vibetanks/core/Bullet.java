@@ -2,17 +2,18 @@ package com.vibetanks.core;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Bullet {
     private static final int DEFAULT_SIZE = GameConstants.BULLET_SIZE;
     private static final double SPEED = GameConstants.BULLET_SPEED;
-    private static long nextId = 1; // Global bullet ID counter
+    private static final AtomicLong nextId = new AtomicLong(1); // Thread-safe ID counter
 
     /**
      * Reset bullet ID counter. Call this at level start/restart to prevent overflow.
      */
     public static void resetIdCounter() {
-        nextId = 1;
+        nextId.set(1);
     }
 
     private long id;
@@ -34,7 +35,7 @@ public class Bullet {
     }
 
     public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber, int size) {
-        this.id = nextId++;
+        this.id = nextId.getAndIncrement();
         this.x = x;
         this.y = y;
         this.direction = direction;

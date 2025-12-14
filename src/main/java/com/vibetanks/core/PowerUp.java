@@ -2,17 +2,18 @@ package com.vibetanks.core;
 
 import com.vibetanks.rendering.PowerUpRenderer;
 import javafx.scene.canvas.GraphicsContext;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class PowerUp {
     private static final int SIZE = 32; // Same size as tank
     private static final int LIFETIME = GameConstants.POWERUP_LIFETIME;
-    private static long nextId = 1;
+    private static final AtomicLong nextId = new AtomicLong(1); // Thread-safe ID counter
 
     /**
      * Reset power-up ID counter. Call this at level start/restart to prevent overflow.
      */
     public static void resetIdCounter() {
-        nextId = 1;
+        nextId.set(1);
     }
 
     public enum Type {
@@ -37,7 +38,7 @@ public class PowerUp {
     private int lifetime;
 
     public PowerUp(double x, double y) {
-        this.id = nextId++;
+        this.id = nextId.getAndIncrement();
         this.x = x;
         this.y = y;
 
@@ -69,7 +70,7 @@ public class PowerUp {
     }
 
     public PowerUp(double x, double y, Type type) {
-        this.id = nextId++;
+        this.id = nextId.getAndIncrement();
         this.x = x;
         this.y = y;
         this.lifetime = LIFETIME;

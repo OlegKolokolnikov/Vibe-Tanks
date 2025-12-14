@@ -2,6 +2,7 @@ package com.vibetanks.core;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Laser beam that passes through all obstacles, only damaging enemies/tanks.
@@ -11,13 +12,13 @@ import javafx.scene.paint.Color;
 public class Laser {
     private static final int BEAM_WIDTH = GameConstants.LASER_BEAM_WIDTH;
     private static final int LIFETIME = GameConstants.LASER_LIFETIME;
-    private static long nextId = 1;
+    private static final AtomicLong nextId = new AtomicLong(1); // Thread-safe ID counter
 
     /**
      * Reset laser ID counter. Call this at level start/restart to prevent overflow.
      */
     public static void resetIdCounter() {
-        nextId = 1;
+        nextId.set(1);
     }
 
     private long id;
@@ -34,7 +35,24 @@ public class Laser {
     private static final double PLAY_AREA_HEIGHT = 26 * 32; // 832 pixels
 
     public Laser(double startX, double startY, Direction direction, boolean fromEnemy, int ownerPlayerNumber) {
-        this.id = nextId++;
+        this.id = nextId.getAndIncrement();
+        this.startX = startX;
+        this.startY = startY;
+        this.direction = direction;
+        this.fromEnemy = fromEnemy;
+        this.ownerPlayerNumber = ownerPlayerNumber;
+        this.lifetime = LIFETIME;
+
+        // Calculate beam length to edge of play area
+        calculateLength();
+    }
+
+    /**
+     * Constructor with explicit ID (for network sync).
+     * Avoids wasting IDs by not incrementing nextId.
+     */
+    public Laser(long id, double startX, double startY, Direction direction, boolean fromEnemy, int ownerPlayerNumber) {
+        this.id = id;
         this.startX = startX;
         this.startY = startY;
         this.direction = direction;

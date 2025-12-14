@@ -393,13 +393,14 @@ public class GameStateApplier {
                 if (firstStateReceived && !seenLaserIds.contains(lData.id) && lData.ownerPlayerNumber != localPlayerNum) {
                     soundManager.playLaser();
                 }
+                // Use explicit ID constructor to preserve network-synced ID
                 Laser laser = new Laser(
+                    lData.id,
                     lData.startX, lData.startY,
                     Direction.values()[lData.direction],
                     lData.fromEnemy,
                     lData.ownerPlayerNumber
                 );
-                laser.setId(lData.id);
                 lasers.add(laser);
             }
         }
@@ -412,9 +413,12 @@ public class GameStateApplier {
         powerUps.clear();
 
         for (GameState.PowerUpData pData : state.powerUps) {
+            // Use explicit ID constructor to preserve network-synced ID
             PowerUp powerUp = new PowerUp(
+                pData.id,
                 pData.x, pData.y,
-                PowerUp.Type.values()[pData.type]
+                PowerUp.Type.values()[pData.type],
+                pData.lifetime
             );
             powerUps.add(powerUp);
         }
@@ -587,6 +591,11 @@ public class GameStateApplier {
         ctx.getBullets().clear();
         ctx.getLasers().clear();
         ctx.getPowerUps().clear();
+
+        // Reset ID counters to stay in sync with server (which also resets on level transitions)
+        Bullet.resetIdCounter();
+        Laser.resetIdCounter();
+        PowerUp.resetIdCounter();
 
         // Clear enemy tanks - will be recreated from state
         ctx.getEnemyTanks().clear();

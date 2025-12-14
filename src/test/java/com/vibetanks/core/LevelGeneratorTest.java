@@ -109,8 +109,8 @@ class LevelGeneratorTest {
         void generatedLevelShouldHaveClearEnemySpawnAreas() {
             generator.generateRandomLevel(tiles);
 
-            // Spawn areas have variable clearance (2-4 tiles), but minimum 2x2 is always clear
-            // Spawn 1: top-left (minimum rows 1-2, cols 1-2)
+            // Spawn areas have minimal 2x2 clearance
+            // Spawn 1: top-left (rows 1-2, cols 1-2)
             for (int row = 1; row <= 2; row++) {
                 for (int col = 1; col <= 2; col++) {
                     assertEquals(GameMap.TileType.EMPTY, tiles[row][col],
@@ -118,15 +118,15 @@ class LevelGeneratorTest {
                 }
             }
 
-            // Spawn 2: top-center (minimum rows 1-4, cols 10-15 for BOSS)
-            for (int row = 1; row <= 4; row++) {
-                for (int col = 10; col <= 15; col++) {
+            // Spawn 2: top-center (rows 1-5, cols 10-16 for BOSS)
+            for (int row = 1; row <= 5; row++) {
+                for (int col = 10; col <= 16; col++) {
                     assertEquals(GameMap.TileType.EMPTY, tiles[row][col],
                         "Enemy spawn 2 should be clear at (" + row + "," + col + ")");
                 }
             }
 
-            // Spawn 3: top-right (minimum rows 1-2, last 2 cols before border)
+            // Spawn 3: top-right (rows 1-2, last 2 cols before border)
             for (int row = 1; row <= 2; row++) {
                 assertEquals(GameMap.TileType.EMPTY, tiles[row][WIDTH - 3],
                     "Enemy spawn 3 should be clear at (" + row + "," + (WIDTH - 3) + ")");
@@ -312,18 +312,17 @@ class LevelGeneratorTest {
         void playerSpawnAreasShouldBeClear() {
             generator.generateRandomLevel(tiles);
 
-            // Player spawn areas have variable clearance, but minimum area is always clear
-            // Player 1 spawn area: around cols 6-9, rows 23-24
-            // Player 2 spawn area: around cols 14-18, rows 23-24
-            // Check that spawn points themselves are clear (minimum guarantee)
+            // Player spawn areas have minimal clearance
+            // Player 1: cols 7-9, rows 23-24
+            // Player 2: cols 16-18, rows 23-24
             for (int row = 23; row <= 24; row++) {
-                // Player 1 minimum spawn area (cols 6-9)
-                for (int col = 6; col <= 9; col++) {
+                // Player 1 spawn area (cols 7-9)
+                for (int col = 7; col <= 9; col++) {
                     assertEquals(GameMap.TileType.EMPTY, tiles[row][col],
                         "Player 1 spawn at row " + row + ", col " + col);
                 }
-                // Player 2 minimum spawn area (cols 14-17)
-                for (int col = 14; col <= 17; col++) {
+                // Player 2 spawn area (cols 16-18)
+                for (int col = 16; col <= 18; col++) {
                     assertEquals(GameMap.TileType.EMPTY, tiles[row][col],
                         "Player 2 spawn at row " + row + ", col " + col);
                 }

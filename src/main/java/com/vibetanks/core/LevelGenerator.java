@@ -142,35 +142,85 @@ public class LevelGenerator {
     }
 
     /**
-     * Ensure the level has less than 50% empty space.
-     * Adds additional content if needed.
+     * Ensure the level has appropriate content based on mode.
+     * Normal mode: less than 50% empty space (more obstacles)
+     * Hard mode: more than 50% empty space but at least 10% content (more open)
      */
     private void ensureMinimumContent() {
         int maxAttempts = 50; // Prevent infinite loops
         int attempts = 0;
 
-        while (calculateEmptyPercentage() > 0.50 && attempts < maxAttempts) {
-            // Add more content to fill empty space
-            int contentType = random.nextInt(5);
-            switch (contentType) {
-                case 0 -> generateGeometricShape();
-                case 1 -> generateCorridor();
-                case 2 -> generateScatteredBlocks();
-                case 3 -> generateTreePatch();
-                case 4 -> {
-                    // Add a few scattered blocks at once
-                    for (int i = 0; i < 3; i++) {
-                        generateScatteredBlocks();
+        if (GameSettings.isHardModeActive()) {
+            // Hard mode: ensure empty space is between 50% and 90%
+            double emptyPct = calculateEmptyPercentage();
+
+            // If too much content (empty < 50%), remove some tiles
+            while (emptyPct < 0.50 && attempts < maxAttempts) {
+                removeRandomContent();
+                emptyPct = calculateEmptyPercentage();
+                attempts++;
+            }
+
+            // If too empty (empty > 90%), add some content
+            while (emptyPct > 0.90 && attempts < maxAttempts) {
+                generateScatteredBlocks();
+                emptyPct = calculateEmptyPercentage();
+                attempts++;
+            }
+
+            if (attempts > 0) {
+                clearSpawnAreas();
+                LOG.info("Adjusted {} passes to meet hard mode 50-90% empty requirement", attempts);
+            }
+        } else {
+            // Normal mode: ensure less than 50% empty space
+            while (calculateEmptyPercentage() > 0.50 && attempts < maxAttempts) {
+                // Add more content to fill empty space
+                int contentType = random.nextInt(5);
+                switch (contentType) {
+                    case 0 -> generateGeometricShape();
+                    case 1 -> generateCorridor();
+                    case 2 -> generateScatteredBlocks();
+                    case 3 -> generateTreePatch();
+                    case 4 -> {
+                        // Add a few scattered blocks at once
+                        for (int i = 0; i < 3; i++) {
+                            generateScatteredBlocks();
+                        }
                     }
+                }
+                attempts++;
+            }
+
+            // Re-clear spawn areas after adding content
+            if (attempts > 0) {
+                clearSpawnAreas();
+                LOG.info("Added {} content passes to meet 50% fill requirement", attempts);
+            }
+        }
+    }
+
+    /**
+     * Remove random content tiles to create more open space (for hard mode).
+     */
+    private void removeRandomContent() {
+        // Try to find and remove a non-essential tile
+        int attempts = 0;
+        while (attempts < 20) {
+            int row = 2 + random.nextInt(height - 6);
+            int col = 2 + random.nextInt(width - 4);
+
+            GameMap.TileType tile = tiles[row][col];
+            // Only remove destructible content (not borders, base protection, or ground)
+            if (tile == GameMap.TileType.BRICK || tile == GameMap.TileType.TREES ||
+                tile == GameMap.TileType.ICE || tile == GameMap.TileType.WATER) {
+                // Don't remove base protection area
+                if (!(row >= 23 && row <= 25 && col >= 11 && col <= 13)) {
+                    tiles[row][col] = GameMap.TileType.EMPTY;
+                    return;
                 }
             }
             attempts++;
-        }
-
-        // Re-clear spawn areas after adding content
-        if (attempts > 0) {
-            clearSpawnAreas();
-            LOG.info("Added {} content passes to meet 50% fill requirement", attempts);
         }
     }
 

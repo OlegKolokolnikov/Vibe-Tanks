@@ -115,7 +115,63 @@ public class LevelGenerator {
         // Clear spawn areas to ensure tanks can move
         clearSpawnAreas();
 
+        // Ensure less than 50% empty space
+        ensureMinimumContent();
+
         LOG.info("Generating random level {}", "N/A");
+    }
+
+    /**
+     * Calculate percentage of empty tiles (excluding borders and spawn areas).
+     */
+    private double calculateEmptyPercentage() {
+        int totalPlayable = 0;
+        int emptyCount = 0;
+
+        // Count only playable area (excluding border tiles)
+        for (int row = 1; row < height - 1; row++) {
+            for (int col = 1; col < width - 1; col++) {
+                totalPlayable++;
+                if (tiles[row][col] == GameMap.TileType.EMPTY) {
+                    emptyCount++;
+                }
+            }
+        }
+
+        return (double) emptyCount / totalPlayable;
+    }
+
+    /**
+     * Ensure the level has less than 50% empty space.
+     * Adds additional content if needed.
+     */
+    private void ensureMinimumContent() {
+        int maxAttempts = 50; // Prevent infinite loops
+        int attempts = 0;
+
+        while (calculateEmptyPercentage() > 0.50 && attempts < maxAttempts) {
+            // Add more content to fill empty space
+            int contentType = random.nextInt(5);
+            switch (contentType) {
+                case 0 -> generateGeometricShape();
+                case 1 -> generateCorridor();
+                case 2 -> generateScatteredBlocks();
+                case 3 -> generateTreePatch();
+                case 4 -> {
+                    // Add a few scattered blocks at once
+                    for (int i = 0; i < 3; i++) {
+                        generateScatteredBlocks();
+                    }
+                }
+            }
+            attempts++;
+        }
+
+        // Re-clear spawn areas after adding content
+        if (attempts > 0) {
+            clearSpawnAreas();
+            LOG.info("Added {} content passes to meet 50% fill requirement", attempts);
+        }
     }
 
     private void placeTile(int row, int col, GameMap.TileType type) {

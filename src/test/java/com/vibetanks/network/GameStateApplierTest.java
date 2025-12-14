@@ -299,7 +299,7 @@ class GameStateApplierTest {
         @DisplayName("BulletData constructor should set all fields")
         void bulletDataConstructorShouldSetAllFields() {
             GameState.BulletData data = new GameState.BulletData(
-                123L, 100, 200, 0, false, 2, true, 1, 8
+                123L, 100, 200, 0, false, 2, true, 1, 8, false
             );
 
             assertEquals(123L, data.id);

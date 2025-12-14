@@ -842,7 +842,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 }
                 // Handle game-level effects for special power-ups (via PowerUpEffectManager)
                 if (playerResult.activateShovel) {
-                    powerUpEffectManager.activateBaseProtection(gameMap);
+                    // Check if player has ground shovel upgrade (1000 points)
+                    boolean useGround = playerResult.collectorPlayerIndex >= 0 &&
+                        playerResult.collectorPlayerIndex < playerTanks.size() &&
+                        playerTanks.get(playerResult.collectorPlayerIndex).hasGroundShovel();
+                    powerUpEffectManager.activateBaseProtection(gameMap, useGround);
                 } else if (playerResult.activateFreeze) {
                     powerUpEffectManager.activateEnemyFreeze();
                 } else if (playerResult.activateBomb) {

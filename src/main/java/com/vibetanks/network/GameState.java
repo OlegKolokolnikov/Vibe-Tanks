@@ -266,8 +266,9 @@ public class GameState implements Serializable {
         public boolean canDestroyTrees;
         public int ownerPlayerNumber;
         public int size; // Bullet size (bigger for BOSS)
+        public boolean rainbow; // Rainbow-colored bullet (500 point upgrade)
 
-        public BulletData(long id, double x, double y, int direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber, int size) {
+        public BulletData(long id, double x, double y, int direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber, int size, boolean rainbow) {
             this.id = id;
             this.x = x;
             this.y = y;
@@ -277,6 +278,7 @@ public class GameState implements Serializable {
             this.canDestroyTrees = canDestroyTrees;
             this.ownerPlayerNumber = ownerPlayerNumber;
             this.size = size;
+            this.rainbow = rainbow;
         }
     }
 

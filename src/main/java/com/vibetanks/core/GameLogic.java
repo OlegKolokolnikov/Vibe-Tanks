@@ -513,6 +513,21 @@ public class GameLogic {
                 playerIndex + 1, result.livesAwarded, newHundreds * 100);
         }
 
+        // Check for score-based upgrades (reset on death)
+        if (playerIndex < playerTanks.size()) {
+            Tank player = playerTanks.get(playerIndex);
+            // 500 points: rainbow bullets
+            if (result.oldScore < 500 && result.newScore >= 500) {
+                player.setRainbowBullets(true);
+                LOG.info("Player {} unlocked rainbow bullets at {} points", playerIndex + 1, result.newScore);
+            }
+            // 1000 points: ground shovel (indestructible base protection)
+            if (result.oldScore < 1000 && result.newScore >= 1000) {
+                player.setGroundShovel(true);
+                LOG.info("Player {} unlocked ground shovel at {} points", playerIndex + 1, result.newScore);
+            }
+        }
+
         return result;
     }
 

@@ -330,7 +330,11 @@ public class GameUpdateOrchestrator {
                     ctx.addScore(playerResult.collectorPlayerIndex, 1);
                 }
                 if (playerResult.activateShovel) {
-                    effectManager.activateBaseProtection(gameMap);
+                    // Check if player has ground shovel upgrade (1000 points)
+                    boolean useGround = playerResult.collectorPlayerIndex >= 0 &&
+                        playerResult.collectorPlayerIndex < playerTanks.size() &&
+                        playerTanks.get(playerResult.collectorPlayerIndex).hasGroundShovel();
+                    effectManager.activateBaseProtection(gameMap, useGround);
                 } else if (playerResult.activateFreeze) {
                     effectManager.activateEnemyFreeze();
                 } else if (playerResult.activateBomb) {

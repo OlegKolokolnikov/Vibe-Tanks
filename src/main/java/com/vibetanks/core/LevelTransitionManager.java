@@ -141,6 +141,8 @@ public class LevelTransitionManager {
             Tank player = playerTanks.get(i);
             player.setLives(3);
             player.setLaserDuration(0); // Clear laser power-up on restart
+            player.setRainbowBullets(false); // Reset score-based upgrades
+            player.setGroundShovel(false);
             player.spawnImmediate(fixedPositions[i][0], fixedPositions[i][1]);
         }
 

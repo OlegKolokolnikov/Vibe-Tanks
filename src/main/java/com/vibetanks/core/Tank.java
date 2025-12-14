@@ -51,6 +51,10 @@ public class Tank {
     private int laserDuration; // LASER power-up duration (30 seconds = 1800 frames at 60 FPS)
     private static final int LASER_COOLDOWN = 10; // Very fast shooting (6 shots per second)
 
+    // Score-based upgrades (reset on death)
+    private boolean hasRainbowBullets; // At 500 points
+    private boolean hasGroundShovel;   // At 1000 points
+
     // Extracted components for better separation of concerns
     private final TankPhysics physics;
     private TankAI ai; // Only initialized for enemy tanks
@@ -211,7 +215,7 @@ public class Tank {
                 case RIGHT -> offsetX += totalSpacing;
             }
 
-            bullets.add(new Bullet(offsetX, offsetY, direction, !isPlayer, bulletPower, canDestroyTrees, isPlayer ? playerNumber : 0, bulletSize));
+            bullets.add(new Bullet(offsetX, offsetY, direction, !isPlayer, bulletPower, canDestroyTrees, isPlayer ? playerNumber : 0, bulletSize, hasRainbowBullets));
             activeBulletCount++;
         }
 
@@ -437,6 +441,12 @@ public class Tank {
     public boolean hasShip() { return canSwim; }
     public boolean hasSaw() { return canDestroyTrees; }
     public int getMachinegunCount() { return machinegunCount; }
+
+    // Score-based upgrades
+    public boolean hasRainbowBullets() { return hasRainbowBullets; }
+    public void setRainbowBullets(boolean value) { hasRainbowBullets = value; }
+    public boolean hasGroundShovel() { return hasGroundShovel; }
+    public void setGroundShovel(boolean value) { hasGroundShovel = value; }
 
     // Power-up effects
     public void applyGun() {

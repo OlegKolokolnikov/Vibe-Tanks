@@ -806,7 +806,8 @@ public class ServerGameState {
                 bullet.getPower(),
                 bullet.canDestroyTrees(),
                 bullet.getOwnerPlayerNumber(),
-                bullet.getSize()
+                bullet.getSize(),
+                bullet.isRainbow()
             ));
         }
 

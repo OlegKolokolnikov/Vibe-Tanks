@@ -98,11 +98,10 @@ class LevelGeneratorTest {
         void generatedLevelShouldHaveBaseProtection() {
             generator.generateRandomLevel(tiles);
 
-            // Base protection bricks at row 23
+            // Base protection bricks at row 23 (3-tile wide U-shape)
             assertEquals(GameMap.TileType.BRICK, tiles[23][11]);
             assertEquals(GameMap.TileType.BRICK, tiles[23][12]);
             assertEquals(GameMap.TileType.BRICK, tiles[23][13]);
-            assertEquals(GameMap.TileType.BRICK, tiles[23][14]);
         }
 
         @Test
@@ -281,11 +280,11 @@ class LevelGeneratorTest {
         void baseAreaShouldNotBeOverwritten() {
             generator.generateRandomLevel(tiles);
 
-            // Base area is at rows 22-24, cols 11-14
-            // The exact base position tiles (24, 12-13) should be controlled by base protection
+            // Base area is at rows 23-24, cols 11-13 (3-tile wide U-shape)
+            // The exact base position is at col 12, row 24
             // Check that base protection bricks exist
             assertEquals(GameMap.TileType.BRICK, tiles[24][11], "Left protection");
-            assertEquals(GameMap.TileType.BRICK, tiles[24][14], "Right protection");
+            assertEquals(GameMap.TileType.BRICK, tiles[24][13], "Right protection");
         }
 
         @Test

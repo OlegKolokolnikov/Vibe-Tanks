@@ -149,7 +149,7 @@ class GameStateTest {
         @Test
         @DisplayName("BulletData should be serializable")
         void bulletDataShouldBeSerializable() throws IOException, ClassNotFoundException {
-            gameState.bullets.add(new GameState.BulletData(123L, 50, 60, 2, false, 1, true, 1, 8));
+            gameState.bullets.add(new GameState.BulletData(123L, 50, 60, 2, false, 1, true, 1, 8, false));
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -224,7 +224,7 @@ class GameStateTest {
         @DisplayName("BulletData constructor should set all fields")
         void bulletDataConstructorSetsFields() {
             GameState.BulletData bullet = new GameState.BulletData(
-                    123L, 50, 60, 2, false, 2, true, 1, 8
+                    123L, 50, 60, 2, false, 2, true, 1, 8, false
             );
 
             assertEquals(123L, bullet.id);

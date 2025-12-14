@@ -48,11 +48,24 @@ public class PowerUpEffectManager {
      * @param gameMap The game map to apply steel protection to
      */
     public void activateBaseProtection(GameMap gameMap) {
-        gameMap.setBaseProtection(GameMap.TileType.STEEL);
+        activateBaseProtection(gameMap, false);
+    }
+
+    /**
+     * Activate base protection (called when player collects SHOVEL).
+     * @param gameMap The game map to apply steel protection to
+     * @param useGround If true, use GROUND (indestructible) instead of STEEL (1000 point upgrade)
+     */
+    public void activateBaseProtection(GameMap gameMap, boolean useGround) {
+        GameMap.TileType protectionType = useGround ? GameMap.TileType.GROUND : GameMap.TileType.STEEL;
+        gameMap.setBaseProtection(protectionType);
         baseProtectionDuration = BASE_PROTECTION_TIME;
         isFlashing = false;
         flashCount = 0;
         flashTimer = 0;
+        if (useGround) {
+            LOG.info("SHOVEL: Base protected with GROUND (1000 point upgrade)!");
+        }
     }
 
     /**

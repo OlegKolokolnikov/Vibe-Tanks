@@ -367,7 +367,8 @@ public class GameStateApplier {
                 bData.power,
                 bData.canDestroyTrees,
                 bData.ownerPlayerNumber,
-                bData.size
+                bData.size,
+                bData.rainbow
             );
             bullets.add(bullet);
         }

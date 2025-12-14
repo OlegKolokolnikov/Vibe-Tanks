@@ -25,16 +25,26 @@ public class Bullet {
     private boolean canDestroyTrees;
     private int ownerPlayerNumber; // 1-4 for player bullets, 0 for enemy
     private int size; // Bullet size (bigger for BOSS)
+    private boolean rainbow; // Rainbow-colored bullet (500 point upgrade)
+
+    // Rainbow colors for cycling
+    private static final Color[] RAINBOW_COLORS = {
+        Color.RED, Color.ORANGE, Color.YELLOW, Color.LIME, Color.CYAN, Color.BLUE, Color.MAGENTA
+    };
 
     public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees) {
-        this(x, y, direction, fromEnemy, power, canDestroyTrees, 0, DEFAULT_SIZE);
+        this(x, y, direction, fromEnemy, power, canDestroyTrees, 0, DEFAULT_SIZE, false);
     }
 
     public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber) {
-        this(x, y, direction, fromEnemy, power, canDestroyTrees, ownerPlayerNumber, DEFAULT_SIZE);
+        this(x, y, direction, fromEnemy, power, canDestroyTrees, ownerPlayerNumber, DEFAULT_SIZE, false);
     }
 
     public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber, int size) {
+        this(x, y, direction, fromEnemy, power, canDestroyTrees, ownerPlayerNumber, size, false);
+    }
+
+    public Bullet(double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber, int size, boolean rainbow) {
         this.id = nextId.getAndIncrement();
         this.x = x;
         this.y = y;
@@ -44,10 +54,15 @@ public class Bullet {
         this.canDestroyTrees = canDestroyTrees;
         this.ownerPlayerNumber = ownerPlayerNumber;
         this.size = size;
+        this.rainbow = rainbow;
     }
 
     // Constructor with explicit ID (for network sync)
     public Bullet(long id, double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber, int size) {
+        this(id, x, y, direction, fromEnemy, power, canDestroyTrees, ownerPlayerNumber, size, false);
+    }
+
+    public Bullet(long id, double x, double y, Direction direction, boolean fromEnemy, int power, boolean canDestroyTrees, int ownerPlayerNumber, int size, boolean rainbow) {
         this.id = id;
         this.x = x;
         this.y = y;
@@ -57,6 +72,7 @@ public class Bullet {
         this.canDestroyTrees = canDestroyTrees;
         this.ownerPlayerNumber = ownerPlayerNumber;
         this.size = size;
+        this.rainbow = rainbow;
     }
 
     public void update() {
@@ -65,7 +81,11 @@ public class Bullet {
     }
 
     public void render(GraphicsContext gc) {
-        if (fromEnemy) {
+        if (rainbow) {
+            // Cycle through rainbow colors based on time
+            int colorIndex = (int)((System.currentTimeMillis() / 50) % RAINBOW_COLORS.length);
+            gc.setFill(RAINBOW_COLORS[colorIndex]);
+        } else if (fromEnemy) {
             gc.setFill(Color.RED);
         } else {
             // Use player's tank color for their bullets
@@ -110,4 +130,5 @@ public class Bullet {
     public int getPower() { return power; }
     public boolean canDestroyTrees() { return canDestroyTrees; }
     public int getOwnerPlayerNumber() { return ownerPlayerNumber; }
+    public boolean isRainbow() { return rainbow; }
 }

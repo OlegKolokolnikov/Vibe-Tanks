@@ -108,30 +108,13 @@ public class EnemySpawner {
             type = Tank.EnemyType.POWER;
         }
 
-        // Choose spawn position - BOSS spawns in center, others randomly
-        double[] spawnPos;
-        if (type == Tank.EnemyType.BOSS) {
-            // BOSS spawns in the center-top of the map
-            spawnPos = new double[]{12 * 32, 32};
-        } else {
-            spawnPos = SPAWN_POSITIONS[random.nextInt(SPAWN_POSITIONS.length)];
-        }
-
         // Get expected tank size for collision check
         int tankSize = (type == Tank.EnemyType.BOSS) ? 28 * 4 : 28;
 
-        // Check if spawn position is clear
-        boolean positionClear = true;
-        for (Tank tank : enemyTanks) {
-            // Check collision using the size of the tank we're about to spawn
-            if (Collider.checkSquare(spawnPos[0], spawnPos[1], tankSize,
-                                     tank.getX(), tank.getY(), tank.getSize())) {
-                positionClear = false;
-                break;
-            }
-        }
+        // Find a valid spawn position (check both tanks and map tiles)
+        double[] spawnPos = findValidSpawnPosition(type, tankSize, enemyTanks);
 
-        if (positionClear) {
+        if (spawnPos != null) {
             Tank enemy = new Tank(spawnPos[0], spawnPos[1], Direction.DOWN, false, 0, type);
 
             // BOSS health increases with level: 12 + (level - 1)
@@ -170,6 +153,57 @@ public class EnemySpawner {
                 powerTanksSpawned++;
             }
         }
+    }
+
+    /**
+     * Find a valid spawn position that doesn't collide with tanks or map tiles.
+     * Returns null if no valid position found.
+     */
+    private double[] findValidSpawnPosition(Tank.EnemyType type, int tankSize, List<Tank> enemyTanks) {
+        // BOSS prefers center, but can try other positions if blocked
+        if (type == Tank.EnemyType.BOSS) {
+            // Try center first (preferred for BOSS)
+            double[] centerPos = {12 * 32, 32};
+            if (isSpawnPositionValid(centerPos, tankSize, enemyTanks)) {
+                return centerPos;
+            }
+            // BOSS can't fit at other positions easily, so just wait
+            LOG.info("BOSS spawn blocked at center, waiting...");
+            return null;
+        }
+
+        // For normal tanks, try positions in random order
+        int startIndex = random.nextInt(SPAWN_POSITIONS.length);
+        for (int i = 0; i < SPAWN_POSITIONS.length; i++) {
+            int index = (startIndex + i) % SPAWN_POSITIONS.length;
+            double[] pos = SPAWN_POSITIONS[index];
+            if (isSpawnPositionValid(pos, tankSize, enemyTanks)) {
+                return pos;
+            }
+        }
+
+        // No valid position found
+        return null;
+    }
+
+    /**
+     * Check if a spawn position is valid (no collision with tanks or map tiles).
+     */
+    private boolean isSpawnPositionValid(double[] pos, int tankSize, List<Tank> enemyTanks) {
+        // Check collision with other tanks
+        for (Tank tank : enemyTanks) {
+            if (Collider.checkSquare(pos[0], pos[1], tankSize,
+                                     tank.getX(), tank.getY(), tank.getSize())) {
+                return false;
+            }
+        }
+
+        // Check collision with map tiles
+        if (map.checkTankCollision(pos[0], pos[1], tankSize)) {
+            return false;
+        }
+
+        return true;
     }
 
     public int getRemainingEnemies() {

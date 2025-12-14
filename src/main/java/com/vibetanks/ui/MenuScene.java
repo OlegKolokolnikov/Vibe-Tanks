@@ -670,6 +670,9 @@ public class MenuScene {
     }
 
     private void startNetworkGame(NetworkManager network, boolean isHost) {
+        // Reset local multiplayer mode (network games use network input, not split keyboard)
+        GameSettings.setLocalMultiplayerMode(false);
+
         javafx.scene.layout.Pane gameRoot = new javafx.scene.layout.Pane();
         Scene gameScene = new Scene(gameRoot, windowWidth, windowHeight);
 

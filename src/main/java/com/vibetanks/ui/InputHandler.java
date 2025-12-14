@@ -100,7 +100,7 @@ public class InputHandler {
     public void handleInput(GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
         // Check if local multiplayer mode
         if (GameSettings.isLocalMultiplayerMode() && playerTanks.size() >= 2) {
-            // Local 2-player mode: Player 1 = WASD + CTRL, Player 2 = Arrows + SPACE
+            // Local 2-player mode: Player 1 = WASD + SPACE, Player 2 = Arrows + ENTER
             handlePlayer1Input(playerTanks.get(0), map, bullets, lasers, soundManager, allTanks, base, movementFrozen);
             handlePlayer2Input(playerTanks.get(1), map, bullets, lasers, soundManager, allTanks, base, movementFrozen);
         } else if (playerTanks.size() >= 1) {

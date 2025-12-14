@@ -710,5 +710,49 @@ public class LevelGenerator {
         tiles[23][13] = GameMap.TileType.BRICK;
         tiles[24][11] = GameMap.TileType.BRICK;
         tiles[24][13] = GameMap.TileType.BRICK;
+
+        // Add random obstacles near each enemy spawn (not blocking spawn itself)
+        addObstaclesNearSpawn(3, 1, 6, 5);   // Near left spawn (rows 3-6, cols 1-5)
+        addObstaclesNearSpawn(6, 8, 10, 18); // Near center spawn (rows 6-10, cols 8-18)
+        addObstaclesNearSpawn(3, width - 6, 6, width - 2); // Near right spawn
+    }
+
+    /**
+     * Add random obstacles in an area near a spawn point.
+     * Places 1-3 small obstacle groups to ensure tanks have something to navigate.
+     * Only places on empty tiles to preserve existing content (water, ice, etc).
+     */
+    private void addObstaclesNearSpawn(int minRow, int minCol, int maxRow, int maxCol) {
+        int numObstacles = 1 + random.nextInt(3); // 1-3 obstacle groups
+
+        for (int i = 0; i < numObstacles; i++) {
+            int row = minRow + random.nextInt(Math.max(1, maxRow - minRow));
+            int col = minCol + random.nextInt(Math.max(1, maxCol - minCol));
+
+            // Random obstacle type
+            GameMap.TileType type;
+            double typeRoll = random.nextDouble();
+            if (typeRoll < 0.6) {
+                type = GameMap.TileType.BRICK;
+            } else if (typeRoll < 0.8) {
+                type = GameMap.TileType.STEEL;
+            } else {
+                type = GameMap.TileType.TREES;
+            }
+
+            // Place 1-2 tile obstacle (only on empty tiles)
+            int size = 1 + random.nextInt(2);
+            for (int r = 0; r < size && row + r < maxRow; r++) {
+                for (int c = 0; c < size && col + c < maxCol; c++) {
+                    int targetRow = row + r;
+                    int targetCol = col + c;
+                    if (targetRow > 0 && targetRow < height - 1 &&
+                        targetCol > 0 && targetCol < width - 1 &&
+                        tiles[targetRow][targetCol] == GameMap.TileType.EMPTY) {
+                        tiles[targetRow][targetCol] = type;
+                    }
+                }
+            }
+        }
     }
 }

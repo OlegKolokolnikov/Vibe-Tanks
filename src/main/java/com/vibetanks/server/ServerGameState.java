@@ -72,12 +72,21 @@ public class ServerGameState {
     // Track actual connected players (may differ from playerTanks.size())
     private int actualConnectedPlayers = 1;
 
+    // Disconnection grace period tracking (in frames, ~60 FPS)
+    private static final int DISCONNECT_GRACE_PERIOD = 600; // 10 seconds at 60 FPS
+    private int[] playerDisconnectTimers = new int[4]; // -1 = connected, 0+ = frames since disconnect
+
     public ServerGameState(int initialPlayers) {
         // Create a sound manager but it won't actually play sounds on server
         this.soundManager = new SoundManager();
 
         playerStats = new PlayerStats();
         playerNicknames = new String[4];
+
+        // Initialize disconnect timers (-1 = connected)
+        for (int i = 0; i < 4; i++) {
+            playerDisconnectTimers[i] = -1;
+        }
 
         actualConnectedPlayers = Math.max(1, initialPlayers);
         initialize(actualConnectedPlayers);
@@ -94,6 +103,78 @@ public class ServerGameState {
             playerTanks.add(player);
             LOG.info("Added tank for Player {}", i + 1);
         }
+    }
+
+    /**
+     * Handle player disconnection - start grace period for reconnection.
+     * Tank will be removed only after grace period expires.
+     * @param playerNumber The player number (1-4) that disconnected
+     */
+    public void handlePlayerDisconnect(int playerNumber) {
+        if (playerNumber < 1 || playerNumber > 4) return;
+
+        int index = playerNumber - 1;
+
+        // Only start timer if not already disconnected
+        if (playerDisconnectTimers[index] < 0) {
+            playerDisconnectTimers[index] = 0; // Start grace period
+            LOG.info("Player {} disconnected - starting {} second grace period for reconnection",
+                     playerNumber, DISCONNECT_GRACE_PERIOD / 60);
+        }
+    }
+
+    /**
+     * Handle player reconnection - restore their tank if within grace period.
+     * @param playerNumber The player number (1-4) that reconnected
+     */
+    public void handlePlayerReconnect(int playerNumber) {
+        if (playerNumber < 1 || playerNumber > 4) return;
+
+        int index = playerNumber - 1;
+
+        // Check if player was in grace period
+        if (playerDisconnectTimers[index] >= 0) {
+            playerDisconnectTimers[index] = -1; // Mark as connected
+            LOG.info("Player {} reconnected within grace period - tank restored", playerNumber);
+
+            // Ensure tank exists and give temporary shield
+            if (index < playerTanks.size()) {
+                Tank tank = playerTanks.get(index);
+                if (tank.isAlive()) {
+                    tank.giveTemporaryShield(); // Give shield on reconnect for safety
+                }
+            }
+        }
+    }
+
+    /**
+     * Update disconnect grace period timers.
+     * Called each frame to check if any disconnected players should be removed.
+     */
+    private void updateDisconnectTimers() {
+        for (int i = 0; i < playerTanks.size() && i < 4; i++) {
+            if (playerDisconnectTimers[i] >= 0) {
+                playerDisconnectTimers[i]++;
+
+                // Grace period expired - remove the tank
+                if (playerDisconnectTimers[i] >= DISCONNECT_GRACE_PERIOD) {
+                    Tank tank = playerTanks.get(i);
+                    tank.setLives(0);
+                    tank.setAlive(false);
+                    playerDisconnectTimers[i] = -1; // Reset timer
+                    LOG.info("Player {} grace period expired - tank removed from game", i + 1);
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if a player is currently disconnected (in grace period).
+     * Used to freeze tank movement during disconnection.
+     */
+    public boolean isPlayerDisconnected(int playerNumber) {
+        if (playerNumber < 1 || playerNumber > 4) return false;
+        return playerDisconnectTimers[playerNumber - 1] >= 0;
     }
 
     private void initialize(int playerCount) {
@@ -281,6 +362,9 @@ public class ServerGameState {
             }
             return;
         }
+
+        // Update disconnect grace period timers
+        updateDisconnectTimers();
 
         // Update freeze timers
         if (enemyFreezeDuration > 0) enemyFreezeDuration--;

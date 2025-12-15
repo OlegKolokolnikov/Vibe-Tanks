@@ -115,12 +115,18 @@ public class DedicatedServer {
                     startGame();
                 }
 
-                // If game already running, add player to game
+                // If game already running, add player to game or handle reconnection
                 if (gameStarted) {
                     synchronized (gameStateLock) {
                         if (gameState != null) {
-                            gameState.addPlayer(playerNum);
-                            LOG.info("Player {} joined the game in progress", playerNum);
+                            // Check if this is a reconnection (player was in grace period)
+                            if (gameState.isPlayerDisconnected(playerNum)) {
+                                gameState.handlePlayerReconnect(playerNum);
+                                LOG.info("Player {} reconnected to the game", playerNum);
+                            } else {
+                                gameState.addPlayer(playerNum);
+                                LOG.info("Player {} joined the game in progress", playerNum);
+                            }
                         }
                     }
                 }
@@ -267,8 +273,18 @@ public class DedicatedServer {
                     lastFpsTime = currentTime;
                 }
 
-                // Clean up disconnected clients
+                // Clean up disconnected clients and notify game state
                 int beforeCount = clients.size();
+                for (ClientConnection client : clients) {
+                    if (!client.isActive()) {
+                        // Notify game state to remove the player's tank
+                        synchronized (gameStateLock) {
+                            if (gameState != null) {
+                                gameState.handlePlayerDisconnect(client.playerNumber);
+                            }
+                        }
+                    }
+                }
                 clients.removeIf(c -> !c.isActive());
                 int afterCount = clients.size();
 

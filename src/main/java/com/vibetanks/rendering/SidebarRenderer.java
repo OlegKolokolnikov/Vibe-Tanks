@@ -44,7 +44,7 @@ public class SidebarRenderer {
     // Fixed Y positions for each section (static layout)
     private static final int ENEMY_SECTION_Y = 10;
     private static final int PLAYER_SECTION_Y = 550;  // Fixed position in lower part of sidebar
-    private static final int FLAG_SECTION_Y = 750;    // Near bottom
+    private static final int FLAG_SECTION_Y = 710;    // Near bottom (with room for level number below)
 
     /**
      * Render the complete sidebar.
@@ -208,7 +208,7 @@ public class SidebarRenderer {
 
     /**
      * Render flag with level number at the bottom of sidebar.
-     * Level number appears next to the flag (like original Battle City).
+     * Level number appears under the flag.
      * Flag colors change based on level:
      * - Normal levels: 1 random color
      * - Levels divisible by 10: 2 colors (striped)
@@ -236,10 +236,10 @@ public class SidebarRenderer {
         // Draw flag with stripes
         drawStripedFlag(flagX + 13, y + 3, 17, 18, flagColors);
 
-        // Level number next to flag (to the right)
+        // Level number under the flag
         gc.setFill(TEXT_COLOR);
         gc.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        gc.fillText(String.valueOf(levelNumber), flagX + 35, y + 30);
+        gc.fillText(String.valueOf(levelNumber), flagX + 5, y + 65);
     }
 
     /**

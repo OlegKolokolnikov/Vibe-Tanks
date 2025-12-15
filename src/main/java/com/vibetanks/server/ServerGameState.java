@@ -920,7 +920,10 @@ public class ServerGameState {
             }
             case BOMB -> {
                 for (Tank enemy : enemyTanks) {
-                    while (enemy.isAlive()) enemy.damage();
+                    // Use bounded loop to prevent infinite loop (max 20 damage = kills any tank)
+                    for (int i = 0; i < 20 && enemy.isAlive(); i++) {
+                        enemy.damage();
+                    }
                 }
             }
             default -> powerUp.applyEffect(player);

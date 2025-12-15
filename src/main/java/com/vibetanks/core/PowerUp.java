@@ -41,21 +41,7 @@ public class PowerUp {
         this.id = nextId.getAndIncrement();
         this.x = x;
         this.y = y;
-
-        // Calculate lifetime based on difficulty mode (60 frames = 1 second)
-        if (GameSettings.isHardModeActive()) {
-            // Hard Mode: 10 seconds
-            this.lifetime = 600;
-        } else if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {
-            // Very Easy Mode: 25 seconds
-            this.lifetime = 1500;
-        } else if (GameSettings.isEasyModeActive(GameSettings.getCurrentLevel())) {
-            // Easy Mode: 20 seconds
-            this.lifetime = 1200;
-        } else {
-            // Normal Mode: 15 seconds
-            this.lifetime = 900;
-        }
+        this.lifetime = calculateLifetime();
 
         // LASER is rare - 5% chance
         if (GameConstants.RANDOM.nextInt(100) < 5) {
@@ -73,8 +59,23 @@ public class PowerUp {
         this.id = nextId.getAndIncrement();
         this.x = x;
         this.y = y;
-        this.lifetime = LIFETIME;
+        this.lifetime = calculateLifetime();
         this.type = type;
+    }
+
+    /**
+     * Calculate lifetime based on difficulty mode.
+     */
+    private static int calculateLifetime() {
+        if (GameSettings.isHardModeActive()) {
+            return 600;  // Hard Mode: 10 seconds
+        } else if (GameSettings.isVeryEasyModeActiveForCurrentLevel()) {
+            return 1500; // Very Easy Mode: 25 seconds
+        } else if (GameSettings.isEasyModeActive(GameSettings.getCurrentLevel())) {
+            return 1200; // Easy Mode: 20 seconds
+        } else {
+            return 900;  // Normal Mode: 15 seconds
+        }
     }
 
     /**

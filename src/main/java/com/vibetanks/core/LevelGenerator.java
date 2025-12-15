@@ -878,11 +878,15 @@ public class LevelGenerator {
         int letterWidth = letter[0].length;
 
         // Find a valid position (avoid spawn areas and base)
-        // Valid zone: rows 6-18, cols 2-22 (approximately middle of the map)
+        // Valid zone: rows 6-20, cols 2-20 (middle area of the map)
         int minRow = 6;
-        int maxRow = 18 - letterHeight;
+        int maxRow = 20 - letterHeight;
         int minCol = 2;
-        int maxCol = width - 2 - letterWidth;
+        int maxCol = width - 4 - letterWidth;
+
+        // Ensure valid range (at least 1 position available)
+        int rowRange = Math.max(1, maxRow - minRow + 1);
+        int colRange = Math.max(1, maxCol - minCol + 1);
 
         // Try to find a good position that doesn't overlap too much with existing content
         int bestRow = -1;
@@ -890,8 +894,8 @@ public class LevelGenerator {
         int bestOverlap = Integer.MAX_VALUE;
 
         for (int attempt = 0; attempt < 20; attempt++) {
-            int testRow = minRow + random.nextInt(Math.max(1, maxRow - minRow));
-            int testCol = minCol + random.nextInt(Math.max(1, maxCol - minCol));
+            int testRow = minRow + random.nextInt(rowRange);
+            int testCol = minCol + random.nextInt(colRange);
 
             // Count how many letter tiles would overlap with existing solid content
             int overlap = 0;

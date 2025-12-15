@@ -86,8 +86,8 @@ class PowerUpTest {
         void updateDecreasesLifetime() {
             assertFalse(powerUp.isExpired());
 
-            // Update many times but not enough to expire (LIFETIME = 600)
-            for (int i = 0; i < 599; i++) {
+            // Update many times but not enough to expire (normal mode = 900 frames)
+            for (int i = 0; i < 899; i++) {
                 powerUp.update();
             }
 
@@ -97,8 +97,8 @@ class PowerUpTest {
         @Test
         @DisplayName("Power-up should expire after LIFETIME updates")
         void powerUpExpiresAfterLifetime() {
-            // LIFETIME is 600 (10 seconds at 60 FPS)
-            for (int i = 0; i < 600; i++) {
+            // Normal mode: 900 frames (15 seconds at 60 FPS)
+            for (int i = 0; i < 900; i++) {
                 powerUp.update();
             }
 
@@ -108,15 +108,15 @@ class PowerUpTest {
         @Test
         @DisplayName("Power-up should expire exactly at lifetime boundary")
         void powerUpExpiresExactlyAtBoundary() {
-            // Update 599 times - should not be expired
-            for (int i = 0; i < 599; i++) {
+            // Update 899 times - should not be expired
+            for (int i = 0; i < 899; i++) {
                 powerUp.update();
                 assertFalse(powerUp.isExpired(), "Should not expire at update " + i);
             }
 
-            // 600th update should make it expire
+            // 900th update should make it expire
             powerUp.update();
-            assertTrue(powerUp.isExpired(), "Should expire at update 600");
+            assertTrue(powerUp.isExpired(), "Should expire at update 900");
         }
     }
 
@@ -400,10 +400,11 @@ class PowerUpTest {
         }
 
         @Test
-        @DisplayName("New power-up should have full lifetime")
+        @DisplayName("New power-up should have full lifetime (normal mode = 900 frames)")
         void newPowerUpHasFullLifetime() {
             powerUp = new PowerUp(0, 0, PowerUp.Type.STAR);
-            assertEquals(600, powerUp.getLifetime());
+            // Normal mode: 15 seconds = 900 frames at 60 FPS
+            assertEquals(900, powerUp.getLifetime());
         }
 
         @Test
@@ -412,10 +413,10 @@ class PowerUpTest {
             powerUp = new PowerUp(0, 0, PowerUp.Type.STAR);
 
             powerUp.update();
-            assertEquals(599, powerUp.getLifetime());
+            assertEquals(899, powerUp.getLifetime());
 
             powerUp.update();
-            assertEquals(598, powerUp.getLifetime());
+            assertEquals(898, powerUp.getLifetime());
         }
 
         @Test
@@ -430,7 +431,8 @@ class PowerUpTest {
         void lifetimeReachesZeroWhenExpired() {
             powerUp = new PowerUp(0, 0, PowerUp.Type.STAR);
 
-            for (int i = 0; i < 600; i++) {
+            // Normal mode: 900 frames
+            for (int i = 0; i < 900; i++) {
                 powerUp.update();
             }
 
@@ -443,7 +445,8 @@ class PowerUpTest {
         void lifetimeCanGoNegative() {
             powerUp = new PowerUp(0, 0, PowerUp.Type.STAR);
 
-            for (int i = 0; i < 610; i++) {
+            // Normal mode: 900 frames + 10 extra
+            for (int i = 0; i < 910; i++) {
                 powerUp.update();
             }
 

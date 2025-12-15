@@ -24,7 +24,12 @@ public class NetworkManager {
     // For host: manage multiple clients (thread-safe list)
     private final List<ClientHandler> clients = new CopyOnWriteArrayList<>();
     private final Map<Integer, PlayerInput> playerInputs = new ConcurrentHashMap<>();
+    private final Map<Integer, PlayerInput> lastKnownInputs = new ConcurrentHashMap<>(); // Fallback for missed packets
+    private final Map<Integer, Long> lastSequenceNumbers = new ConcurrentHashMap<>(); // Track sequence numbers
     private Thread acceptThread; // Track accept thread
+
+    // Input buffer settings
+    private static final int INPUT_BUFFER_FRAMES = 3; // Use last input for up to 3 frames if no new input
 
     // For client: single connection to host
     private Socket socket;
@@ -61,7 +66,22 @@ public class NetworkManager {
                 while (active && !Thread.interrupted()) {
                     Object obj = in.readObject();
                     if (obj instanceof PlayerInput) {
-                        playerInputs.put(playerNumber, (PlayerInput) obj);
+                        PlayerInput input = (PlayerInput) obj;
+                        long lastSeq = lastSequenceNumbers.getOrDefault(playerNumber, -1L);
+
+                        // Check for out-of-order packets (skip if older than current)
+                        if (input.sequenceNumber > lastSeq) {
+                            // Check for missed packets
+                            if (lastSeq >= 0 && input.sequenceNumber > lastSeq + 1) {
+                                LOG.debug("Player {} missed {} packets (seq {} -> {})",
+                                    playerNumber, input.sequenceNumber - lastSeq - 1, lastSeq, input.sequenceNumber);
+                            }
+
+                            playerInputs.put(playerNumber, input);
+                            lastKnownInputs.put(playerNumber, input); // Store as fallback
+                            lastSequenceNumbers.put(playerNumber, input.sequenceNumber);
+                        }
+
                         lastHeartbeat = System.currentTimeMillis(); // Update heartbeat on any input
                     }
                 }
@@ -387,8 +407,43 @@ public class NetworkManager {
     }
 
     // Get player input for specific player (for host)
+    // Returns new input if available, otherwise returns last known input (for buffering)
     public PlayerInput getPlayerInput(int playerNum) {
-        return playerInputs.remove(playerNum);
+        PlayerInput newInput = playerInputs.remove(playerNum);
+        if (newInput != null) {
+            return newInput;
+        }
+
+        // No new input - use last known input as fallback (input buffering)
+        // This keeps the player moving in their last direction during brief lag spikes
+        PlayerInput lastKnown = lastKnownInputs.get(playerNum);
+        if (lastKnown != null) {
+            // Clear shoot flag on buffered input to prevent repeated shots
+            // Movement continues but shooting requires fresh input
+            PlayerInput buffered = new PlayerInput();
+            buffered.up = lastKnown.up;
+            buffered.down = lastKnown.down;
+            buffered.left = lastKnown.left;
+            buffered.right = lastKnown.right;
+            buffered.shoot = false; // Don't repeat shooting
+            buffered.posX = lastKnown.posX;
+            buffered.posY = lastKnown.posY;
+            buffered.direction = lastKnown.direction;
+            buffered.nickname = lastKnown.nickname;
+            buffered.requestLife = false; // Don't repeat requests
+            buffered.requestNextLevel = false;
+            buffered.requestRestart = false;
+            return buffered;
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if there's a fresh (non-buffered) input available for a player.
+     */
+    public boolean hasFreshInput(int playerNum) {
+        return playerInputs.containsKey(playerNum);
     }
 
     // Get number of connected players (including host)

@@ -3,7 +3,7 @@ package com.vibetanks.network;
 import java.io.Serializable;
 
 public class PlayerInput implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     public boolean up, down, left, right;
     public boolean shoot;
@@ -17,6 +17,12 @@ public class PlayerInput implements Serializable {
 
     // Client sends its nickname to host
     public String nickname;
+
+    // Sequence number for detecting missed packets
+    public long sequenceNumber;
+
+    // Timestamp for latency calculation
+    public long timestamp;
 
     public PlayerInput() {
         this.up = false;

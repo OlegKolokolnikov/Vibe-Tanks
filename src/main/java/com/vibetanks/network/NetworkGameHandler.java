@@ -14,6 +14,9 @@ import java.util.List;
 public class NetworkGameHandler {
     private static final GameLogger LOG = GameLogger.getLogger(NetworkGameHandler.class);
 
+    // Sequence number for client inputs (incremented each frame)
+    private static long clientInputSequence = 0;
+
 
     /**
      * Result of handling client update - indicates if main update should continue.
@@ -174,6 +177,8 @@ public class NetworkGameHandler {
                 input.direction = 0;
             }
             input.nickname = NicknameManager.getNickname();
+            input.sequenceNumber = ++clientInputSequence;
+            input.timestamp = System.currentTimeMillis();
             network.sendInput(input);
         }
 

@@ -55,7 +55,7 @@ class GameStateBuilderTest {
     private GameState buildState() {
         return GameStateBuilder.build(
             playerTanks, playerKills, playerScores, playerLevelScores,
-            playerNicknames, playerKillsByType, enemyTanks, bullets, lasers, powerUps,
+            playerNicknames, playerKillsByType, null, enemyTanks, bullets, lasers, powerUps,
             false, false, enemySpawner, gameMap, base, 1,
             powerUpEffectManager, -1, null, celebrationManager,
             new ArrayList<>(), ufoManager, new ArrayList<>()
@@ -78,7 +78,7 @@ class GameStateBuilderTest {
         void buildShouldSetGameOverFlag() {
             GameState state = GameStateBuilder.build(
                 playerTanks, playerKills, playerScores, playerLevelScores,
-                playerNicknames, playerKillsByType, enemyTanks, bullets, lasers, powerUps,
+                playerNicknames, playerKillsByType, null, enemyTanks, bullets, lasers, powerUps,
                 true, false, enemySpawner, gameMap, base, 1,
                 powerUpEffectManager, -1, null, celebrationManager,
                 new ArrayList<>(), ufoManager, new ArrayList<>()
@@ -92,7 +92,7 @@ class GameStateBuilderTest {
         void buildShouldSetVictoryFlag() {
             GameState state = GameStateBuilder.build(
                 playerTanks, playerKills, playerScores, playerLevelScores,
-                playerNicknames, playerKillsByType, enemyTanks, bullets, lasers, powerUps,
+                playerNicknames, playerKillsByType, null, enemyTanks, bullets, lasers, powerUps,
                 false, true, enemySpawner, gameMap, base, 1,
                 powerUpEffectManager, -1, null, celebrationManager,
                 new ArrayList<>(), ufoManager, new ArrayList<>()
@@ -117,7 +117,7 @@ class GameStateBuilderTest {
         void buildShouldSetConnectedPlayers() {
             GameState state = GameStateBuilder.build(
                 playerTanks, playerKills, playerScores, playerLevelScores,
-                playerNicknames, playerKillsByType, enemyTanks, bullets, lasers, powerUps,
+                playerNicknames, playerKillsByType, null, enemyTanks, bullets, lasers, powerUps,
                 false, false, enemySpawner, gameMap, base, 3,
                 powerUpEffectManager, -1, null, celebrationManager,
                 new ArrayList<>(), ufoManager, new ArrayList<>()
@@ -402,7 +402,7 @@ class GameStateBuilderTest {
         void buildShouldIncludeBossKillerPlayerIndex() {
             GameState state = GameStateBuilder.build(
                 playerTanks, playerKills, playerScores, playerLevelScores,
-                playerNicknames, playerKillsByType, enemyTanks, bullets, lasers, powerUps,
+                playerNicknames, playerKillsByType, null, enemyTanks, bullets, lasers, powerUps,
                 false, false, enemySpawner, gameMap, base, 1,
                 powerUpEffectManager, 2, null, celebrationManager,
                 new ArrayList<>(), ufoManager, new ArrayList<>()
@@ -416,7 +416,7 @@ class GameStateBuilderTest {
         void buildShouldIncludeBossKillPowerUpReward() {
             GameState state = GameStateBuilder.build(
                 playerTanks, playerKills, playerScores, playerLevelScores,
-                playerNicknames, playerKillsByType, enemyTanks, bullets, lasers, powerUps,
+                playerNicknames, playerKillsByType, null, enemyTanks, bullets, lasers, powerUps,
                 false, false, enemySpawner, gameMap, base, 1,
                 powerUpEffectManager, 0, PowerUp.Type.TANK, celebrationManager,
                 new ArrayList<>(), ufoManager, new ArrayList<>()

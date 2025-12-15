@@ -32,6 +32,10 @@ public class NetworkManager {
     private ObjectInputStream in;
     private BlockingQueue<GameState> receivedStates = new LinkedBlockingQueue<>();
     private Thread receiveThread;
+    private volatile long lastHostHeartbeat = System.currentTimeMillis(); // Track last received state from host
+
+    // Heartbeat timeout - mark client as disconnected if no input for 5 seconds
+    private static final long HEARTBEAT_TIMEOUT_MS = 5000;
 
     // Client handler for host
     private class ClientHandler {
@@ -40,6 +44,7 @@ public class NetworkManager {
         private ObjectInputStream in;
         private int playerNumber;
         private volatile boolean active = true;
+        private volatile long lastHeartbeat = System.currentTimeMillis();
 
         public ClientHandler(Socket socket, int playerNumber, ObjectOutputStream out) throws IOException {
             this.socket = socket;
@@ -57,6 +62,7 @@ public class NetworkManager {
                     Object obj = in.readObject();
                     if (obj instanceof PlayerInput) {
                         playerInputs.put(playerNumber, (PlayerInput) obj);
+                        lastHeartbeat = System.currentTimeMillis(); // Update heartbeat on any input
                     }
                 }
             } catch (Exception e) {
@@ -65,6 +71,20 @@ public class NetworkManager {
                     active = false;
                 }
             }
+        }
+
+        /**
+         * Check if client has timed out (no input for HEARTBEAT_TIMEOUT_MS)
+         */
+        public boolean isTimedOut() {
+            return System.currentTimeMillis() - lastHeartbeat > HEARTBEAT_TIMEOUT_MS;
+        }
+
+        /**
+         * Get ping/latency estimate in milliseconds
+         */
+        public long getPingMs() {
+            return System.currentTimeMillis() - lastHeartbeat;
         }
 
         public void sendState(GameState state) {
@@ -314,6 +334,7 @@ public class NetworkManager {
                         Object obj = in.readObject();
                         if (obj instanceof GameState) {
                             receivedStates.offer((GameState) obj);
+                            lastHostHeartbeat = System.currentTimeMillis(); // Update heartbeat
                         }
                     }
                 } catch (Exception e) {
@@ -380,7 +401,23 @@ public class NetworkManager {
     }
 
     public boolean isConnected() {
+        // For clients, also check heartbeat timeout
+        if (!isHost && connected) {
+            if (System.currentTimeMillis() - lastHostHeartbeat > HEARTBEAT_TIMEOUT_MS) {
+                LOG.warn("Host heartbeat timeout - connection lost");
+                connected = false;
+            }
+        }
         return connected;
+    }
+
+    /**
+     * Get time since last host update in milliseconds (for clients).
+     * Returns 0 for host.
+     */
+    public long getHostPing() {
+        if (isHost) return 0;
+        return System.currentTimeMillis() - lastHostHeartbeat;
     }
 
     public boolean isHost() {
@@ -389,6 +426,73 @@ public class NetworkManager {
 
     public int getPlayerNumber() {
         return playerNumber;
+    }
+
+    /**
+     * Check if a specific player is still connected.
+     * Host is always connected (player 1). Clients check their handler's active status.
+     * Also checks heartbeat timeout for clients.
+     */
+    public boolean isPlayerConnected(int playerNum) {
+        if (!isHost) return connected; // Client only knows its own status
+
+        if (playerNum == 1) return true; // Host is always connected
+
+        // Find client handler for this player
+        for (ClientHandler client : clients) {
+            if (client.playerNumber == playerNum) {
+                // Check both active flag and heartbeat timeout
+                if (client.active && client.isTimedOut()) {
+                    LOG.warn("Player {} heartbeat timeout - marking as disconnected", playerNum);
+                    client.active = false;
+                }
+                return client.active;
+            }
+        }
+        return false; // Player not found = not connected
+    }
+
+    /**
+     * Get connection status array for all 4 player slots.
+     * Index 0 = Player 1, etc.
+     * Also checks heartbeat timeouts.
+     */
+    public boolean[] getPlayerConnectionStatus() {
+        boolean[] status = new boolean[4];
+
+        if (isHost) {
+            status[0] = true; // Host (Player 1) always connected
+            for (ClientHandler client : clients) {
+                if (client.playerNumber >= 2 && client.playerNumber <= 4) {
+                    // Check heartbeat timeout
+                    if (client.active && client.isTimedOut()) {
+                        LOG.warn("Player {} heartbeat timeout - marking as disconnected", client.playerNumber);
+                        client.active = false;
+                    }
+                    status[client.playerNumber - 1] = client.active;
+                }
+            }
+        } else {
+            // Client doesn't know other players' status, will be updated from GameState
+            status[playerNumber - 1] = connected;
+        }
+
+        return status;
+    }
+
+    /**
+     * Get ping estimate for a player in milliseconds.
+     * Returns -1 if player not found or not host.
+     */
+    public long getPlayerPing(int playerNum) {
+        if (!isHost || playerNum == 1) return 0; // Host has 0 ping
+
+        for (ClientHandler client : clients) {
+            if (client.playerNumber == playerNum && client.active) {
+                return client.getPingMs();
+            }
+        }
+        return -1;
     }
 
     public void close() {

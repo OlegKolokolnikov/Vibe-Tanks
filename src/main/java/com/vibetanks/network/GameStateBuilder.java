@@ -24,6 +24,7 @@ public class GameStateBuilder {
             int[] playerLevelScores,
             String[] playerNicknames,
             int[][] playerKillsByType,
+            boolean[] playerConnected,
             List<Tank> enemyTanks,
             List<Bullet> bullets,
             List<Laser> lasers,
@@ -45,7 +46,7 @@ public class GameStateBuilder {
         GameState state = new GameState();
 
         // Build player data
-        buildPlayerData(state, playerTanks, playerKills, playerScores, playerLevelScores, playerNicknames, playerKillsByType);
+        buildPlayerData(state, playerTanks, playerKills, playerScores, playerLevelScores, playerNicknames, playerKillsByType, playerConnected);
 
         // Build enemy data
         buildEnemyData(state, enemyTanks);
@@ -102,11 +103,15 @@ public class GameStateBuilder {
 
     private static void buildPlayerData(GameState state, List<Tank> playerTanks,
                                          int[] playerKills, int[] playerScores, int[] playerLevelScores,
-                                         String[] playerNicknames, int[][] playerKillsByType) {
+                                         String[] playerNicknames, int[][] playerKillsByType,
+                                         boolean[] playerConnected) {
         for (int i = 0; i < playerTanks.size() && i < 4; i++) {
             Tank tank = playerTanks.get(i);
             state.players[i].copyFromTank(tank, playerKills[i], playerScores[i], playerLevelScores[i],
                                           playerNicknames[i], playerKillsByType[i]);
+            // Set connection status from network manager
+            state.players[i].connected = (playerConnected != null && i < playerConnected.length)
+                                          ? playerConnected[i] : true;
         }
     }
 

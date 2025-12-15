@@ -263,6 +263,23 @@ public class GameStateApplier {
             Tank tank = playerTanks.get(i);
             PlayerData pData = state.players[i];
 
+            // Handle disconnected players - mark tank as dead with 0 lives
+            if (!pData.connected) {
+                if (tank.isAlive() || tank.getLives() > 0) {
+                    LOG.info("Player {} disconnected - marking tank as dead", i + 1);
+                    tank.setAlive(false);
+                    tank.setLives(0);
+                }
+                // Update kills/scores even for disconnected players (preserve stats)
+                playerKills[i] = pData.kills;
+                playerScores[i] = pData.score;
+                playerLevelScores[i] = pData.levelScore;
+                if (pData.killsByType != null) {
+                    System.arraycopy(pData.killsByType, 0, playerKillsByType[i], 0, Math.min(6, pData.killsByType.length));
+                }
+                continue; // Skip position/powerup updates for disconnected players
+            }
+
             // Skip position update for local player (client-authoritative movement)
             // EXCEPT when:
             // 1. First state received - need to sync initial position from host

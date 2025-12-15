@@ -45,6 +45,7 @@ public class PlayerData implements Serializable {
     // Identity
     public String nickname;
     public int playerNumber; // 1-4
+    public boolean connected = true; // Whether player is still connected (for network sync)
 
     public PlayerData() {
         this.lives = 3;

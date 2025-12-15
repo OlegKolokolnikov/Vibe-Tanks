@@ -1151,9 +1151,10 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     @Override
     public GameState buildGameState() {
         int connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
+        boolean[] playerConnected = network != null ? network.getPlayerConnectionStatus() : null;
         GameState state = GameStateBuilder.build(
             playerTanks, playerKills, playerScores, playerLevelScores, playerNicknames, playerKillsByType,
-            enemyTanks, bullets, lasers, powerUps,
+            playerConnected, enemyTanks, bullets, lasers, powerUps,
             gameOver, victory, enemySpawner, gameMap, base, connectedPlayers,
             powerUpEffectManager, bossKillerPlayerIndex, bossKillPowerUpReward,
             celebrationManager, mapChanges, ufoManager, pendingSoundEvents

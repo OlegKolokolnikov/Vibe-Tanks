@@ -25,14 +25,15 @@ public class Tank {
     private static final double TARGET_FPS = 60.0; // Game is designed for 60 FPS
     private static final int SHOOT_COOLDOWN = 30; // frames
 
-    private double x;
-    private double y;
-    private Direction direction;
+    // Position fields are volatile for thread-safe network sync
+    private volatile double x;
+    private volatile double y;
+    private volatile Direction direction;
     private boolean isPlayer;
     private int playerNumber; // 1 or 2
     private EnemyType enemyType; // For enemy tanks
-    private boolean alive;
-    private int lives;
+    private volatile boolean alive; // Volatile for thread-safe network sync
+    private volatile int lives; // Volatile for thread-safe network sync
     private int health;
     private int maxHealth;
 
@@ -626,7 +627,7 @@ public class Tank {
         this.shieldDuration = GameConstants.TEMPORARY_SHIELD_DURATION;
     }
 
-    public void setPosition(double x, double y) {
+    public synchronized void setPosition(double x, double y) {
         // Animate tracks if position changed (for network sync)
         if (this.x != x || this.y != y) {
             trackAnimationFrame++;

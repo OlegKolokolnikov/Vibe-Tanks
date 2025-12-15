@@ -351,6 +351,9 @@ public class ServerGameState {
         // Update bullets
         updateBullets();
 
+        // Process bullet-to-bullet collisions (opposing bullets cancel out)
+        processBulletToBulletCollisions();
+
         // Update lasers
         updateLasers();
 
@@ -468,6 +471,36 @@ public class ServerGameState {
 
         // Remove dead enemies
         enemyTanks.removeIf(e -> !e.isAlive());
+    }
+
+    /**
+     * Process bullet-to-bullet collisions.
+     * Opposing bullets (player vs enemy) cancel each other out.
+     * Same-team bullets pass through each other.
+     */
+    private void processBulletToBulletCollisions() {
+        List<Bullet> toRemove = new ArrayList<>();
+
+        for (int i = 0; i < bullets.size(); i++) {
+            Bullet b1 = bullets.get(i);
+            if (toRemove.contains(b1)) continue;
+
+            for (int j = i + 1; j < bullets.size(); j++) {
+                Bullet b2 = bullets.get(j);
+                if (toRemove.contains(b2)) continue;
+
+                // Only opposing bullets collide (player vs enemy)
+                if (b1.isFromEnemy() != b2.isFromEnemy()) {
+                    if (b1.collidesWith(b2)) {
+                        toRemove.add(b1);
+                        toRemove.add(b2);
+                        break;
+                    }
+                }
+            }
+        }
+
+        bullets.removeAll(toRemove);
     }
 
     private void updateLasers() {

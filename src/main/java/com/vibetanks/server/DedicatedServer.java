@@ -151,9 +151,17 @@ public class DedicatedServer {
                     playerInputs.put(client.playerNumber, (PlayerInput) obj);
                 }
             }
-        } catch (Exception e) {
+        } catch (java.io.EOFException e) {
+            // Clean disconnect (player clicked exit) - remove immediately
             if (running && client.isActive()) {
-                LOG.info("Player {} disconnected: {}", client.playerNumber, e.getMessage());
+                LOG.info("Player {} exited the game", client.playerNumber);
+                client.setActive(false);
+                client.cleanDisconnect = true; // Mark as intentional exit
+            }
+        } catch (Exception e) {
+            // Network error - will use grace period
+            if (running && client.isActive()) {
+                LOG.info("Player {} disconnected (network issue): {}", client.playerNumber, e.getMessage());
                 client.setActive(false);
             }
         }
@@ -277,10 +285,10 @@ public class DedicatedServer {
                 int beforeCount = clients.size();
                 for (ClientConnection client : clients) {
                     if (!client.isActive()) {
-                        // Notify game state to remove the player's tank
+                        // Notify game state - immediate removal for clean exit, grace period for network issues
                         synchronized (gameStateLock) {
                             if (gameState != null) {
-                                gameState.handlePlayerDisconnect(client.playerNumber);
+                                gameState.handlePlayerDisconnect(client.playerNumber, client.cleanDisconnect);
                             }
                         }
                     }
@@ -372,6 +380,7 @@ public class DedicatedServer {
         final ObjectInputStream in;
         final ObjectOutputStream out;
         private volatile boolean active = true;
+        volatile boolean cleanDisconnect = false; // True if player clicked exit (vs network error)
 
         ClientConnection(Socket socket, int playerNumber, ObjectInputStream in, ObjectOutputStream out) {
             this.socket = socket;

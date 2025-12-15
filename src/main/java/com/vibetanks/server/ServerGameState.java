@@ -106,20 +106,31 @@ public class ServerGameState {
     }
 
     /**
-     * Handle player disconnection - start grace period for reconnection.
-     * Tank will be removed only after grace period expires.
+     * Handle player disconnection - either remove immediately or start grace period.
      * @param playerNumber The player number (1-4) that disconnected
+     * @param immediate True if player clicked exit (remove immediately), false for network issues (use grace period)
      */
-    public void handlePlayerDisconnect(int playerNumber) {
+    public void handlePlayerDisconnect(int playerNumber, boolean immediate) {
         if (playerNumber < 1 || playerNumber > 4) return;
 
         int index = playerNumber - 1;
 
-        // Only start timer if not already disconnected
-        if (playerDisconnectTimers[index] < 0) {
-            playerDisconnectTimers[index] = 0; // Start grace period
-            LOG.info("Player {} disconnected - starting {} second grace period for reconnection",
-                     playerNumber, DISCONNECT_GRACE_PERIOD / 60);
+        if (immediate) {
+            // Player clicked exit - remove tank immediately
+            if (index < playerTanks.size()) {
+                Tank tank = playerTanks.get(index);
+                tank.setLives(0);
+                tank.setAlive(false);
+            }
+            playerDisconnectTimers[index] = -1; // Not in grace period
+            LOG.info("Player {} exited - tank removed immediately", playerNumber);
+        } else {
+            // Network issue - start grace period if not already disconnected
+            if (playerDisconnectTimers[index] < 0) {
+                playerDisconnectTimers[index] = 0; // Start grace period
+                LOG.info("Player {} disconnected (network issue) - starting {} second grace period",
+                         playerNumber, DISCONNECT_GRACE_PERIOD / 60);
+            }
         }
     }
 
@@ -222,6 +233,7 @@ public class ServerGameState {
     }
 
     public void addPlayer(int playerNumber) {
+        // Add tanks if needed
         while (playerTanks.size() < playerNumber) {
             int idx = playerTanks.size();
             if (idx < 4) {
@@ -230,6 +242,21 @@ public class ServerGameState {
                 player.giveTemporaryShield();
                 playerTanks.add(player);
                 LOG.info("Added Player {} tank to game", idx + 1);
+            }
+        }
+
+        // If slot exists but tank is dead (previous player left), reset it for new player
+        int index = playerNumber - 1;
+        if (index < playerTanks.size()) {
+            Tank tank = playerTanks.get(index);
+            if (tank.getLives() <= 0 || !tank.isAlive()) {
+                double[] pos = GameConstants.getPlayerStartPosition(index);
+                tank.setPosition(pos[0], pos[1]);
+                tank.setDirection(Direction.UP);
+                tank.setLives(3); // Reset to default lives
+                tank.setAlive(true);
+                tank.giveTemporaryShield();
+                LOG.info("Reset dead tank slot for new Player {}", playerNumber);
             }
         }
     }

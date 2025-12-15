@@ -510,6 +510,73 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         GameLogic.notifyBulletDestroyed(bullet, playerTanks);
     }
 
+    /**
+     * Handle enemy kill - track kills, award points, and BOSS rewards.
+     */
+    private void handleEnemyKill(Tank enemy, int killerPlayerNumber, boolean isBossKill) {
+        if (killerPlayerNumber < 1 || killerPlayerNumber > 4) return;
+
+        int playerIndex = killerPlayerNumber - 1;
+        playerKills[playerIndex]++;
+
+        int enemyTypeOrdinal = enemy.getEnemyType().ordinal();
+        if (enemyTypeOrdinal < 6) {
+            playerKillsByType[playerIndex][enemyTypeOrdinal]++;
+        }
+
+        addScore(playerIndex, GameConstants.getScoreForEnemyType(enemy.getEnemyType()));
+
+        if (isBossKill) {
+            Tank killer = playerTanks.get(playerIndex);
+            LOG.info("BOSS killed by Player {} - awarding power-up!", killerPlayerNumber);
+            bossKillerPlayerIndex = playerIndex;
+            bossKillPowerUpReward = applyRandomPowerUp(killer);
+        }
+    }
+
+    /**
+     * Handle UFO destruction - award points and spawn easter egg.
+     */
+    private void handleUFODestruction(int killerPlayerNumber) {
+        if (killerPlayerNumber >= 1 && killerPlayerNumber <= 4) {
+            addScore(killerPlayerNumber - 1, 20);
+            LOG.info("UFO destroyed by Player {} - awarded 20 points!", killerPlayerNumber);
+        }
+        double[] eggPos = getRandomPowerUpSpawnPosition();
+        ufoManager.handleUFODestroyed(killerPlayerNumber, eggPos[0], eggPos[1]);
+    }
+
+    /**
+     * Spawn a power-up at a random position.
+     */
+    private void spawnPowerUp() {
+        double[] spawnPos = getRandomPowerUpSpawnPosition();
+        powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
+        soundManager.playPowerUpSpawn();
+        queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
+    }
+
+    /**
+     * Handle player kill - queue sound and spawn power-up in 3+ player mode.
+     */
+    private void handlePlayerKill() {
+        queueSoundEvent(GameState.SoundType.PLAYER_DEATH);
+        if (playerTanks.size() > 2) {
+            spawnPowerUp();
+            LOG.info("Power-up spawned for killed player (3+ players mode)");
+        }
+    }
+
+    /**
+     * Handle base destruction - trigger game over.
+     */
+    private void handleBaseDestruction() {
+        base.destroy();
+        soundManager.playBaseDestroyed();
+        gameOver = true;
+        GameSettings.recordLoss(gameMap.getLevelNumber());
+    }
+
     private void checkAndSpawnUFO() {
         // UFO spawn conditions:
         // 1. 10 or fewer enemies remaining (but more than 1 - BOSS not yet spawned)
@@ -683,66 +750,20 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 notifyBulletDestroyed(bullet);
                 bulletIterator.remove();
 
-                // Handle UFO destruction
                 if (result.ufoDestroyed) {
-                    int killerPlayer = result.killerPlayerNumber;
-                    if (killerPlayer >= 1 && killerPlayer <= 4) {
-                        addScore(killerPlayer - 1, 20);
-                        LOG.info("UFO destroyed by Player {} - awarded 20 points!", killerPlayer);
-                    }
-                    double[] eggPos = getRandomPowerUpSpawnPosition();
-                    ufoManager.handleUFODestroyed(killerPlayer, eggPos[0], eggPos[1]);
+                    handleUFODestruction(result.killerPlayerNumber);
                 }
-
-                // Handle enemy killed - track kills and award points
                 if (result.enemyKilled && result.killedEnemy != null) {
-                    int killerPlayer = result.killerPlayerNumber;
-                    Tank enemy = result.killedEnemy;
-                    if (killerPlayer >= 1 && killerPlayer <= 4) {
-                        playerKills[killerPlayer - 1]++;
-                        int enemyTypeOrdinal = enemy.getEnemyType().ordinal();
-                        if (enemyTypeOrdinal < 6) {
-                            playerKillsByType[killerPlayer - 1][enemyTypeOrdinal]++;
-                        }
-                        Tank killer = playerTanks.get(killerPlayer - 1);
-                        addScore(killerPlayer - 1, GameConstants.getScoreForEnemyType(enemy.getEnemyType()));
-                        if (enemy.getEnemyType() == Tank.EnemyType.BOSS) {
-                            LOG.info("BOSS killed by Player {} (tank playerNumber={}) - awarding power-up!",
-                                killerPlayer, killer.getPlayerNumber());
-                            bossKillerPlayerIndex = killerPlayer - 1;
-                            bossKillPowerUpReward = applyRandomPowerUp(killer);
-                            LOG.info("After reward: killer.hasShip={}", killer.hasShip());
-                        }
-                    }
+                    handleEnemyKill(result.killedEnemy, result.killerPlayerNumber, result.isBossKill);
                 }
-
-                // Handle power-up drop
                 if (result.shouldDropPowerUp) {
-                    double[] spawnPos = getRandomPowerUpSpawnPosition();
-                    powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
-                    soundManager.playPowerUpSpawn();
-                    queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
+                    spawnPowerUp();
                 }
-
-                // Handle player killed - queue death sound and spawn power-up in 3+ player mode
                 if (result.playerKilled) {
-                    queueSoundEvent(GameState.SoundType.PLAYER_DEATH);
-                    if (playerTanks.size() > 2) {
-                        double[] spawnPos = getRandomPowerUpSpawnPosition();
-                        powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
-                        soundManager.playPowerUpSpawn();
-                        queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
-                        LOG.info("Power-up spawned for killed player (3+ players mode)");
-                    }
+                    handlePlayerKill();
                 }
-
-                // Handle base hit
                 if (result.hitBase) {
-                    base.destroy();
-                    soundManager.playBaseDestroyed();
-                    gameOver = true;
-                    // Record loss for adaptive difficulty
-                    GameSettings.recordLoss(gameMap.getLevelNumber());
+                    handleBaseDestruction();
                 }
             }
         }
@@ -766,64 +787,20 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             ProjectileHandler.LaserCollisionResult laserResult = ProjectileHandler.processLaser(
                     laser, enemyTanks, playerTanks, base, ufoManager.getUFO(), soundManager);
 
-            // Handle enemy killed - track kills and award points
             if (laserResult.enemyKilled && laserResult.killedEnemy != null) {
-                int killerPlayer = laserResult.killerPlayerNumber;
-                Tank enemy = laserResult.killedEnemy;
-                if (killerPlayer >= 1 && killerPlayer <= 4) {
-                    playerKills[killerPlayer - 1]++;
-                    int enemyTypeOrdinal = enemy.getEnemyType().ordinal();
-                    if (enemyTypeOrdinal < 6) {
-                        playerKillsByType[killerPlayer - 1][enemyTypeOrdinal]++;
-                    }
-                    addScore(killerPlayer - 1, GameConstants.getScoreForEnemyType(enemy.getEnemyType()));
-                    // BOSS kill rewards
-                    if (laserResult.isBossKill) {
-                        Tank killer = playerTanks.get(killerPlayer - 1);
-                        bossKillerPlayerIndex = killerPlayer - 1;
-                        bossKillPowerUpReward = applyRandomPowerUp(killer);
-                    }
-                }
+                handleEnemyKill(laserResult.killedEnemy, laserResult.killerPlayerNumber, laserResult.isBossKill);
             }
-
-            // Handle power-up drop
             if (laserResult.shouldDropPowerUp) {
-                double[] spawnPos = getRandomPowerUpSpawnPosition();
-                powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
-                soundManager.playPowerUpSpawn();
-                queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
+                spawnPowerUp();
             }
-
-            // Handle player killed - queue death sound and spawn power-up in 3+ player mode
             if (laserResult.playerKilled) {
-                queueSoundEvent(GameState.SoundType.PLAYER_DEATH);
-                if (playerTanks.size() > 2) {
-                    double[] spawnPos = getRandomPowerUpSpawnPosition();
-                    powerUps.add(new PowerUp(spawnPos[0], spawnPos[1]));
-                    soundManager.playPowerUpSpawn();
-                    queueSoundEvent(GameState.SoundType.POWERUP_SPAWN);
-                    LOG.info("Power-up spawned for killed player by laser (3+ players mode)");
-                }
+                handlePlayerKill();
             }
-
-            // Handle UFO destruction
             if (laserResult.ufoDestroyed) {
-                int killerPlayer = laserResult.killerPlayerNumber;
-                if (killerPlayer >= 1 && killerPlayer <= 4) {
-                    addScore(killerPlayer - 1, 20);
-                    LOG.info("UFO destroyed by laser from Player {} - awarded 20 points!", killerPlayer);
-                }
-                double[] eggPos = getRandomPowerUpSpawnPosition();
-                ufoManager.handleUFODestroyed(killerPlayer, eggPos[0], eggPos[1]);
+                handleUFODestruction(laserResult.killerPlayerNumber);
             }
-
-            // Handle base hit
             if (laserResult.hitBase) {
-                base.destroy();
-                soundManager.playBaseDestroyed();
-                gameOver = true;
-                // Record loss for adaptive difficulty
-                GameSettings.recordLoss(gameMap.getLevelNumber());
+                handleBaseDestruction();
             }
         }
 

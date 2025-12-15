@@ -109,6 +109,22 @@ public class InputHandler {
         }
     }
 
+    /**
+     * Handle shooting for a player with the specified shoot key.
+     */
+    private void handleShooting(Tank player, KeyCode shootKey, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager) {
+        if (pressedKeys.contains(shootKey)) {
+            if (player.hasLaser()) {
+                Laser laser = player.shootLaser(soundManager);
+                if (laser != null) {
+                    lasers.add(laser);
+                }
+            } else {
+                player.shoot(bullets, soundManager);
+            }
+        }
+    }
+
     // Single player input handler (arrows or WASD + SPACE)
     private void handlePlayerInput(Tank player, GameMap map, List<Bullet> bullets, List<Laser> lasers, SoundManager soundManager, List<Tank> allTanks, Base base, boolean movementFrozen) {
         if (!player.isAlive()) return;
@@ -116,7 +132,6 @@ public class InputHandler {
         boolean isMoving = false;
 
         // Movement with arrow keys or WASD (skip if frozen)
-        // Use most recently pressed direction key for priority
         if (!movementFrozen) {
             Direction moveDirection = getMostRecentDirection();
             if (moveDirection != null) {
@@ -132,18 +147,7 @@ public class InputHandler {
             wasMoving = isMoving;
         }
 
-        // Shooting with space (allowed even when frozen)
-        if (pressedKeys.contains(KeyCode.SPACE)) {
-            // Use laser if tank has laser power-up, otherwise use normal bullets
-            if (player.hasLaser()) {
-                Laser laser = player.shootLaser(soundManager);
-                if (laser != null) {
-                    lasers.add(laser);
-                }
-            } else {
-                player.shoot(bullets, soundManager);
-            }
-        }
+        handleShooting(player, KeyCode.SPACE, bullets, lasers, soundManager);
     }
 
     // Player 1 input handler for local multiplayer (WASD + SPACE)
@@ -168,17 +172,7 @@ public class InputHandler {
             wasMovingPlayer1 = isMoving;
         }
 
-        // Shooting with SPACE (allowed even when frozen)
-        if (pressedKeys.contains(KeyCode.SPACE)) {
-            if (player.hasLaser()) {
-                Laser laser = player.shootLaser(soundManager);
-                if (laser != null) {
-                    lasers.add(laser);
-                }
-            } else {
-                player.shoot(bullets, soundManager);
-            }
-        }
+        handleShooting(player, KeyCode.SPACE, bullets, lasers, soundManager);
     }
 
     // Player 2 input handler for local multiplayer (Arrows + ENTER)
@@ -203,17 +197,7 @@ public class InputHandler {
             wasMovingPlayer2 = isMoving;
         }
 
-        // Shooting with ENTER (allowed even when frozen)
-        if (pressedKeys.contains(KeyCode.ENTER)) {
-            if (player.hasLaser()) {
-                Laser laser = player.shootLaser(soundManager);
-                if (laser != null) {
-                    lasers.add(laser);
-                }
-            } else {
-                player.shoot(bullets, soundManager);
-            }
-        }
+        handleShooting(player, KeyCode.ENTER, bullets, lasers, soundManager);
     }
 
     // Get the most recently pressed direction (last in the order list) - for single player

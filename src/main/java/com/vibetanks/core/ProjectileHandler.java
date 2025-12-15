@@ -76,6 +76,7 @@ public class ProjectileHandler {
         public boolean hitBase = false;
         public boolean hitUfo = false;
         public boolean ufoDestroyed = false;
+        public boolean isBossKill = false;
 
         /** Reset all fields to default values for reuse */
         public void reset() {
@@ -91,6 +92,7 @@ public class ProjectileHandler {
             hitBase = false;
             hitUfo = false;
             ufoDestroyed = false;
+            isBossKill = false;
         }
     }
 
@@ -217,6 +219,7 @@ public class ProjectileHandler {
                         result.enemyKilled = true;
                         result.killedEnemy = enemy;
                         result.killerPlayerNumber = bullet.getOwnerPlayerNumber();
+                        result.isBossKill = enemy.getEnemyType() == Tank.EnemyType.BOSS;
                         soundManager.playExplosion();
                     }
 

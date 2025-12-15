@@ -16,6 +16,234 @@ public class LevelGenerator {
     private final int height;
     private GameMap.TileType[][] tiles;
 
+    // Cyrillic letter patterns (5 rows x variable width, true = brick)
+    private static final boolean[][][] CYRILLIC_LETTERS = {
+        // А
+        {
+            {false, true, true, true, false},
+            {true, false, false, false, true},
+            {true, true, true, true, true},
+            {true, false, false, false, true},
+            {true, false, false, false, true}
+        },
+        // Б
+        {
+            {true, true, true, true, true},
+            {true, false, false, false, false},
+            {true, true, true, true, false},
+            {true, false, false, false, true},
+            {true, true, true, true, false}
+        },
+        // В
+        {
+            {true, true, true, true, false},
+            {true, false, false, false, true},
+            {true, true, true, true, false},
+            {true, false, false, false, true},
+            {true, true, true, true, false}
+        },
+        // Г
+        {
+            {true, true, true, true, true},
+            {true, false, false, false, false},
+            {true, false, false, false, false},
+            {true, false, false, false, false},
+            {true, false, false, false, false}
+        },
+        // Д
+        {
+            {false, true, true, true, false},
+            {false, true, false, true, false},
+            {false, true, false, true, false},
+            {true, true, true, true, true},
+            {true, false, false, false, true}
+        },
+        // Е
+        {
+            {true, true, true, true, true},
+            {true, false, false, false, false},
+            {true, true, true, false, false},
+            {true, false, false, false, false},
+            {true, true, true, true, true}
+        },
+        // Ж
+        {
+            {true, false, true, false, true},
+            {false, true, true, true, false},
+            {false, false, true, false, false},
+            {false, true, true, true, false},
+            {true, false, true, false, true}
+        },
+        // З
+        {
+            {true, true, true, true, false},
+            {false, false, false, false, true},
+            {false, true, true, true, false},
+            {false, false, false, false, true},
+            {true, true, true, true, false}
+        },
+        // И
+        {
+            {true, false, false, false, true},
+            {true, false, false, true, true},
+            {true, false, true, false, true},
+            {true, true, false, false, true},
+            {true, false, false, false, true}
+        },
+        // К
+        {
+            {true, false, false, true, false},
+            {true, false, true, false, false},
+            {true, true, false, false, false},
+            {true, false, true, false, false},
+            {true, false, false, true, false}
+        },
+        // Л
+        {
+            {false, true, true, true, false},
+            {false, true, false, true, false},
+            {false, true, false, true, false},
+            {false, true, false, true, false},
+            {true, false, false, false, true}
+        },
+        // М
+        {
+            {true, false, false, false, true},
+            {true, true, false, true, true},
+            {true, false, true, false, true},
+            {true, false, false, false, true},
+            {true, false, false, false, true}
+        },
+        // Н
+        {
+            {true, false, false, false, true},
+            {true, false, false, false, true},
+            {true, true, true, true, true},
+            {true, false, false, false, true},
+            {true, false, false, false, true}
+        },
+        // О
+        {
+            {false, true, true, true, false},
+            {true, false, false, false, true},
+            {true, false, false, false, true},
+            {true, false, false, false, true},
+            {false, true, true, true, false}
+        },
+        // П
+        {
+            {true, true, true, true, true},
+            {true, false, false, false, true},
+            {true, false, false, false, true},
+            {true, false, false, false, true},
+            {true, false, false, false, true}
+        },
+        // Р
+        {
+            {true, true, true, true, false},
+            {true, false, false, false, true},
+            {true, true, true, true, false},
+            {true, false, false, false, false},
+            {true, false, false, false, false}
+        },
+        // С
+        {
+            {false, true, true, true, true},
+            {true, false, false, false, false},
+            {true, false, false, false, false},
+            {true, false, false, false, false},
+            {false, true, true, true, true}
+        },
+        // Т
+        {
+            {true, true, true, true, true},
+            {false, false, true, false, false},
+            {false, false, true, false, false},
+            {false, false, true, false, false},
+            {false, false, true, false, false}
+        },
+        // У
+        {
+            {true, false, false, false, true},
+            {true, false, false, false, true},
+            {false, true, true, true, true},
+            {false, false, false, false, true},
+            {true, true, true, true, false}
+        },
+        // Ф
+        {
+            {false, false, true, false, false},
+            {false, true, true, true, false},
+            {true, false, true, false, true},
+            {false, true, true, true, false},
+            {false, false, true, false, false}
+        },
+        // Х
+        {
+            {true, false, false, false, true},
+            {false, true, false, true, false},
+            {false, false, true, false, false},
+            {false, true, false, true, false},
+            {true, false, false, false, true}
+        },
+        // Ц
+        {
+            {true, false, false, false, true},
+            {true, false, false, false, true},
+            {true, false, false, false, true},
+            {true, true, true, true, true},
+            {false, false, false, false, true}
+        },
+        // Ч
+        {
+            {true, false, false, false, true},
+            {true, false, false, false, true},
+            {false, true, true, true, true},
+            {false, false, false, false, true},
+            {false, false, false, false, true}
+        },
+        // Ш
+        {
+            {true, false, true, false, true},
+            {true, false, true, false, true},
+            {true, false, true, false, true},
+            {true, false, true, false, true},
+            {true, true, true, true, true}
+        },
+        // Щ
+        {
+            {true, false, true, false, true},
+            {true, false, true, false, true},
+            {true, false, true, false, true},
+            {true, true, true, true, true},
+            {false, false, false, false, true}
+        },
+        // Э
+        {
+            {true, true, true, true, false},
+            {false, false, false, false, true},
+            {false, true, true, true, true},
+            {false, false, false, false, true},
+            {true, true, true, true, false}
+        },
+        // Ю
+        {
+            {true, false, false, true, true, false},
+            {true, false, true, false, false, true},
+            {true, true, true, false, false, true},
+            {true, false, true, false, false, true},
+            {true, false, false, true, true, false}
+        },
+        // Я
+        {
+            {false, true, true, true, true},
+            {true, false, false, false, true},
+            {false, true, true, true, true},
+            {false, false, true, false, true},
+            {true, false, false, false, true}
+        }
+    };
+
     public LevelGenerator(int width, int height, Random random) {
         this.width = width;
         this.height = height;
@@ -117,6 +345,9 @@ public class LevelGenerator {
 
         // Ensure less than 50% empty space
         ensureMinimumContent();
+
+        // Add a Cyrillic letter made of bricks (placed last so it doesn't get overwritten)
+        generateCyrillicLetter();
 
         LOG.info("Generating random level {}", "N/A");
     }
@@ -631,6 +862,102 @@ public class LevelGenerator {
             for (int c = 0; c < size; c++) {
                 placeTile(row + r, col + c, type);
             }
+        }
+    }
+
+    /**
+     * Generate a random Cyrillic letter made of bricks somewhere on the map.
+     * Avoids spawn areas and base protection zone.
+     */
+    private void generateCyrillicLetter() {
+        // Select a random letter
+        int letterIndex = random.nextInt(CYRILLIC_LETTERS.length);
+        boolean[][] letter = CYRILLIC_LETTERS[letterIndex];
+
+        int letterHeight = letter.length;
+        int letterWidth = letter[0].length;
+
+        // Find a valid position (avoid spawn areas and base)
+        // Valid zone: rows 6-18, cols 2-22 (approximately middle of the map)
+        int minRow = 6;
+        int maxRow = 18 - letterHeight;
+        int minCol = 2;
+        int maxCol = width - 2 - letterWidth;
+
+        // Try to find a good position that doesn't overlap too much with existing content
+        int bestRow = -1;
+        int bestCol = -1;
+        int bestOverlap = Integer.MAX_VALUE;
+
+        for (int attempt = 0; attempt < 20; attempt++) {
+            int testRow = minRow + random.nextInt(Math.max(1, maxRow - minRow));
+            int testCol = minCol + random.nextInt(Math.max(1, maxCol - minCol));
+
+            // Count how many letter tiles would overlap with existing solid content
+            int overlap = 0;
+            for (int r = 0; r < letterHeight; r++) {
+                for (int c = 0; c < letterWidth; c++) {
+                    if (letter[r][c]) {
+                        int mapRow = testRow + r;
+                        int mapCol = testCol + c;
+                        if (mapRow > 0 && mapRow < height - 1 && mapCol > 0 && mapCol < width - 1) {
+                            GameMap.TileType existing = tiles[mapRow][mapCol];
+                            if (existing == GameMap.TileType.STEEL ||
+                                existing == GameMap.TileType.WATER ||
+                                existing == GameMap.TileType.GROUND) {
+                                overlap += 10; // Heavily penalize steel/water/ground overlap
+                            } else if (existing == GameMap.TileType.BRICK) {
+                                overlap += 1; // Small penalty for brick overlap (letter blends in)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (overlap < bestOverlap) {
+                bestOverlap = overlap;
+                bestRow = testRow;
+                bestCol = testCol;
+            }
+
+            // If we found a spot with no overlap, use it immediately
+            if (overlap == 0) {
+                break;
+            }
+        }
+
+        // Place the letter if we found a valid position
+        if (bestRow >= 0 && bestCol >= 0) {
+            // First, clear a rectangular area around the letter so it stands out
+            for (int r = -1; r <= letterHeight; r++) {
+                for (int c = -1; c <= letterWidth; c++) {
+                    int mapRow = bestRow + r;
+                    int mapCol = bestCol + c;
+                    if (mapRow > 0 && mapRow < height - 1 && mapCol > 0 && mapCol < width - 1) {
+                        GameMap.TileType existing = tiles[mapRow][mapCol];
+                        // Clear everything except steel, water, and ground
+                        if (existing != GameMap.TileType.STEEL &&
+                            existing != GameMap.TileType.WATER &&
+                            existing != GameMap.TileType.GROUND) {
+                            tiles[mapRow][mapCol] = GameMap.TileType.EMPTY;
+                        }
+                    }
+                }
+            }
+
+            // Now place the letter
+            for (int r = 0; r < letterHeight; r++) {
+                for (int c = 0; c < letterWidth; c++) {
+                    if (letter[r][c]) {
+                        int mapRow = bestRow + r;
+                        int mapCol = bestCol + c;
+                        if (mapRow > 0 && mapRow < height - 1 && mapCol > 0 && mapCol < width - 1) {
+                            tiles[mapRow][mapCol] = GameMap.TileType.BRICK;
+                        }
+                    }
+                }
+            }
+            LOG.info("Placed Cyrillic letter {} at row={}, col={}", letterIndex, bestRow, bestCol);
         }
     }
 

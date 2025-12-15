@@ -241,14 +241,80 @@ public class LevelGenerator {
             {false, true, true, true, true},
             {false, false, true, false, true},
             {true, false, false, false, true}
+        },
+        // Ь (soft sign)
+        {
+            {true, false, false, false, false},
+            {true, false, false, false, false},
+            {true, true, true, true, false},
+            {true, false, false, false, true},
+            {true, true, true, true, false}
         }
     };
+
+    // Character to letter index mapping
+    private static final java.util.Map<Character, Integer> CHAR_TO_INDEX = new java.util.HashMap<>();
+    static {
+        CHAR_TO_INDEX.put('а', 0);  CHAR_TO_INDEX.put('б', 1);  CHAR_TO_INDEX.put('в', 2);
+        CHAR_TO_INDEX.put('г', 3);  CHAR_TO_INDEX.put('д', 4);  CHAR_TO_INDEX.put('е', 5);
+        CHAR_TO_INDEX.put('ж', 6);  CHAR_TO_INDEX.put('з', 7);  CHAR_TO_INDEX.put('и', 8);
+        CHAR_TO_INDEX.put('к', 9);  CHAR_TO_INDEX.put('л', 10); CHAR_TO_INDEX.put('м', 11);
+        CHAR_TO_INDEX.put('н', 12); CHAR_TO_INDEX.put('о', 13); CHAR_TO_INDEX.put('п', 14);
+        CHAR_TO_INDEX.put('р', 15); CHAR_TO_INDEX.put('с', 16); CHAR_TO_INDEX.put('т', 17);
+        CHAR_TO_INDEX.put('у', 18); CHAR_TO_INDEX.put('ф', 19); CHAR_TO_INDEX.put('х', 20);
+        CHAR_TO_INDEX.put('ц', 21); CHAR_TO_INDEX.put('ч', 22); CHAR_TO_INDEX.put('ш', 23);
+        CHAR_TO_INDEX.put('щ', 24); CHAR_TO_INDEX.put('э', 25); CHAR_TO_INDEX.put('ю', 26);
+        CHAR_TO_INDEX.put('я', 27); CHAR_TO_INDEX.put('ь', 28);
+    }
+
+    // Secret phrase words (unique words only)
+    private static final String[] SECRET_WORDS = {
+        "олег", "за", "все", "берется", "смело", "но", "получается",
+        "говно", "а", "если", "то", "просто", "тратит", "меньше", "сил"
+    };
+
+    // Word sequence tracking (static to persist across LevelGenerator instances within session)
+    private static java.util.List<String> shuffledWords;
+    private static int currentWordIndex = 0;
+    private static int currentLetterIndex = 0;
+    private static boolean phraseComplete = false;
+    private static boolean initialized = false;
+
+    // Track level to avoid advancing letter on restarts (static for server restarts)
+    private static int lastGeneratedLevel = -1;
+    private static int lastLetterIndex = -1; // Cache the letter for restarts
 
     public LevelGenerator(int width, int height, Random random) {
         this.width = width;
         this.height = height;
         this.random = random;
+
+        // Initialize and shuffle words only once per session (static)
+        if (!initialized) {
+            shuffledWords = new java.util.ArrayList<>(java.util.Arrays.asList(SECRET_WORDS));
+            java.util.Collections.shuffle(shuffledWords, random);
+            initialized = true;
+            LOG.info("Secret phrase words shuffled for this session: {}", shuffledWords);
+        }
     }
+
+    /**
+     * Reset the word sequence for a new game session.
+     * Call this when starting a completely new game.
+     */
+    public static void resetWordSequence() {
+        initialized = false;
+        currentWordIndex = 0;
+        currentLetterIndex = 0;
+        phraseComplete = false;
+        lastGeneratedLevel = -1;
+        lastLetterIndex = -1;
+        shuffledWords = null;
+        LOG.info("Word sequence reset for new session");
+    }
+
+    // Current level being generated (set by generateRandomLevel)
+    private int currentLevel = 1;
 
     /**
      * Generate a random level into the provided tiles array.
@@ -256,7 +322,18 @@ public class LevelGenerator {
      * @param tiles The tiles array to populate
      */
     public void generateRandomLevel(GameMap.TileType[][] tiles) {
+        generateRandomLevel(tiles, 1);
+    }
+
+    /**
+     * Generate a random level into the provided tiles array.
+     *
+     * @param tiles The tiles array to populate
+     * @param levelNumber The current level number
+     */
+    public void generateRandomLevel(GameMap.TileType[][] tiles, int levelNumber) {
         this.tiles = tiles;
+        this.currentLevel = levelNumber;
 
         // Initialize with empty tiles
         for (int row = 0; row < height; row++) {
@@ -866,12 +943,61 @@ public class LevelGenerator {
     }
 
     /**
-     * Generate a random Cyrillic letter made of bricks somewhere on the map.
+     * Get the next letter index from the secret phrase word sequence.
+     * Returns -1 if phrase is complete (use random letter).
+     */
+    private int getNextLetterFromPhrase() {
+        if (phraseComplete || shuffledWords == null || shuffledWords.isEmpty()) {
+            return -1;
+        }
+
+        // Get current word and letter
+        String currentWord = shuffledWords.get(currentWordIndex);
+        char currentChar = currentWord.charAt(currentLetterIndex);
+        Integer letterIndex = CHAR_TO_INDEX.get(currentChar);
+
+        // Advance to next letter
+        currentLetterIndex++;
+        if (currentLetterIndex >= currentWord.length()) {
+            // Move to next word
+            currentLetterIndex = 0;
+            currentWordIndex++;
+            if (currentWordIndex >= shuffledWords.size()) {
+                // Phrase complete
+                phraseComplete = true;
+                LOG.info("Secret phrase complete! Switching to random letters.");
+            } else {
+                LOG.info("Word '{}' complete. Next word: '{}'", currentWord, shuffledWords.get(currentWordIndex));
+            }
+        }
+
+        return letterIndex != null ? letterIndex : -1;
+    }
+
+    /**
+     * Generate a Cyrillic letter made of bricks somewhere on the map.
+     * Uses secret phrase sequence first, then random letters after phrase is complete.
+     * Only advances to next letter when level number increases (not on restarts).
      * Avoids spawn areas and base protection zone.
      */
     private void generateCyrillicLetter() {
-        // Select a random letter
-        int letterIndex = random.nextInt(CYRILLIC_LETTERS.length);
+        int letterIndex;
+
+        // Check if this is a new level or a restart
+        if (currentLevel != lastGeneratedLevel) {
+            // New level - get next letter from phrase
+            letterIndex = getNextLetterFromPhrase();
+            if (letterIndex < 0) {
+                // Phrase complete or error - use random letter
+                letterIndex = random.nextInt(CYRILLIC_LETTERS.length);
+            }
+            lastGeneratedLevel = currentLevel;
+            lastLetterIndex = letterIndex;
+        } else {
+            // Restart of same level - use cached letter
+            letterIndex = lastLetterIndex >= 0 ? lastLetterIndex : random.nextInt(CYRILLIC_LETTERS.length);
+        }
+
         boolean[][] letter = CYRILLIC_LETTERS[letterIndex];
 
         int letterHeight = letter.length;

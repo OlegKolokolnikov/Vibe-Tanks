@@ -98,7 +98,7 @@ public class GameMap {
      * Generate level for a specific level number.
      * Checks if a custom level exists, otherwise generates random.
      */
-    private void generateLevelForNumber(int num) {
+    public void generateLevelForNumber(int num) {
         this.levelNumber = num;
         this.customLevelData = null; // Reset custom level
 
@@ -126,7 +126,7 @@ public class GameMap {
 
     public void generateRandomLevel() {
         LOG.info("Generating random level {}", levelNumber);
-        levelGenerator.generateRandomLevel(tiles);
+        levelGenerator.generateRandomLevel(tiles, levelNumber);
     }
 
     public boolean checkTankCollision(double x, double y, int tankSize) {

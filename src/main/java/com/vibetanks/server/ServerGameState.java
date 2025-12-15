@@ -194,12 +194,25 @@ public class ServerGameState {
     }
 
     private void initialize(int playerCount) {
+        initialize(playerCount, true); // Default: create new map
+    }
+
+    private void initialize(int playerCount, boolean newMap) {
         // Reset IDs to prevent overflow after extended play
         Bullet.resetIdCounter();
         Laser.resetIdCounter();
         PowerUp.resetIdCounter();
 
-        gameMap = new GameMap(MAP_SIZE, MAP_SIZE);
+        if (newMap || gameMap == null) {
+            // Create new map (first init or next level)
+            gameMap = new GameMap(MAP_SIZE, MAP_SIZE);
+            gameMap.setLevelNumber(currentLevel);
+            gameMap.generateLevelForNumber(currentLevel);
+        } else {
+            // Restart same level - regenerate with same seed
+            gameMap.regenerateCurrentLevel();
+        }
+
         bullets = new ArrayList<>();
         lasers = new ArrayList<>();
         powerUps = new ArrayList<>();
@@ -236,7 +249,7 @@ public class ServerGameState {
         ufoSpawnedThisLevel = false;
         easterEgg = null;
 
-        LOG.info("Game initialized with {} player(s)", playerCount);
+        LOG.info("Game initialized with {} player(s), newMap={}", playerCount, newMap);
     }
 
     public void addPlayer(int playerNumber) {
@@ -1096,7 +1109,7 @@ public class ServerGameState {
         playerStats.resetKillsOnly();
         playerStats.resetLevelScores();
 
-        initialize(playerTanks.size());
+        initialize(playerTanks.size(), false); // Same map on restart
     }
 
     public void nextLevel() {
@@ -1107,7 +1120,7 @@ public class ServerGameState {
         playerStats.resetKillsOnly();
         playerStats.resetLevelScores();
 
-        initialize(playerTanks.size());
+        initialize(playerTanks.size(), true); // New map for next level
     }
 
     public boolean isGameOver() { return gameOver; }

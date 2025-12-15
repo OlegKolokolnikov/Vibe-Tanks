@@ -1,5 +1,6 @@
 package com.vibetanks;
 
+import com.vibetanks.core.GameConstants;
 import com.vibetanks.ui.MenuScene;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -7,8 +8,9 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
 public class Main extends Application {
-    private static final int WINDOW_WIDTH = 832;  // 26 tiles * 32 pixels
-    private static final int WINDOW_HEIGHT = 832; // 26 tiles * 32 pixels
+    private static final int GAME_FIELD_SIZE = 832;  // 26 tiles * 32 pixels (game field stays same size)
+    private static final int WINDOW_WIDTH = GAME_FIELD_SIZE + GameConstants.SIDEBAR_WIDTH;  // Game field + sidebar
+    private static final int WINDOW_HEIGHT = GAME_FIELD_SIZE; // Height stays the same
 
     @Override
     public void start(Stage primaryStage) {

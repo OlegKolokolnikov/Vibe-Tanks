@@ -8,6 +8,7 @@ import com.vibetanks.rendering.GameRenderer;
 import com.vibetanks.rendering.HUDRenderer;
 import com.vibetanks.rendering.IconRenderer;
 import com.vibetanks.rendering.ImageLoader;
+import com.vibetanks.rendering.SidebarRenderer;
 import com.vibetanks.rendering.StatsRenderer;
 import com.vibetanks.network.GameState;
 import com.vibetanks.network.GameStateApplier;
@@ -43,6 +44,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     private final GraphicsContext gc;
     private final int width;
     private final int height;
+    private final int gameFieldWidth;  // Game field width (excludes sidebar)
     private final int playerCount;
     private final int totalEnemies;
     private final Stage stage;
@@ -65,6 +67,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     private IconRenderer iconRenderer;
     private StatsRenderer statsRenderer;
     private HUDRenderer hudRenderer;
+    private SidebarRenderer sidebarRenderer;
     private double[][] playerStartPositions; // For respawning
 
     // Fixed start positions - use shared constants
@@ -165,6 +168,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         this.root = root;
         this.width = width;
         this.height = height;
+        this.gameFieldWidth = width - GameConstants.SIDEBAR_WIDTH;  // Game field excludes sidebar
         this.playerCount = playerCount;
         this.totalEnemies = totalEnemies;
         this.stage = stage;
@@ -350,11 +354,12 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         soundManager.playIntro();
 
         // Initialize renderers
-        gameRenderer = new GameRenderer(gc, width, height);
+        gameRenderer = new GameRenderer(gc, gameFieldWidth, height);
         effectRenderer = gameRenderer.getEffectRenderer();
         iconRenderer = gameRenderer.getIconRenderer();
-        statsRenderer = new StatsRenderer(gc, iconRenderer, width);
-        hudRenderer = new HUDRenderer(gc, iconRenderer, effectRenderer, statsRenderer, width, height);
+        statsRenderer = new StatsRenderer(gc, iconRenderer, gameFieldWidth);
+        hudRenderer = new HUDRenderer(gc, iconRenderer, effectRenderer, statsRenderer, gameFieldWidth, height);
+        sidebarRenderer = new SidebarRenderer(gc, gameFieldWidth, height);
 
         // Initialize spatial grids for optimized collision detection
         ProjectileHandler.initializeSpatialGrids(gameMap.getWidth() * 32, gameMap.getHeight() * 32);
@@ -1012,6 +1017,10 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         if (ufoManager.getUfoKilledMessageTimer() > 0) {
             effectRenderer.renderUfoKilledMessage(ufoManager.getUfoKilledMessageTimer());
         }
+
+        // Render sidebar (remaining enemies, player lives, level)
+        int remainingToSpawn = enemySpawner.getRemainingEnemies();
+        sidebarRenderer.render(remainingToSpawn, playerTanks, gameMap.getLevelNumber());
 
         // Render UI
         renderUI();

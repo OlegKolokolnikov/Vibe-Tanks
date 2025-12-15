@@ -19,6 +19,9 @@ public final class GameConstants {
     public static final int MAP_SIZE = 26;
     public static final int TILE_SIZE = 32;
 
+    // Sidebar dimensions (like original Battle City)
+    public static final int SIDEBAR_WIDTH = 64;  // 2 tiles width
+
     // Enemy settings
     public static final int TOTAL_ENEMIES = 20;
     public static final int MAX_ENEMIES_ON_SCREEN = 5;

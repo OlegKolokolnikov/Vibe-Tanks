@@ -36,24 +36,21 @@ public class HUDRenderer {
     }
 
     /**
-     * Render the main HUD (level info, player stats, power-up icons).
+     * Render the main HUD (player stats, power-up icons).
+     * Level, enemies, and lives are now shown in the sidebar.
      */
     public void renderHUD(int levelNumber, int remainingEnemies, int displayPlayerCount,
                           List<Tank> playerTanks, int[] playerKills, int[] playerScores,
                           PlayerNameProvider nameProvider) {
-        gc.setFill(Color.WHITE);
-        gc.fillText("Level: " + levelNumber + "  Enemies: " + remainingEnemies, 10, 20);
-
-        // Display player info and power-ups
+        // Display player info and power-ups (kills and score only - lives moved to sidebar)
         for (int i = 0; i < displayPlayerCount && i < playerTanks.size(); i++) {
             Tank player = playerTanks.get(i);
             String playerName = nameProvider.getPlayerDisplayName(i);
-            double yOffset = 40 + i * 60;
+            double yOffset = 20 + i * 40;
 
-            // Display lives (show remaining respawns, not total lives), kills and score
-            int displayLives = Math.max(0, player.getLives() - 1);
+            // Display kills and score (lives now in sidebar)
             gc.setFill(Color.WHITE);
-            gc.fillText(playerName + " Lives: " + displayLives + "  Kills: " + playerKills[i] + "  Score: " + playerScores[i], 10, yOffset);
+            gc.fillText(playerName + "  Kills: " + playerKills[i] + "  Score: " + playerScores[i], 10, yOffset);
 
             // Display power-ups
             renderPlayerPowerUps(player, 10, yOffset + 10);

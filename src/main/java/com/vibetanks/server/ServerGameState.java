@@ -198,6 +198,10 @@ public class ServerGameState {
     }
 
     private void initialize(int playerCount, boolean newMap) {
+        initialize(playerCount, newMap, null);
+    }
+
+    private void initialize(int playerCount, boolean newMap, int[] preservedLives) {
         // Reset IDs to prevent overflow after extended play
         Bullet.resetIdCounter();
         Laser.resetIdCounter();
@@ -223,7 +227,21 @@ public class ServerGameState {
         for (int i = 0; i < playerCount; i++) {
             double[] pos = GameConstants.getPlayerStartPosition(i);
             Tank player = new Tank(pos[0], pos[1], Direction.UP, true, i + 1);
-            player.giveTemporaryShield();
+
+            // Preserve lives from previous level - dead players stay dead
+            if (preservedLives != null && i < preservedLives.length) {
+                int lives = preservedLives[i];
+                player.setLives(lives);
+                if (lives <= 0) {
+                    // Player was dead - keep them dead (need to take life or rejoin)
+                    player.setAlive(false);
+                    LOG.info("Player {} remains dead after level transition (0 lives)", i + 1);
+                } else {
+                    player.giveTemporaryShield();
+                }
+            } else {
+                player.giveTemporaryShield();
+            }
             playerTanks.add(player);
         }
 
@@ -363,18 +381,27 @@ public class ServerGameState {
         Tank deadPlayer = playerTanks.get(playerIndex);
         if (deadPlayer.isAlive() || deadPlayer.isWaitingToRespawn()) return;
 
-        // Find teammate with lives to spare
+        // Find all teammates with lives to spare
+        List<Integer> eligibleTeammates = new ArrayList<>();
         for (int i = 0; i < playerTanks.size(); i++) {
             if (i == playerIndex) continue;
             Tank teammate = playerTanks.get(i);
             if (teammate.getLives() > 1) {
-                teammate.setLives(teammate.getLives() - 1);
-                deadPlayer.setLives(1);
-                double[] pos = GameConstants.getPlayerStartPosition(playerIndex);
-                deadPlayer.respawn(pos[0], pos[1]);
-                LOG.info("Player {} took life from Player {}", playerIndex + 1, i + 1);
-                break;
+                eligibleTeammates.add(i);
             }
+        }
+
+        // Pick a random teammate from eligible list
+        if (!eligibleTeammates.isEmpty()) {
+            int randomIndex = GameConstants.RANDOM.nextInt(eligibleTeammates.size());
+            int donorIndex = eligibleTeammates.get(randomIndex);
+            Tank donor = playerTanks.get(donorIndex);
+
+            donor.setLives(donor.getLives() - 1);
+            deadPlayer.setLives(1);
+            double[] pos = GameConstants.getPlayerStartPosition(playerIndex);
+            deadPlayer.respawn(pos[0], pos[1]);
+            LOG.info("Player {} took life from random teammate Player {}", playerIndex + 1, donorIndex + 1);
         }
     }
 
@@ -1109,7 +1136,13 @@ public class ServerGameState {
         playerStats.resetKillsOnly();
         playerStats.resetLevelScores();
 
-        initialize(playerTanks.size(), false); // Same map on restart
+        // Preserve player lives (dead players stay dead - must take life or rejoin)
+        int[] lives = new int[playerTanks.size()];
+        for (int i = 0; i < playerTanks.size(); i++) {
+            lives[i] = playerTanks.get(i).getLives();
+        }
+
+        initialize(playerTanks.size(), false, lives); // Same map on restart
     }
 
     public void nextLevel() {
@@ -1120,7 +1153,13 @@ public class ServerGameState {
         playerStats.resetKillsOnly();
         playerStats.resetLevelScores();
 
-        initialize(playerTanks.size(), true); // New map for next level
+        // Preserve player lives (dead players stay dead - must take life or rejoin)
+        int[] lives = new int[playerTanks.size()];
+        for (int i = 0; i < playerTanks.size(); i++) {
+            lives[i] = playerTanks.get(i).getLives();
+        }
+
+        initialize(playerTanks.size(), true, lives); // New map for next level
     }
 
     public boolean isGameOver() { return gameOver; }

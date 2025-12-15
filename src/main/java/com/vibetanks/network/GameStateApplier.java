@@ -355,8 +355,7 @@ public class GameStateApplier {
             enemy.setSpeedMultiplier(eData.speedMultiplier);
             enemy.setColorOverrideIndex(eData.colorOverrideIndex);
             if (eData.alive) {
-                enemy.setPosition(eData.x, eData.y);
-                enemy.setDirection(Direction.values()[eData.direction]);
+                enemy.setPositionAndDirection(eData.x, eData.y, Direction.values()[eData.direction]);
             }
         }
     }
@@ -602,8 +601,7 @@ public class GameStateApplier {
         if (localPlayerIdx >= 0 && localPlayerIdx < playerTanks.size()) {
             Tank myTank = playerTanks.get(localPlayerIdx);
             double[][] fixedPositions = ctx.getFixedStartPositions();
-            myTank.setPosition(fixedPositions[localPlayerIdx][0], fixedPositions[localPlayerIdx][1]);
-            myTank.setDirection(Direction.UP);
+            myTank.setPositionAndDirection(fixedPositions[localPlayerIdx][0], fixedPositions[localPlayerIdx][1], Direction.UP);
             myTank.giveTemporaryShield();
         }
 
@@ -616,6 +614,10 @@ public class GameStateApplier {
         Bullet.resetIdCounter();
         Laser.resetIdCounter();
         PowerUp.resetIdCounter();
+
+        // Clear seen ID sets to prevent false duplicate detection after ID reset
+        ctx.getSeenBulletIds().clear();
+        ctx.getSeenLaserIds().clear();
 
         // Clear enemy tanks - will be recreated from state
         ctx.getEnemyTanks().clear();

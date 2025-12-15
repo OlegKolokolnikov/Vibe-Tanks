@@ -103,9 +103,8 @@ public class NetworkManager {
 
         /**
          * Check if client has timed out (no input for HEARTBEAT_TIMEOUT_MS)
-         * Must be called within synchronized(this) block for thread safety
          */
-        public boolean isTimedOut() {
+        public synchronized boolean isTimedOut() {
             return System.currentTimeMillis() - lastHeartbeat > HEARTBEAT_TIMEOUT_MS;
         }
 
@@ -130,6 +129,10 @@ public class NetworkManager {
 
         public void close() {
             active = false;
+            // Clean up input maps to prevent memory leak
+            playerInputs.remove(playerNumber);
+            lastKnownInputs.remove(playerNumber);
+            lastSequenceNumbers.remove(playerNumber);
             try {
                 if (out != null) out.close();
                 if (in != null) in.close();
@@ -410,9 +413,10 @@ public class NetworkManager {
     // Get latest game state (for client)
     public GameState getLatestGameState() {
         GameState latest = null;
-        // Drain queue and get most recent
-        while (!receivedStates.isEmpty()) {
-            latest = receivedStates.poll();
+        GameState current;
+        // Drain queue atomically using poll() which returns null when empty
+        while ((current = receivedStates.poll()) != null) {
+            latest = current;
         }
         return latest;
     }

@@ -55,7 +55,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     private List<Bullet> bullets;
     private List<Laser> lasers;
     private List<PowerUp> powerUps;
-    private List<GameState.SoundEvent> pendingSoundEvents = new ArrayList<>(); // Sound events for network sync
+    private final List<GameState.SoundEvent> pendingSoundEvents = Collections.synchronizedList(new ArrayList<>()); // Sound events for network sync (thread-safe)
     private EnemySpawner enemySpawner;
     private InputHandler inputHandler;
     private SoundManager soundManager;
@@ -179,11 +179,13 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         canvas.setFocusTraversable(false); // Canvas should not take focus
         root.getChildren().add(canvas);
 
-        // Load local player's nickname
-        String localNickname = NicknameManager.getNickname();
-        int myPlayerIndex = isNetworkGame && network != null ? network.getPlayerNumber() - 1 : 0;
-        if (myPlayerIndex >= 0 && myPlayerIndex < 4) {
-            playerNicknames[myPlayerIndex] = localNickname;
+        // Load local player's nickname (only for host/single player - clients get updated via GameStateApplier)
+        // For network clients, player number may not be assigned yet, so skip here to avoid overwriting host's nickname
+        if (!isNetworkGame || (network != null && network.isHost())) {
+            String localNickname = NicknameManager.getNickname();
+            synchronized (playerNicknames) {
+                playerNicknames[0] = localNickname;
+            }
         }
 
         // Load dancing anime girl GIF for victory screen
@@ -270,11 +272,13 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     pauseMenuSelection = 0;
 
                     if (isNetworkGame) {
-                        // Multiplayer: also toggle shield
+                        // Multiplayer: also toggle shield (synchronized for thread safety)
                         int myPlayerIndex = network != null && !network.isHost()
                             ? network.getPlayerNumber() - 1 : 0;
                         if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
-                            playerPaused[myPlayerIndex] = paused;
+                            synchronized (playerPaused) {
+                                playerPaused[myPlayerIndex] = paused;
+                            }
                             Tank myTank = playerTanks.get(myPlayerIndex);
                             myTank.setPauseShield(paused);
                         }
@@ -300,7 +304,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                             int myPlayerIndex = network != null && !network.isHost()
                                 ? network.getPlayerNumber() - 1 : 0;
                             if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
-                                playerPaused[myPlayerIndex] = false;
+                                synchronized (playerPaused) {
+                                    playerPaused[myPlayerIndex] = false;
+                                }
                                 playerTanks.get(myPlayerIndex).setPauseShield(false);
                             }
                         }
@@ -1166,15 +1172,20 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     public GameState buildGameState() {
         int connectedPlayers = network != null ? network.getConnectedPlayerCount() : playerCount;
         boolean[] playerConnected = network != null ? network.getPlayerConnectionStatus() : null;
+        // Atomically copy and clear sound events to prevent race conditions
+        List<GameState.SoundEvent> soundEventsCopy;
+        synchronized (pendingSoundEvents) {
+            soundEventsCopy = new ArrayList<>(pendingSoundEvents);
+            pendingSoundEvents.clear();
+        }
         GameState state = GameStateBuilder.build(
             playerTanks, playerKills, playerScores, playerLevelScores, playerNicknames, playerKillsByType,
             playerConnected, enemyTanks, bullets, lasers, powerUps,
             gameOver, victory, enemySpawner, gameMap, base, connectedPlayers,
             powerUpEffectManager, bossKillerPlayerIndex, bossKillPowerUpReward,
-            celebrationManager, mapChanges, ufoManager, pendingSoundEvents
+            celebrationManager, mapChanges, ufoManager, soundEventsCopy
         );
         mapChanges.clear(); // Clear after building state
-        pendingSoundEvents.clear(); // Clear sound events after sending
         return state;
     }
 

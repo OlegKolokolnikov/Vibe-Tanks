@@ -375,7 +375,7 @@ public class Tank {
     public void setPauseShield(boolean pauseShield) { this.hasPauseShield = pauseShield; }
     public Direction getDirection() { return direction; }
 
-    public void setDirection(Direction direction) {
+    public synchronized void setDirection(Direction direction) {
         this.direction = direction;
     }
 
@@ -635,6 +635,21 @@ public class Tank {
         }
         this.x = x;
         this.y = y;
+    }
+
+    /**
+     * Atomically set position and direction together for network sync.
+     * Prevents race conditions where another thread reads inconsistent position/direction.
+     */
+    public synchronized void setPositionAndDirection(double x, double y, Direction direction) {
+        // Animate tracks if position changed
+        if (this.x != x || this.y != y) {
+            trackAnimationFrame++;
+            isMoving = true;
+        }
+        this.x = x;
+        this.y = y;
+        this.direction = direction;
     }
 
     // Color override methods (for enemies that collected LIFE/STEEL powerup)

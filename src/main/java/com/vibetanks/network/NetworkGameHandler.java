@@ -128,11 +128,17 @@ public class NetworkGameHandler {
         if (myPlayerIndex >= 0 && myPlayerIndex < playerTanks.size()) {
             Tank myTank = playerTanks.get(myPlayerIndex);
 
+            // Read pause status once under synchronization for consistent behavior
+            boolean isPaused;
+            synchronized (playerPaused) {
+                isPaused = playerPaused[myPlayerIndex];
+            }
+
             // Capture input from InputHandler
             PlayerInput input = ctx.capturePlayerInput();
 
             // Apply movement locally (skip if paused or dead)
-            if (myTank.isAlive() && !ctx.getPowerUpEffectManager().arePlayersFrozen() && !playerPaused[myPlayerIndex]) {
+            if (myTank.isAlive() && !ctx.getPowerUpEffectManager().arePlayersFrozen() && !isPaused) {
                 List<Tank> allTanks = new ArrayList<>();
                 allTanks.addAll(playerTanks);
                 allTanks.addAll(ctx.getEnemyTanks());
@@ -149,7 +155,7 @@ public class NetworkGameHandler {
             }
 
             // Shoot locally for sound (skip if paused)
-            if (myTank.isAlive() && input.shoot && !playerPaused[myPlayerIndex]) {
+            if (myTank.isAlive() && input.shoot && !isPaused) {
                 if (myTank.hasLaser()) {
                     Laser laser = myTank.shootLaser(ctx.getSoundManager());
                     if (laser != null) {
@@ -177,7 +183,7 @@ public class NetworkGameHandler {
                 input.direction = 0;
             }
             input.nickname = NicknameManager.getNickname();
-            input.paused = playerPaused[myPlayerIndex]; // Send pause status for shield sync
+            input.paused = isPaused; // Send pause status for shield sync
             input.sequenceNumber = ++clientInputSequence;
             input.timestamp = System.currentTimeMillis();
             network.sendInput(input);
@@ -276,10 +282,10 @@ public class NetworkGameHandler {
             if (clientInput != null) {
                 Tank clientTank = playerTanks.get(i - 1);
 
-                // Accept client's position directly (only if valid)
+                // Accept client's position directly (only if valid) - use atomic method for thread safety
                 if (clientTank.isAlive() && clientInput.posX >= 0 && clientInput.posY >= 0) {
-                    clientTank.setPosition(clientInput.posX, clientInput.posY);
-                    clientTank.setDirection(Direction.values()[clientInput.direction]);
+                    clientTank.setPositionAndDirection(clientInput.posX, clientInput.posY,
+                            Direction.values()[clientInput.direction]);
                 }
 
                 // Handle shooting on host (for bullet sync)

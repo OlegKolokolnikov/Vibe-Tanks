@@ -427,8 +427,13 @@ public class Tank {
         // Update size for BOSS tanks (needed for network sync)
         if (type == EnemyType.BOSS) {
             this.size = BASE_SIZE * 4;
+            this.bulletPower = 2; // BOSS can destroy steel
+        } else if (type == EnemyType.HEAVY) {
+            this.size = BASE_SIZE;
+            this.bulletPower = 2; // HEAVY can destroy steel
         } else {
             this.size = BASE_SIZE;
+            this.bulletPower = 1; // Other types cannot destroy steel
         }
     }
 

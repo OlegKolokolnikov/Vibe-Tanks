@@ -208,25 +208,11 @@ public class GameStateBuilder {
     }
 
     private static void buildMapData(GameState state, GameMap gameMap, List<GameState.TileChange> mapChanges) {
-        // Use delta encoding for efficiency when few tiles changed
-        // Full sync when more than 10% of map changed (e.g., level transitions)
-        if (gameMap.needsFullSync()) {
-            // Full map sync
-            state.useDeltaMapEncoding = false;
-            state.mapTiles = gameMap.exportTiles();
-            gameMap.markTilesSynced(); // Reset delta tracking after full sync
-        } else {
-            // Delta encoding - only send changed tiles
-            state.useDeltaMapEncoding = true;
-            state.mapTiles = null; // Don't send full map
-
-            // Get tiles changed since last sync
-            java.util.List<int[]> deltaChanges = gameMap.exportDeltaTiles();
-            for (int[] change : deltaChanges) {
-                state.tileChanges.add(new GameState.TileChange(change[0], change[1], change[2]));
-            }
-            gameMap.markTilesSynced(); // Reset for next frame
-        }
+        // Always send full map tiles for network games to ensure new players get correct map
+        // Delta encoding was causing sync issues when players join mid-game
+        state.useDeltaMapEncoding = false;
+        state.mapTiles = gameMap.exportTiles();
+        gameMap.markTilesSynced(); // Reset delta tracking after full sync
 
         // Burning tiles for fire animation sync
         Map<Long, Integer> burning = gameMap.exportBurningTiles();

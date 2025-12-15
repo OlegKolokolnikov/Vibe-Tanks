@@ -177,6 +177,7 @@ public class NetworkGameHandler {
                 input.direction = 0;
             }
             input.nickname = NicknameManager.getNickname();
+            input.paused = playerPaused[myPlayerIndex]; // Send pause status for shield sync
             input.sequenceNumber = ++clientInputSequence;
             input.timestamp = System.currentTimeMillis();
             network.sendInput(input);
@@ -300,10 +301,15 @@ public class NetworkGameHandler {
                     ctx.tryTakeLifeFromTeammate(i - 1);
                 }
 
-                // Update client's nickname
+                // Update client's nickname (synchronized to prevent race conditions)
                 if (clientInput.nickname != null) {
-                    playerNicknames[i - 1] = clientInput.nickname;
+                    synchronized (playerNicknames) {
+                        playerNicknames[i - 1] = clientInput.nickname;
+                    }
                 }
+
+                // Sync client's pause shield status
+                clientTank.setPauseShield(clientInput.paused);
             }
         }
     }

@@ -829,7 +829,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 } else if (playerResult.activateFreeze) {
                     powerUpEffectManager.activateEnemyFreeze();
                 } else if (playerResult.activateBomb) {
-                    PowerUpHandler.applyPlayerBomb(enemyTanks, soundManager);
+                    int killed = PowerUpHandler.applyPlayerBomb(enemyTanks, soundManager);
+                    // Queue explosion sounds for network sync (one per enemy killed)
+                    for (int k = 0; k < killed; k++) {
+                        queueSoundEvent(GameState.SoundType.EXPLOSION);
+                    }
                 }
                 powerUpIterator.remove();
                 continue;
@@ -846,7 +850,15 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 } else if (enemyResult.activateFreeze) {
                     powerUpEffectManager.activatePlayerFreeze();
                 } else if (enemyResult.activateBomb) {
-                    PowerUpHandler.applyEnemyBomb(playerTanks, soundManager);
+                    int killed = PowerUpHandler.applyEnemyBomb(playerTanks, soundManager);
+                    // Queue sounds for network sync
+                    for (int k = 0; k < killed; k++) {
+                        queueSoundEvent(GameState.SoundType.PLAYER_DEATH);
+                    }
+                    // Explosion sound for non-killed (just damaged)
+                    for (int k = 0; k < playerTanks.size() - killed; k++) {
+                        queueSoundEvent(GameState.SoundType.EXPLOSION);
+                    }
                 } else if (enemyResult.activateCar) {
                     powerUpEffectManager.activateEnemySpeedBoost(enemyResult.collectorEnemy);
                     PowerUpHandler.applyEnemyCarSpeedBoost(enemyTanks, enemyResult.collectorEnemy, ENEMY_TEAM_SPEED_BOOST);
@@ -1021,9 +1033,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 return localNickname;
             }
         } else {
-            // For other players, use synced nickname from array
-            if (playerIndex >= 0 && playerIndex < 4 && playerNicknames[playerIndex] != null) {
-                return playerNicknames[playerIndex];
+            // For other players, use synced nickname from array (synchronized for thread safety)
+            synchronized (playerNicknames) {
+                if (playerIndex >= 0 && playerIndex < 4 && playerNicknames[playerIndex] != null) {
+                    return playerNicknames[playerIndex];
+                }
             }
         }
         return "P" + (playerIndex + 1);

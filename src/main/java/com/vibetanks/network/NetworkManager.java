@@ -26,6 +26,7 @@ public class NetworkManager {
     private final Map<Integer, PlayerInput> playerInputs = new ConcurrentHashMap<>();
     private final Map<Integer, PlayerInput> lastKnownInputs = new ConcurrentHashMap<>(); // Fallback for missed packets
     private final Map<Integer, Long> lastSequenceNumbers = new ConcurrentHashMap<>(); // Track sequence numbers
+    private final Object inputLock = new Object(); // Lock for atomic input operations
     private Thread acceptThread; // Track accept thread
 
     // Input buffer settings
@@ -67,22 +68,29 @@ public class NetworkManager {
                     Object obj = in.readObject();
                     if (obj instanceof PlayerInput) {
                         PlayerInput input = (PlayerInput) obj;
-                        long lastSeq = lastSequenceNumbers.getOrDefault(playerNumber, -1L);
 
-                        // Check for out-of-order packets (skip if older than current)
-                        if (input.sequenceNumber > lastSeq) {
-                            // Check for missed packets
-                            if (lastSeq >= 0 && input.sequenceNumber > lastSeq + 1) {
-                                LOG.debug("Player {} missed {} packets (seq {} -> {})",
-                                    playerNumber, input.sequenceNumber - lastSeq - 1, lastSeq, input.sequenceNumber);
+                        // Synchronized block for atomic input update
+                        synchronized (inputLock) {
+                            long lastSeq = lastSequenceNumbers.getOrDefault(playerNumber, -1L);
+
+                            // Check for out-of-order packets (skip if older than current)
+                            if (input.sequenceNumber > lastSeq) {
+                                // Check for missed packets
+                                if (lastSeq >= 0 && input.sequenceNumber > lastSeq + 1) {
+                                    LOG.debug("Player {} missed {} packets (seq {} -> {})",
+                                        playerNumber, input.sequenceNumber - lastSeq - 1, lastSeq, input.sequenceNumber);
+                                }
+
+                                playerInputs.put(playerNumber, input);
+                                lastKnownInputs.put(playerNumber, input); // Store as fallback
+                                lastSequenceNumbers.put(playerNumber, input.sequenceNumber);
                             }
-
-                            playerInputs.put(playerNumber, input);
-                            lastKnownInputs.put(playerNumber, input); // Store as fallback
-                            lastSequenceNumbers.put(playerNumber, input.sequenceNumber);
                         }
 
-                        lastHeartbeat = System.currentTimeMillis(); // Update heartbeat on any input
+                        // Synchronized heartbeat update to avoid race with timeout check
+                        synchronized (ClientHandler.this) {
+                            lastHeartbeat = System.currentTimeMillis();
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -95,6 +103,7 @@ public class NetworkManager {
 
         /**
          * Check if client has timed out (no input for HEARTBEAT_TIMEOUT_MS)
+         * Must be called within synchronized(this) block for thread safety
          */
         public boolean isTimedOut() {
             return System.currentTimeMillis() - lastHeartbeat > HEARTBEAT_TIMEOUT_MS;
@@ -103,7 +112,7 @@ public class NetworkManager {
         /**
          * Get ping/latency estimate in milliseconds
          */
-        public long getPingMs() {
+        public synchronized long getPingMs() {
             return System.currentTimeMillis() - lastHeartbeat;
         }
 
@@ -336,12 +345,14 @@ public class NetworkManager {
             in = new ObjectInputStream(socket.getInputStream());
 
             connected = true;
+            lastHostHeartbeat = System.currentTimeMillis(); // Reset heartbeat on actual connection
 
             // Start receiving game states
             receiveThread = new Thread(() -> {
                 try {
                     // First message from host tells us our player number
                     Object firstObj = in.readObject();
+                    lastHostHeartbeat = System.currentTimeMillis(); // Reset on first message
                     if (firstObj instanceof Integer) {
                         playerNumber = (Integer) firstObj;
                         LOG.info("Received player number from host: {}", playerNumber);
@@ -409,34 +420,36 @@ public class NetworkManager {
     // Get player input for specific player (for host)
     // Returns new input if available, otherwise returns last known input (for buffering)
     public PlayerInput getPlayerInput(int playerNum) {
-        PlayerInput newInput = playerInputs.remove(playerNum);
-        if (newInput != null) {
-            return newInput;
-        }
+        synchronized (inputLock) {
+            PlayerInput newInput = playerInputs.remove(playerNum);
+            if (newInput != null) {
+                return newInput;
+            }
 
-        // No new input - use last known input as fallback (input buffering)
-        // This keeps the player moving in their last direction during brief lag spikes
-        PlayerInput lastKnown = lastKnownInputs.get(playerNum);
-        if (lastKnown != null) {
-            // Clear shoot flag on buffered input to prevent repeated shots
-            // Movement continues but shooting requires fresh input
-            PlayerInput buffered = new PlayerInput();
-            buffered.up = lastKnown.up;
-            buffered.down = lastKnown.down;
-            buffered.left = lastKnown.left;
-            buffered.right = lastKnown.right;
-            buffered.shoot = false; // Don't repeat shooting
-            buffered.posX = lastKnown.posX;
-            buffered.posY = lastKnown.posY;
-            buffered.direction = lastKnown.direction;
-            buffered.nickname = lastKnown.nickname;
-            buffered.requestLife = false; // Don't repeat requests
-            buffered.requestNextLevel = false;
-            buffered.requestRestart = false;
-            return buffered;
-        }
+            // No new input - use last known input as fallback (input buffering)
+            // This keeps the player moving in their last direction during brief lag spikes
+            PlayerInput lastKnown = lastKnownInputs.get(playerNum);
+            if (lastKnown != null) {
+                // Clear shoot flag on buffered input to prevent repeated shots
+                // Movement continues but shooting requires fresh input
+                PlayerInput buffered = new PlayerInput();
+                buffered.up = lastKnown.up;
+                buffered.down = lastKnown.down;
+                buffered.left = lastKnown.left;
+                buffered.right = lastKnown.right;
+                buffered.shoot = false; // Don't repeat shooting
+                buffered.posX = lastKnown.posX;
+                buffered.posY = lastKnown.posY;
+                buffered.direction = lastKnown.direction;
+                buffered.nickname = lastKnown.nickname;
+                buffered.requestLife = false; // Don't repeat requests
+                buffered.requestNextLevel = false;
+                buffered.requestRestart = false;
+                return buffered;
+            }
 
-        return null;
+            return null;
+        }
     }
 
     /**
@@ -496,12 +509,14 @@ public class NetworkManager {
         // Find client handler for this player
         for (ClientHandler client : clients) {
             if (client.playerNumber == playerNum) {
-                // Check both active flag and heartbeat timeout
-                if (client.active && client.isTimedOut()) {
-                    LOG.warn("Player {} heartbeat timeout - marking as disconnected", playerNum);
-                    client.active = false;
+                // Synchronized to make timeout check and status modification atomic
+                synchronized (client) {
+                    if (client.active && client.isTimedOut()) {
+                        LOG.warn("Player {} heartbeat timeout - marking as disconnected", playerNum);
+                        client.active = false;
+                    }
+                    return client.active;
                 }
-                return client.active;
             }
         }
         return false; // Player not found = not connected
@@ -519,12 +534,14 @@ public class NetworkManager {
             status[0] = true; // Host (Player 1) always connected
             for (ClientHandler client : clients) {
                 if (client.playerNumber >= 2 && client.playerNumber <= 4) {
-                    // Check heartbeat timeout
-                    if (client.active && client.isTimedOut()) {
-                        LOG.warn("Player {} heartbeat timeout - marking as disconnected", client.playerNumber);
-                        client.active = false;
+                    // Synchronized to make timeout check and status modification atomic
+                    synchronized (client) {
+                        if (client.active && client.isTimedOut()) {
+                            LOG.warn("Player {} heartbeat timeout - marking as disconnected", client.playerNumber);
+                            client.active = false;
+                        }
+                        status[client.playerNumber - 1] = client.active;
                     }
-                    status[client.playerNumber - 1] = client.active;
                 }
             }
         } else {

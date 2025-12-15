@@ -194,9 +194,11 @@ public class ServerGameState {
             }
         }
 
-        // Update nickname
+        // Update nickname (synchronized for thread safety)
         if (input.nickname != null) {
-            playerNicknames[playerNumber - 1] = input.nickname;
+            synchronized (playerNicknames) {
+                playerNicknames[playerNumber - 1] = input.nickname;
+            }
         }
 
         // Accept client position with server-side validation
@@ -784,11 +786,15 @@ public class ServerGameState {
         state.totalEnemiesLeft = enemySpawner.getRemainingEnemies() + enemyTanks.size();
         state.connectedPlayers = actualConnectedPlayers;
 
-        // Players - use array assignment
+        // Players - use array assignment (synchronized nickname read for thread safety)
         for (int i = 0; i < playerTanks.size() && i < 4; i++) {
             Tank tank = playerTanks.get(i);
+            String nickname;
+            synchronized (playerNicknames) {
+                nickname = playerNicknames[i];
+            }
             state.players[i].copyFromTank(tank, playerStats.getKills(i), playerStats.getScore(i),
-                playerStats.getLevelScore(i), playerNicknames[i], playerStats.getKillsByTypeArray(i));
+                playerStats.getLevelScore(i), nickname, playerStats.getKillsByTypeArray(i));
         }
 
         // Enemies

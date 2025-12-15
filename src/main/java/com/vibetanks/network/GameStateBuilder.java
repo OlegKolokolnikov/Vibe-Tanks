@@ -107,8 +107,13 @@ public class GameStateBuilder {
                                          boolean[] playerConnected) {
         for (int i = 0; i < playerTanks.size() && i < 4; i++) {
             Tank tank = playerTanks.get(i);
+            // Synchronized read of playerNicknames for thread safety
+            String nickname;
+            synchronized (playerNicknames) {
+                nickname = playerNicknames[i];
+            }
             state.players[i].copyFromTank(tank, playerKills[i], playerScores[i], playerLevelScores[i],
-                                          playerNicknames[i], playerKillsByType[i]);
+                                          nickname, playerKillsByType[i]);
             // Set connection status from network manager
             state.players[i].connected = (playerConnected != null && i < playerConnected.length)
                                           ? playerConnected[i] : true;

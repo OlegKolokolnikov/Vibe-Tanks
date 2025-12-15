@@ -317,15 +317,17 @@ public class GameStateApplier {
             if (pData.killsByType != null) {
                 System.arraycopy(pData.killsByType, 0, playerKillsByType[i], 0, Math.min(6, pData.killsByType.length));
             }
-            // Update nicknames - local player uses NicknameManager, others from state
-            if (i == myPlayerIndex) {
-                // Ensure local player's nickname is in the correct slot
-                String localNickname = NicknameManager.getNickname();
-                if (localNickname != null) {
-                    playerNicknames[i] = localNickname;
+            // Update nicknames - local player uses NicknameManager, others from state (synchronized for thread safety)
+            synchronized (playerNicknames) {
+                if (i == myPlayerIndex) {
+                    // Ensure local player's nickname is in the correct slot
+                    String localNickname = NicknameManager.getNickname();
+                    if (localNickname != null) {
+                        playerNicknames[i] = localNickname;
+                    }
+                } else if (pData.nickname != null) {
+                    playerNicknames[i] = pData.nickname;
                 }
-            } else if (pData.nickname != null) {
-                playerNicknames[i] = pData.nickname;
             }
         }
     }

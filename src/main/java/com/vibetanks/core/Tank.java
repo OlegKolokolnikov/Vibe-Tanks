@@ -31,30 +31,30 @@ public class Tank {
     private volatile Direction direction;
     private boolean isPlayer;
     private int playerNumber; // 1 or 2
-    private EnemyType enemyType; // For enemy tanks
+    private volatile EnemyType enemyType; // Volatile for thread-safe network sync
     private volatile boolean alive; // Volatile for thread-safe network sync
     private volatile int lives; // Volatile for thread-safe network sync
-    private int health;
-    private int maxHealth;
+    private volatile int health; // Volatile for thread-safe network sync
+    private volatile int maxHealth; // Volatile for thread-safe network sync
 
     private int shootCooldown;
     private int activeBulletCount; // Track how many bullets this tank has active
-    private boolean hasShield;
-    private int shieldDuration;
-    private boolean hasPauseShield; // Shield while player is paused (multiplayer)
-    private double speedMultiplier; // Base is 1.0, each CAR adds 0.3
-    private double tempSpeedBoost; // Temporary speed boost from team CAR pickup
-    private int bulletPower; // 1 = normal, 2 = can break steel
-    private boolean canSwim; // SHIP power-up
-    private boolean canDestroyTrees; // SAW power-up
-    private int machinegunCount; // MACHINEGUN power-up (each adds one extra bullet, max 5)
-    private int shootCooldownReduction; // STAR power-up (each star reduces cooldown)
-    private int laserDuration; // LASER power-up duration (30 seconds = 1800 frames at 60 FPS)
+    private volatile boolean hasShield; // Volatile for thread-safe network sync
+    private volatile int shieldDuration; // Volatile for thread-safe network sync
+    private volatile boolean hasPauseShield; // Shield while player is paused (multiplayer) - Volatile for network sync
+    private volatile double speedMultiplier; // Base is 1.0, each CAR adds 0.3 - Volatile for network sync
+    private volatile double tempSpeedBoost; // Temporary speed boost from team CAR pickup - Volatile for network sync
+    private volatile int bulletPower; // 1 = normal, 2 = can break steel - Volatile for network sync
+    private volatile boolean canSwim; // SHIP power-up - Volatile for network sync
+    private volatile boolean canDestroyTrees; // SAW power-up - Volatile for network sync
+    private volatile int machinegunCount; // MACHINEGUN power-up - Volatile for network sync
+    private volatile int shootCooldownReduction; // STAR power-up - Volatile for network sync
+    private volatile int laserDuration; // LASER power-up duration - Volatile for network sync
     private static final int LASER_COOLDOWN = 10; // Very fast shooting (6 shots per second)
 
-    // Score-based upgrades (reset on death)
-    private boolean hasRainbowBullets; // At 500 points
-    private boolean hasGroundShovel;   // At 1000 points
+    // Score-based upgrades (reset on death) - Volatile for network sync
+    private volatile boolean hasRainbowBullets; // At 500 points
+    private volatile boolean hasGroundShovel;   // At 1000 points
 
     // Extracted components for better separation of concerns
     private final TankPhysics physics;
@@ -71,7 +71,7 @@ public class Tank {
 
     // Color override for enemies that collected LIFE/STEEL powerup
     // -1 = no override, 0-6 = rainbow color index
-    private int colorOverrideIndex = -1;
+    private volatile int colorOverrideIndex = -1; // Volatile for network sync
 
     public Tank(double x, double y, Direction direction, boolean isPlayer, int playerNumber) {
         this(x, y, direction, isPlayer, playerNumber, EnemyType.REGULAR);

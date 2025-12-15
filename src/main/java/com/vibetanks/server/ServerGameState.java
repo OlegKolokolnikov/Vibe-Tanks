@@ -41,6 +41,11 @@ public class ServerGameState {
     private boolean gameOver = false;
     private boolean victory = false;
 
+    // Victory delay (5 seconds to collect powerups after killing last enemy)
+    private boolean victoryConditionMet = false;
+    private int victoryDelayTimer = 0;
+    private static final int VICTORY_DELAY = 300; // 5 seconds at 60 FPS
+
     // Player stats (consolidated)
     private PlayerStats playerStats;
     private String[] playerNicknames;
@@ -216,6 +221,8 @@ public class ServerGameState {
         // Reset game state
         gameOver = false;
         victory = false;
+        victoryConditionMet = false;
+        victoryDelayTimer = 0;
         enemyFreezeDuration = 0;
         playerFreezeDuration = 0;
         enemyTeamSpeedBoostDuration = 0;
@@ -487,13 +494,22 @@ public class ServerGameState {
         }
 
         // Check victory condition ONLY if not game over
+        // Use victory delay to give players time to collect remaining powerups
         if (!gameOver && !victory && GameLogic.checkVictory(enemySpawner, enemyTanks)) {
-            victory = true;
+            if (!victoryConditionMet) {
+                victoryConditionMet = true;
+                victoryDelayTimer = 0;
+                LOG.info("All enemies defeated! Victory in {} seconds...", VICTORY_DELAY / 60);
+            }
+            victoryDelayTimer++;
+            if (victoryDelayTimer >= VICTORY_DELAY) {
+                victory = true;
 
-            // Start cat escape animation if base is cat and protection was broken
-            if (base.isCatMode() && gameMap.isBaseProtectionBroken()) {
-                base.startCatEscape();
-                LOG.info("Cat escaping from damaged base!");
+                // Start cat escape animation if base is cat and protection was broken
+                if (base.isCatMode() && gameMap.isBaseProtectionBroken()) {
+                    base.startCatEscape();
+                    LOG.info("Cat escaping from damaged base!");
+                }
             }
         }
     }
@@ -925,6 +941,8 @@ public class ServerGameState {
         state.levelNumber = currentLevel;
         state.gameOver = gameOver;
         state.victory = victory;
+        state.victoryConditionMet = victoryConditionMet;
+        state.victoryDelayTimer = victoryDelayTimer;
         state.baseAlive = base.isAlive();
         state.remainingEnemies = enemySpawner.getRemainingEnemies();
         state.totalEnemiesLeft = enemySpawner.getRemainingEnemies() + enemyTanks.size();

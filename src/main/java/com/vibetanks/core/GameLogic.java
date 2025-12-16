@@ -546,9 +546,10 @@ public class GameLogic {
      *
      * @param allTanks Combined list of player and enemy tanks
      * @param gameMap Game map for collision checking
+     * @param base The base to avoid pushing tanks into
      * @return Result indicating any tanks killed by BOSS contact
      */
-    public static TankOverlapResult resolveOverlappingTanks(List<Tank> allTanks, GameMap gameMap) {
+    public static TankOverlapResult resolveOverlappingTanks(List<Tank> allTanks, GameMap gameMap, Base base) {
         TankOverlapResult result = new TankOverlapResult();
         final double PUSH_FORCE = 3.0; // Pixels to push per frame
         final double MIN_GAP = 4.0; // Minimum gap to maintain between tanks
@@ -625,11 +626,16 @@ public class GameLogic {
                     double newX2 = tank2.getX() + pushX * tank2Push;
                     double newY2 = tank2.getY() + pushY * tank2Push;
 
-                    // Apply push only if the new position doesn't collide with walls
-                    if (!gameMap.checkTankCollision(newX1, newY1, tank1.getSize(), tank1.hasShip())) {
+                    // Apply push only if the new position doesn't collide with walls or base
+                    boolean tank1CollidesWithBase = base != null && base.isAlive() &&
+                        TankPhysics.checkCollision(newX1, newY1, base.getX(), base.getY(), tank1.getSize(), base.getSize());
+                    boolean tank2CollidesWithBase = base != null && base.isAlive() &&
+                        TankPhysics.checkCollision(newX2, newY2, base.getX(), base.getY(), tank2.getSize(), base.getSize());
+
+                    if (!gameMap.checkTankCollision(newX1, newY1, tank1.getSize(), tank1.hasShip()) && !tank1CollidesWithBase) {
                         tank1.setPosition(newX1, newY1);
                     }
-                    if (!gameMap.checkTankCollision(newX2, newY2, tank2.getSize(), tank2.hasShip())) {
+                    if (!gameMap.checkTankCollision(newX2, newY2, tank2.getSize(), tank2.hasShip()) && !tank2CollidesWithBase) {
                         tank2.setPosition(newX2, newY2);
                     }
                 }

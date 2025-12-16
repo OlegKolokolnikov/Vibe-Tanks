@@ -375,7 +375,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
 
     // Push apart tanks that are overlapping - delegates to GameLogic
     private void pushApartOverlappingTanks(List<Tank> allTanks) {
-        GameLogic.TankOverlapResult result = GameLogic.resolveOverlappingTanks(allTanks, gameMap);
+        GameLogic.TankOverlapResult result = GameLogic.resolveOverlappingTanks(allTanks, gameMap, base);
 
         // Handle BOSS contact kills (play sounds and log)
         if (result.tank1Killed && result.killedTank1 != null) {

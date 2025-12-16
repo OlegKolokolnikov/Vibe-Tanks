@@ -368,7 +368,7 @@ class GameLogicTest {
             double x2Before = tank2.getX();
             double y2Before = tank2.getY();
 
-            GameLogic.TankOverlapResult result = GameLogic.resolveOverlappingTanks(allTanks, gameMap);
+            GameLogic.TankOverlapResult result = GameLogic.resolveOverlappingTanks(allTanks, gameMap, base);
 
             assertEquals(x1Before, tank1.getX());
             assertEquals(y1Before, tank1.getY());
@@ -393,7 +393,7 @@ class GameLogicTest {
             allTanks.add(boss);
             allTanks.add(regular);
 
-            GameLogic.TankOverlapResult result = GameLogic.resolveOverlappingTanks(allTanks, gameMap);
+            GameLogic.TankOverlapResult result = GameLogic.resolveOverlappingTanks(allTanks, gameMap, base);
 
             assertTrue(result.tank2Killed);
             assertEquals(regular, result.killedTank2);
@@ -410,7 +410,7 @@ class GameLogicTest {
             allTanks.add(alive);
             allTanks.add(dead);
 
-            GameLogic.TankOverlapResult result = GameLogic.resolveOverlappingTanks(allTanks, gameMap);
+            GameLogic.TankOverlapResult result = GameLogic.resolveOverlappingTanks(allTanks, gameMap, base);
 
             // No kills should occur since one tank is already dead
             assertFalse(result.tank1Killed);

@@ -155,20 +155,55 @@ public class EnemySpawner {
         }
     }
 
+    // Track BOSS spawn wait time to prevent infinite blocking
+    private int bossSpawnWaitFrames = 0;
+    private static final int BOSS_MAX_WAIT_FRAMES = 180; // ~3 seconds at 60fps
+
     /**
      * Find a valid spawn position that doesn't collide with tanks or map tiles.
      * Returns null if no valid position found.
      */
     private double[] findValidSpawnPosition(Tank.EnemyType type, int tankSize, List<Tank> enemyTanks) {
-        // BOSS prefers center, but can try other positions if blocked
+        // BOSS prefers center, but has fallback positions to prevent infinite blocking
         if (type == Tank.EnemyType.BOSS) {
             // Try center first (preferred for BOSS)
             double[] centerPos = {12 * 32, 32};
             if (isSpawnPositionValid(centerPos, tankSize, enemyTanks)) {
+                bossSpawnWaitFrames = 0;
                 return centerPos;
             }
-            // BOSS can't fit at other positions easily, so just wait
-            LOG.info("BOSS spawn blocked at center, waiting...");
+
+            // Increment wait counter
+            bossSpawnWaitFrames++;
+
+            // If waited too long, try alternative positions
+            if (bossSpawnWaitFrames > BOSS_MAX_WAIT_FRAMES) {
+                LOG.info("BOSS spawn blocked too long, trying alternative positions...");
+
+                // Alternative BOSS spawn positions (left and right of center)
+                double[][] bossAlternatives = {
+                    {6 * 32, 32},   // Left side
+                    {18 * 32, 32},  // Right side
+                    {12 * 32, 4 * 32}, // Center but lower
+                };
+
+                for (double[] altPos : bossAlternatives) {
+                    if (isSpawnPositionValid(altPos, tankSize, enemyTanks)) {
+                        LOG.info("BOSS spawning at alternative position: ({}, {})", altPos[0], altPos[1]);
+                        bossSpawnWaitFrames = 0;
+                        return altPos;
+                    }
+                }
+
+                // Force spawn at center anyway if all else fails (enemies will be pushed)
+                if (bossSpawnWaitFrames > BOSS_MAX_WAIT_FRAMES * 2) {
+                    LOG.warn("BOSS force-spawning at center after extended wait");
+                    bossSpawnWaitFrames = 0;
+                    return centerPos;
+                }
+            }
+
+            LOG.debug("BOSS spawn blocked at center, waiting... (frame {})", bossSpawnWaitFrames);
             return null;
         }
 
@@ -226,6 +261,7 @@ public class EnemySpawner {
         this.spawnedCount = 0;
         this.spawnCooldown = SPAWN_DELAY;
         this.powerTanksSpawned = 0;
+        this.bossSpawnWaitFrames = 0;
         this.map = newMap;
         this.levelNumber = newMap.getLevelNumber();
     }

@@ -65,32 +65,38 @@ public class NetworkManager {
         private void receiveFromClient() {
             try {
                 while (active && !Thread.interrupted()) {
-                    Object obj = in.readObject();
-                    if (obj instanceof PlayerInput) {
-                        PlayerInput input = (PlayerInput) obj;
+                    try {
+                        Object obj = in.readObject();
+                        if (obj instanceof PlayerInput) {
+                            PlayerInput input = (PlayerInput) obj;
 
-                        // Synchronized block for atomic input update
-                        synchronized (inputLock) {
-                            long lastSeq = lastSequenceNumbers.getOrDefault(playerNumber, -1L);
+                            // Synchronized block for atomic input update
+                            synchronized (inputLock) {
+                                long lastSeq = lastSequenceNumbers.getOrDefault(playerNumber, -1L);
 
-                            // Check for out-of-order packets (skip if older than current)
-                            if (input.sequenceNumber > lastSeq) {
-                                // Check for missed packets
-                                if (lastSeq >= 0 && input.sequenceNumber > lastSeq + 1) {
-                                    LOG.debug("Player {} missed {} packets (seq {} -> {})",
-                                        playerNumber, input.sequenceNumber - lastSeq - 1, lastSeq, input.sequenceNumber);
+                                // Check for out-of-order packets (skip if older than current)
+                                if (input.sequenceNumber > lastSeq) {
+                                    // Check for missed packets
+                                    if (lastSeq >= 0 && input.sequenceNumber > lastSeq + 1) {
+                                        LOG.debug("Player {} missed {} packets (seq {} -> {})",
+                                            playerNumber, input.sequenceNumber - lastSeq - 1, lastSeq, input.sequenceNumber);
+                                    }
+
+                                    playerInputs.put(playerNumber, input);
+                                    lastKnownInputs.put(playerNumber, input); // Store as fallback
+                                    lastSequenceNumbers.put(playerNumber, input.sequenceNumber);
                                 }
+                            }
 
-                                playerInputs.put(playerNumber, input);
-                                lastKnownInputs.put(playerNumber, input); // Store as fallback
-                                lastSequenceNumbers.put(playerNumber, input.sequenceNumber);
+                            // Synchronized heartbeat update to avoid race with timeout check
+                            synchronized (ClientHandler.this) {
+                                lastHeartbeat = System.currentTimeMillis();
                             }
                         }
-
-                        // Synchronized heartbeat update to avoid race with timeout check
-                        synchronized (ClientHandler.this) {
-                            lastHeartbeat = System.currentTimeMillis();
-                        }
+                    } catch (SocketTimeoutException e) {
+                        // Read timeout - continue loop if still active
+                        // Timeout check will handle disconnection detection
+                        continue;
                     }
                 }
             } catch (Exception e) {
@@ -275,6 +281,7 @@ public class NetworkManager {
         try {
             serverSocket = new ServerSocket();
             serverSocket.setReuseAddress(true); // Allow immediate port reuse
+            serverSocket.setSoTimeout(1000); // 1 second accept timeout to allow clean shutdown
             LOG.debug("Binding to port {}...", PORT);
             serverSocket.bind(new InetSocketAddress(PORT));
             LOG.info("Successfully bound to port {}", PORT);
@@ -291,29 +298,37 @@ public class NetworkManager {
                             break;
                         }
 
-                        Socket clientSocket = serverSocket.accept();
-                        int playerNum = clients.size() + 2; // Player 2, 3, or 4
-                        LOG.info("Player {} connected from: {}", playerNum, clientSocket.getInetAddress());
+                        try {
+                            Socket clientSocket = serverSocket.accept();
+                            // Set read timeout on client socket to prevent blocking forever
+                            clientSocket.setSoTimeout(10000); // 10 second read timeout
 
-                        // Create ObjectOutputStream immediately so client can create its InputStream
-                        ObjectOutputStream tempOut = new ObjectOutputStream(clientSocket.getOutputStream());
-                        tempOut.flush();
-                        LOG.debug("Server stream header sent to Player {}", playerNum);
+                            int playerNum = clients.size() + 2; // Player 2, 3, or 4
+                            LOG.info("Player {} connected from: {}", playerNum, clientSocket.getInetAddress());
 
-                        ClientHandler client = new ClientHandler(clientSocket, playerNum, tempOut);
-                        clients.add(client);
+                            // Create ObjectOutputStream immediately so client can create its InputStream
+                            ObjectOutputStream tempOut = new ObjectOutputStream(clientSocket.getOutputStream());
+                            tempOut.flush();
+                            LOG.debug("Server stream header sent to Player {}", playerNum);
 
-                        // Send player number to client so they know which player they are
-                        tempOut.writeObject(Integer.valueOf(playerNum));
-                        tempOut.flush();
-                        LOG.debug("Sent player number {} to client", playerNum);
+                            ClientHandler client = new ClientHandler(clientSocket, playerNum, tempOut);
+                            clients.add(client);
 
-                        // First connection establishes game as ready
-                        if (!connected) {
-                            connected = true;
+                            // Send player number to client so they know which player they are
+                            tempOut.writeObject(Integer.valueOf(playerNum));
+                            tempOut.flush();
+                            LOG.debug("Sent player number {} to client", playerNum);
+
+                            // First connection establishes game as ready
+                            if (!connected) {
+                                connected = true;
+                            }
+
+                            LOG.info("Player {} joined mid-game, total players: {}", playerNum, clients.size() + 1);
+                        } catch (SocketTimeoutException e) {
+                            // Accept timeout - just continue loop to check if still hosting
+                            continue;
                         }
-
-                        LOG.info("Player {} joined mid-game, total players: {}", playerNum, clients.size() + 1);
                     }
                 } catch (IOException e) {
                     if (isHosting) {
@@ -340,7 +355,8 @@ public class NetworkManager {
         try {
             LOG.info("Connecting to {}:{}...", hostIP, PORT);
             socket = new Socket();
-            socket.connect(new InetSocketAddress(hostIP, PORT), 5000); // 5 second timeout
+            socket.connect(new InetSocketAddress(hostIP, PORT), 5000); // 5 second connection timeout
+            socket.setSoTimeout(10000); // 10 second read timeout to prevent blocking forever
             LOG.info("Connected to host!");
 
             out = new ObjectOutputStream(socket.getOutputStream());
@@ -365,10 +381,18 @@ public class NetworkManager {
                     }
 
                     while (connected && !Thread.interrupted()) {
-                        Object obj = in.readObject();
-                        if (obj instanceof GameState) {
-                            receivedStates.offer((GameState) obj);
-                            lastHostHeartbeat = System.currentTimeMillis(); // Update heartbeat
+                        try {
+                            Object obj = in.readObject();
+                            if (obj instanceof GameState) {
+                                receivedStates.offer((GameState) obj);
+                                lastHostHeartbeat = System.currentTimeMillis(); // Update heartbeat
+                            }
+                        } catch (SocketTimeoutException e) {
+                            // Read timeout - check if connection still valid
+                            if (System.currentTimeMillis() - lastHostHeartbeat > HEARTBEAT_TIMEOUT_MS) {
+                                LOG.warn("Host heartbeat timeout - connection may be lost");
+                            }
+                            // Continue loop to try again
                         }
                     }
                 } catch (Exception e) {

@@ -315,22 +315,32 @@ public class ProjectileHandler {
 
     /**
      * Original O(n^2) brute force algorithm - fallback when grid not initialized.
+     * Uses removal set pattern to avoid index manipulation bugs during iteration.
      */
     private static void processBulletCollisionsBruteForce(List<Bullet> bullets, List<Tank> playerTanks) {
+        // Use pre-allocated set (clear for reuse) - same safe pattern as grid method
+        bulletRemovalSet.clear();
+
         for (int i = 0; i < bullets.size(); i++) {
             Bullet bullet1 = bullets.get(i);
+            if (bulletRemovalSet.contains(bullet1)) continue;
+
             for (int j = i + 1; j < bullets.size(); j++) {
                 Bullet bullet2 = bullets.get(j);
+                if (bulletRemovalSet.contains(bullet2)) continue;
+
                 if (bullet1.collidesWith(bullet2)) {
                     GameLogic.notifyBulletDestroyed(bullet1, playerTanks);
                     GameLogic.notifyBulletDestroyed(bullet2, playerTanks);
-                    bullets.remove(j);
-                    bullets.remove(i);
-                    i--;
+                    bulletRemovalSet.add(bullet1);
+                    bulletRemovalSet.add(bullet2);
                     break;
                 }
             }
         }
+
+        // Remove collided bullets safely after iteration complete
+        bullets.removeAll(bulletRemovalSet);
     }
 
     /**

@@ -458,6 +458,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         LevelTransitionManager.restartCurrentLevel(this);
     }
 
+    // Flag to prevent frame queue buildup - only queue next frame if previous finished
+    private volatile boolean frameInProgress = false;
+
     public void start() {
         running = true;
         gameLoop = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -471,24 +474,39 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         gameLoop.scheduleAtFixedRate(() -> {
             if (!running) return;
 
+            // CRITICAL FIX: Prevent event queue flooding
+            // If previous frame hasn't finished, skip this frame to prevent buildup
+            if (frameInProgress) {
+                LOG.debug("Frame skip - previous frame still in progress");
+                return;
+            }
+
             // Update cached frame timestamp for consistent timing during rendering
             FrameTime.updateFrameTime();
 
+            // Mark frame as in progress before queuing
+            frameInProgress = true;
+
             // Run update and render on JavaFX Application Thread
             Platform.runLater(() -> {
-                if (!running) return;
+                try {
+                    if (!running) return;
 
-                update();
-                render();
+                    update();
+                    render();
 
-                // FPS counter
-                fpsFrameCount++;
-                long currentTime = System.currentTimeMillis();
-                if (currentTime - fpsLastTime >= 5000) {
-                    double fps = fpsFrameCount / 5.0;
-                    LOG.info("[FPS] {} (target: 60)", String.format("%.1f", fps));
-                    fpsFrameCount = 0;
-                    fpsLastTime = currentTime;
+                    // FPS counter
+                    fpsFrameCount++;
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - fpsLastTime >= 5000) {
+                        double fps = fpsFrameCount / 5.0;
+                        LOG.info("[FPS] {} (target: 60)", String.format("%.1f", fps));
+                        fpsFrameCount = 0;
+                        fpsLastTime = currentTime;
+                    }
+                } finally {
+                    // Always mark frame as complete, even if exception occurs
+                    frameInProgress = false;
                 }
             });
         }, 0, FRAME_TIME_MS, TimeUnit.MILLISECONDS);
@@ -528,6 +546,13 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         if (killerPlayerNumber < 1 || killerPlayerNumber > 4) return;
 
         int playerIndex = killerPlayerNumber - 1;
+
+        // Bounds check to prevent ArrayIndexOutOfBoundsException
+        if (playerIndex >= playerTanks.size()) {
+            LOG.warn("Invalid playerIndex {} for playerTanks size {}", playerIndex, playerTanks.size());
+            return;
+        }
+
         playerKills[playerIndex]++;
 
         int enemyTypeOrdinal = enemy.getEnemyType().ordinal();
@@ -888,18 +913,21 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         UFOManager.UpdateResult eggResult = ufoManager.updateEasterEgg(playerTanks, enemyTanks);
         if (eggResult.easterEggCollectedByPlayer) {
             int playerIndex = eggResult.easterEggCollectorIndex;
-            Tank player = playerTanks.get(playerIndex);
-            // Give collecting player 3 extra lives and 3 points
-            for (int j = 0; j < 3; j++) {
-                player.addLife();
-            }
-            addScore(playerIndex, 3);
-            LOG.info("Easter egg collected by Player {}! +3 lives, +3 points!", playerIndex + 1);
-            GameLogic.applyEasterEggEffect(enemyTanks, true);
-            // Turn base into cat if boss has spawned (remaining == 0 means boss was the last spawned)
-            if (enemySpawner.getRemainingEnemies() == 0) {
-                base.setCatMode(true);
-                LOG.info("Base transformed to cat!");
+            // Bounds check to prevent ArrayIndexOutOfBoundsException
+            if (playerIndex >= 0 && playerIndex < playerTanks.size()) {
+                Tank player = playerTanks.get(playerIndex);
+                // Give collecting player 3 extra lives and 3 points
+                for (int j = 0; j < 3; j++) {
+                    player.addLife();
+                }
+                addScore(playerIndex, 3);
+                LOG.info("Easter egg collected by Player {}! +3 lives, +3 points!", playerIndex + 1);
+                GameLogic.applyEasterEggEffect(enemyTanks, true);
+                // Turn base into cat if boss has spawned (remaining == 0 means boss was the last spawned)
+                if (enemySpawner.getRemainingEnemies() == 0) {
+                    base.setCatMode(true);
+                    LOG.info("Base transformed to cat!");
+                }
             }
         } else if (eggResult.easterEggCollectedByEnemy) {
             LOG.info("Easter egg collected by enemy! All enemies become HEAVY tanks!");

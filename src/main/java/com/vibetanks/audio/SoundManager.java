@@ -299,11 +299,12 @@ public class SoundManager {
                 line.start();
 
                 // Loop the music until stopped
-                while (!stopMusicRequested && !shutdown) {
+                while (!stopMusicRequested && !shutdown && !Thread.currentThread().isInterrupted()) {
                     // Write in chunks to allow for stopping
                     int chunkSize = 4096;
                     int offset = 0;
-                    while (offset < explanationMusicData.length && !stopMusicRequested && !shutdown) {
+                    while (offset < explanationMusicData.length && !stopMusicRequested && !shutdown
+                           && !Thread.currentThread().isInterrupted()) {
                         int bytesToWrite = Math.min(chunkSize, explanationMusicData.length - offset);
                         line.write(explanationMusicData, offset, bytesToWrite);
                         offset += bytesToWrite;
@@ -328,8 +329,14 @@ public class SoundManager {
     public void stopExplanationMusic() {
         stopMusicRequested = true;
         if (musicThread != null) {
+            // Interrupt the thread to break out of any blocking audio write
+            musicThread.interrupt();
             try {
-                musicThread.join(500); // Wait up to 500ms for thread to stop
+                // Increased timeout to allow audio buffer to drain properly
+                musicThread.join(1500);
+                if (musicThread.isAlive()) {
+                    LOG.debug("Music thread still running after timeout, continuing anyway");
+                }
             } catch (InterruptedException e) {
                 LOG.debug("Interrupted while stopping music: {}", e.getMessage());
                 Thread.currentThread().interrupt(); // Preserve interrupt status

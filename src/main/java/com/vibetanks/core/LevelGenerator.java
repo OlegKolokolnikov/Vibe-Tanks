@@ -414,17 +414,18 @@ public class LevelGenerator {
             generateScatteredBlocks();
         }
 
-        // Ensure base is surrounded by bricks
-        createBaseProtection();
-
         // Clear spawn areas to ensure tanks can move
         clearSpawnAreas();
 
         // Ensure less than 50% empty space
         ensureMinimumContent();
 
-        // Add a Cyrillic letter made of bricks (placed last so it doesn't get overwritten)
+        // Add a Cyrillic letter made of bricks
         generateCyrillicLetter();
+
+        // Ensure base is surrounded by bricks AND steel wall above
+        // Called LAST to ensure nothing overwrites the protection
+        createBaseProtection();
 
         LOG.info("Generating random level {}", "N/A");
     }

@@ -20,8 +20,6 @@ public class SpatialGrid<T> {
     private final int gridHeight;
     private final List<T>[][] cells;
 
-    // Pre-allocated list for query results to avoid allocation in hot path
-    private final List<T> queryResult = new ArrayList<>(32);
 
     @SuppressWarnings("unchecked")
     public SpatialGrid(int mapWidth, int mapHeight) {
@@ -90,26 +88,26 @@ public class SpatialGrid<T> {
 
     /**
      * Get all entities in the same cell as the given position.
-     * Returns a reusable list - do not store reference!
+     * Returns a NEW list to prevent aliasing bugs in nested loops.
      */
     public List<T> getInCell(double x, double y) {
-        queryResult.clear();
+        List<T> result = new ArrayList<>(16);
         int cellX = getCellX(x);
         int cellY = getCellY(y);
 
         if (isValidCell(cellX, cellY)) {
-            queryResult.addAll(cells[cellY][cellX]);
+            result.addAll(cells[cellY][cellX]);
         }
-        return queryResult;
+        return result;
     }
 
     /**
      * Get all entities in the same cell and adjacent cells (3x3 area).
      * This is the main method for collision detection.
-     * Returns a reusable list - do not store reference!
+     * Returns a NEW list to prevent aliasing bugs in nested loops.
      */
     public List<T> getNearby(double x, double y) {
-        queryResult.clear();
+        List<T> result = new ArrayList<>(32);
         int cellX = getCellX(x);
         int cellY = getCellY(y);
 
@@ -119,19 +117,19 @@ public class SpatialGrid<T> {
                 int cx = cellX + dx;
                 int cy = cellY + dy;
                 if (isValidCell(cx, cy)) {
-                    queryResult.addAll(cells[cy][cx]);
+                    result.addAll(cells[cy][cx]);
                 }
             }
         }
-        return queryResult;
+        return result;
     }
 
     /**
      * Get all entities within a rectangular area.
-     * Returns a reusable list - do not store reference!
+     * Returns a NEW list to prevent aliasing bugs in nested loops.
      */
     public List<T> getInArea(double x, double y, int width, int height) {
-        queryResult.clear();
+        List<T> result = new ArrayList<>(32);
         int minCellX = getCellX(x);
         int maxCellX = getCellX(x + width - 1);
         int minCellY = getCellY(y);
@@ -145,10 +143,10 @@ public class SpatialGrid<T> {
 
         for (int cy = minCellY; cy <= maxCellY; cy++) {
             for (int cx = minCellX; cx <= maxCellX; cx++) {
-                queryResult.addAll(cells[cy][cx]);
+                result.addAll(cells[cy][cx]);
             }
         }
-        return queryResult;
+        return result;
     }
 
     private int getCellX(double x) {

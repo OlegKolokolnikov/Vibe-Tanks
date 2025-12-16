@@ -188,16 +188,19 @@ class SpatialGridTest {
         }
 
         @Test
-        @DisplayName("query result list is reused")
-        void queryResultListIsReused() {
+        @DisplayName("query result lists are independent to prevent aliasing bugs")
+        void queryResultListsAreIndependent() {
             grid.insert("e1", 100, 100);
             List<String> result1 = grid.getNearby(100, 100);
 
             grid.insert("e2", 200, 200);
             List<String> result2 = grid.getNearby(200, 200);
 
-            // Both references should point to same list (reused)
-            assertSame(result1, result2);
+            // Lists should NOT be same reference to prevent aliasing bugs in nested loops
+            assertNotSame(result1, result2);
+            // Original result should still contain original data
+            assertTrue(result1.contains("e1"));
+            assertTrue(result2.contains("e2"));
         }
     }
 

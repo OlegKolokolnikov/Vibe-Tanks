@@ -61,8 +61,9 @@ public class Tank {
     private TankAI ai; // Only initialized for enemy tanks
 
     // Respawn delay (1 second = 60 frames at 60 FPS)
-    private int respawnTimer = 0;
-    private double pendingRespawnX, pendingRespawnY;
+    // Volatile for thread-safe access from network thread
+    private volatile int respawnTimer = 0;
+    private volatile double pendingRespawnX, pendingRespawnY;
     private static final int RESPAWN_DELAY = 60; // 1 second
 
     // Track animation

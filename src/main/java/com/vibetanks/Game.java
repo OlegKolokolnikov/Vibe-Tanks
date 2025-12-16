@@ -488,27 +488,35 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             frameInProgress = true;
 
             // Run update and render on JavaFX Application Thread
-            Platform.runLater(() -> {
-                try {
-                    if (!running) return;
+            try {
+                Platform.runLater(() -> {
+                    try {
+                        if (!running) return;
 
-                    update();
-                    render();
+                        update();
+                        render();
 
-                    // FPS counter
-                    fpsFrameCount++;
-                    long currentTime = System.currentTimeMillis();
-                    if (currentTime - fpsLastTime >= 5000) {
-                        double fps = fpsFrameCount / 5.0;
-                        LOG.info("[FPS] {} (target: 60)", String.format("%.1f", fps));
-                        fpsFrameCount = 0;
-                        fpsLastTime = currentTime;
+                        // FPS counter
+                        fpsFrameCount++;
+                        long currentTime = System.currentTimeMillis();
+                        if (currentTime - fpsLastTime >= 5000) {
+                            double fps = fpsFrameCount / 5.0;
+                            LOG.info("[FPS] {} (target: 60)", String.format("%.1f", fps));
+                            fpsFrameCount = 0;
+                            fpsLastTime = currentTime;
+                        }
+                    } catch (Exception e) {
+                        LOG.error("Error in game loop: {}", e.getMessage(), e);
+                    } finally {
+                        // Always mark frame as complete, even if exception occurs
+                        frameInProgress = false;
                     }
-                } finally {
-                    // Always mark frame as complete, even if exception occurs
-                    frameInProgress = false;
-                }
-            });
+                });
+            } catch (Exception e) {
+                // Platform.runLater failed (FX thread shut down?) - reset flag
+                frameInProgress = false;
+                LOG.error("Failed to queue frame: {}", e.getMessage());
+            }
         }, 0, FRAME_TIME_MS, TimeUnit.MILLISECONDS);
     }
 

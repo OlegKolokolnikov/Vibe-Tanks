@@ -13,6 +13,9 @@ public class TankAI {
     private int aiShootCooldown;
     private double lastX, lastY; // Track position to detect stuck
     private int stuckCounter; // Count frames stuck
+    private int tankCollisionCounter; // Count frames colliding with another tank
+    private static final int TANK_COLLISION_THRESHOLD = 15; // Frames before avoiding other tank
+    private static final double TANK_DETECTION_DISTANCE = 48; // Distance to check for other tanks
 
     public TankAI(double initialX, double initialY) {
         this.aiMoveCooldown = GameConstants.AI_MOVE_COOLDOWN_BASE;
@@ -20,6 +23,7 @@ public class TankAI {
         this.lastX = initialX;
         this.lastY = initialY;
         this.stuckCounter = 0;
+        this.tankCollisionCounter = 0;
     }
 
     /**
@@ -29,6 +33,22 @@ public class TankAI {
     public void update(Tank tank, TankPhysics physics, GameMap map, List<Bullet> bullets,
                        List<Tank> allTanks, Base base, SoundManager soundManager) {
         if (!tank.isAlive()) return;
+
+        // Check if colliding with another tank in current direction
+        boolean collidingWithTank = isTankInDirection(tank, tank.getDirection(), allTanks);
+        if (collidingWithTank) {
+            tankCollisionCounter++;
+            // If pushing against another tank for too long, change direction
+            if (tankCollisionCounter > TANK_COLLISION_THRESHOLD) {
+                Direction avoidDirection = getAvoidDirection(tank, allTanks);
+                tank.setDirection(avoidDirection);
+                tankCollisionCounter = 0;
+                aiMoveCooldown = GameConstants.AI_MOVE_COOLDOWN_BASE / 2 +
+                                 GameConstants.RANDOM.nextInt(GameConstants.AI_MOVE_COOLDOWN_RANDOM / 2);
+            }
+        } else {
+            tankCollisionCounter = 0;
+        }
 
         // Detect if stuck (position hasn't changed)
         Direction newDirection = detectAndHandleStuck(tank);
@@ -51,7 +71,7 @@ public class TankAI {
 
         // Change direction occasionally
         if (aiMoveCooldown <= 0) {
-            Direction decidedDirection = decideDirection(tank, base);
+            Direction decidedDirection = decideDirection(tank, base, allTanks);
             tank.setDirection(decidedDirection);
             aiMoveCooldown = GameConstants.AI_MOVE_COOLDOWN_BASE / 2 +
                              GameConstants.RANDOM.nextInt(GameConstants.AI_MOVE_COOLDOWN_RANDOM);
@@ -96,13 +116,33 @@ public class TankAI {
     /**
      * Decide which direction to move.
      * AI_TARGET_BASE_CHANCE to move towards base, remainder random.
+     * Avoids directions blocked by other tanks.
      */
-    private Direction decideDirection(Tank tank, Base base) {
+    private Direction decideDirection(Tank tank, Base base, List<Tank> allTanks) {
+        Direction preferred;
         if (GameConstants.RANDOM.nextDouble() < GameConstants.AI_TARGET_BASE_CHANCE) {
-            return calculateDirectionTowardsBase(tank, base);
+            preferred = calculateDirectionTowardsBase(tank, base);
         } else {
-            return Direction.values()[GameConstants.RANDOM.nextInt(4)];
+            preferred = Direction.values()[GameConstants.RANDOM.nextInt(4)];
         }
+
+        // If preferred direction is blocked by another tank, try alternatives
+        if (isTankInDirection(tank, preferred, allTanks)) {
+            // Try perpendicular directions first
+            Direction[] perpendicular = getPerpendicularDirections(preferred);
+            for (Direction dir : perpendicular) {
+                if (!isTankInDirection(tank, dir, allTanks)) {
+                    return dir;
+                }
+            }
+            // Try opposite direction as last resort
+            Direction opposite = getOppositeDirection(preferred);
+            if (!isTankInDirection(tank, opposite, allTanks)) {
+                return opposite;
+            }
+        }
+
+        return preferred;
     }
 
     /**
@@ -119,6 +159,93 @@ public class TankAI {
         }
     }
 
+    /**
+     * Check if there's another tank in the given direction within detection distance.
+     */
+    private boolean isTankInDirection(Tank tank, Direction direction, List<Tank> allTanks) {
+        double tankCenterX = tank.getX() + tank.getSize() / 2.0;
+        double tankCenterY = tank.getY() + tank.getSize() / 2.0;
+
+        for (Tank other : allTanks) {
+            if (other == tank || !other.isAlive()) continue;
+
+            double otherCenterX = other.getX() + other.getSize() / 2.0;
+            double otherCenterY = other.getY() + other.getSize() / 2.0;
+
+            double dx = otherCenterX - tankCenterX;
+            double dy = otherCenterY - tankCenterY;
+            double distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > TANK_DETECTION_DISTANCE) continue;
+
+            // Check if other tank is in the specified direction
+            boolean inDirection = switch (direction) {
+                case UP -> dy < 0 && Math.abs(dx) < tank.getSize();
+                case DOWN -> dy > 0 && Math.abs(dx) < tank.getSize();
+                case LEFT -> dx < 0 && Math.abs(dy) < tank.getSize();
+                case RIGHT -> dx > 0 && Math.abs(dy) < tank.getSize();
+            };
+
+            if (inDirection) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get a direction that avoids other tanks.
+     */
+    private Direction getAvoidDirection(Tank tank, List<Tank> allTanks) {
+        Direction current = tank.getDirection();
+
+        // Try perpendicular directions first (more likely to break deadlock)
+        Direction[] perpendicular = getPerpendicularDirections(current);
+        // Shuffle perpendicular to add variety
+        if (GameConstants.RANDOM.nextBoolean()) {
+            Direction temp = perpendicular[0];
+            perpendicular[0] = perpendicular[1];
+            perpendicular[1] = temp;
+        }
+
+        for (Direction dir : perpendicular) {
+            if (!isTankInDirection(tank, dir, allTanks)) {
+                return dir;
+            }
+        }
+
+        // Try opposite direction
+        Direction opposite = getOppositeDirection(current);
+        if (!isTankInDirection(tank, opposite, allTanks)) {
+            return opposite;
+        }
+
+        // All directions blocked, pick random perpendicular
+        return perpendicular[GameConstants.RANDOM.nextInt(2)];
+    }
+
+    /**
+     * Get perpendicular directions to the given direction.
+     */
+    private Direction[] getPerpendicularDirections(Direction dir) {
+        return switch (dir) {
+            case UP, DOWN -> new Direction[]{Direction.LEFT, Direction.RIGHT};
+            case LEFT, RIGHT -> new Direction[]{Direction.UP, Direction.DOWN};
+        };
+    }
+
+    /**
+     * Get opposite direction.
+     */
+    private Direction getOppositeDirection(Direction dir) {
+        return switch (dir) {
+            case UP -> Direction.DOWN;
+            case DOWN -> Direction.UP;
+            case LEFT -> Direction.RIGHT;
+            case RIGHT -> Direction.LEFT;
+        };
+    }
+
     // For network sync
     public void setLastPosition(double x, double y) {
         this.lastX = x;
@@ -129,5 +256,6 @@ public class TankAI {
         this.aiMoveCooldown = GameConstants.AI_MOVE_COOLDOWN_BASE;
         this.aiShootCooldown = GameConstants.AI_SHOOT_COOLDOWN_BASE + 30;
         this.stuckCounter = 0;
+        this.tankCollisionCounter = 0;
     }
 }

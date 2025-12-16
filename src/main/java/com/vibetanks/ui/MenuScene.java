@@ -193,6 +193,10 @@ public class MenuScene {
     }
 
     private void startGame(int playerCount, int totalEnemies, boolean localMultiplayer) {
+        // Reset adaptive difficulty when starting a new game from menu
+        // This ensures normal mode (not easy/hard mode from previous session)
+        GameSettings.resetAdaptiveDifficulty();
+
         // Set local multiplayer mode flag
         GameSettings.setLocalMultiplayerMode(localMultiplayer);
 

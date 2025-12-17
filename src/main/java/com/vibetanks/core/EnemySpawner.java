@@ -274,4 +274,47 @@ public class EnemySpawner {
     private int getHeavyThreshold() {
         return GameSettings.isSinglePlayerLocalGame() ? 6 : 10;
     }
+
+    /**
+     * Spawn an extra random enemy tank (not BOSS).
+     * Called when an enemy collects a TANK/LIFE power-up.
+     * Increases totalEnemies by 1 and spawns immediately if possible.
+     *
+     * @param enemyTanks List of current enemy tanks
+     * @return true if enemy was spawned successfully
+     */
+    public boolean spawnExtraEnemy(List<Tank> enemyTanks) {
+        // Increase total enemy count
+        totalEnemies++;
+
+        // Pick a random type (not BOSS or HEAVY)
+        Tank.EnemyType[] types = {
+            Tank.EnemyType.REGULAR,
+            Tank.EnemyType.FAST,
+            Tank.EnemyType.ARMORED,
+            Tank.EnemyType.POWER
+        };
+        Tank.EnemyType type = types[random.nextInt(types.length)];
+        int tankSize = 28;
+
+        // Find a valid spawn position
+        double[] spawnPos = findValidSpawnPosition(type, tankSize, enemyTanks);
+
+        if (spawnPos != null) {
+            Tank enemy = new Tank(spawnPos[0], spawnPos[1], Direction.DOWN, false, 0, type);
+            enemyTanks.add(enemy);
+            spawnedCount++;
+
+            // Track POWER tanks for easy mode guarantees
+            if (type == Tank.EnemyType.POWER) {
+                powerTanksSpawned++;
+            }
+
+            LOG.info("EXTRA ENEMY: {} spawned from LIFE power-up! (total enemies now: {})", type, totalEnemies);
+            return true;
+        }
+
+        LOG.info("EXTRA ENEMY: Could not spawn immediately (no valid position), will spawn later");
+        return false;
+    }
 }

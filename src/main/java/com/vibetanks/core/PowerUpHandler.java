@@ -39,6 +39,7 @@ public class PowerUpHandler {
         public boolean activateFreeze = false;        // Freeze players
         public boolean activateBomb = false;          // Damage all players
         public boolean activateCar = false;           // Team speed boost
+        public boolean spawnExtraEnemy = false;       // Spawn extra enemy (TANK/LIFE collected)
     }
 
     /**
@@ -97,6 +98,11 @@ public class PowerUpHandler {
                     case CAR -> {
                         result.activateCar = true;
                         powerUp.applyEffect(enemy);  // Give permanent boost to collector
+                    }
+                    case TANK -> {
+                        // Enemy collected LIFE power-up - spawn extra enemy instead of giving life
+                        result.spawnExtraEnemy = true;
+                        enemy.setRandomColorOverride();  // Visual feedback
                     }
                     default -> powerUp.applyEffect(enemy);
                 }

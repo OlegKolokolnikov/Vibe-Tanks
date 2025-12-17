@@ -906,6 +906,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 } else if (enemyResult.activateCar) {
                     powerUpEffectManager.activateEnemySpeedBoost(enemyResult.collectorEnemy);
                     PowerUpHandler.applyEnemyCarSpeedBoost(enemyTanks, enemyResult.collectorEnemy, ENEMY_TEAM_SPEED_BOOST);
+                } else if (enemyResult.spawnExtraEnemy) {
+                    // Enemy collected LIFE power-up - spawn extra enemy
+                    enemySpawner.spawnExtraEnemy(enemyTanks);
                 }
                 powerUpIterator.remove();
                 continue;

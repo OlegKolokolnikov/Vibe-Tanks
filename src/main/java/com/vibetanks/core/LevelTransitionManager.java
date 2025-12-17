@@ -56,6 +56,10 @@ public class LevelTransitionManager {
         // Configuration
         int getTotalEnemies();
         double[][] getFixedStartPositions();
+
+        // Explosions
+        List<ExplosionEffect> getExplosions();
+        void resetPlayerDeathExplosionFlags();
     }
 
     /**
@@ -220,13 +224,15 @@ public class LevelTransitionManager {
     }
 
     /**
-     * Clear all projectiles and power-ups.
+     * Clear all projectiles, power-ups, and explosions.
      * Also reset ID counters to stay in sync with server.
      */
     private static void clearProjectilesAndPowerUps(LevelTransitionContext ctx) {
         ctx.getBullets().clear();
         ctx.getLasers().clear();
         ctx.getPowerUps().clear();
+        ctx.getExplosions().clear();
+        ctx.resetPlayerDeathExplosionFlags();
 
         // Reset ID counters to stay in sync with server (which also resets on level transitions)
         Bullet.resetIdCounter();

@@ -57,6 +57,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     private List<Bullet> bullets;
     private List<Laser> lasers;
     private List<PowerUp> powerUps;
+    private List<ExplosionEffect> explosions = new ArrayList<>();
+    private boolean[] playerDeathExplosionCreated = new boolean[4]; // Track permanent death explosions
     private final List<GameState.SoundEvent> pendingSoundEvents = Collections.synchronizedList(new ArrayList<>()); // Sound events for network sync (thread-safe)
     private EnemySpawner enemySpawner;
     private InputHandler inputHandler;
@@ -710,6 +712,9 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         int enemyCountBefore = enemyTanks.size();
         enemySpawner.update(enemyTanks);
         enemySpawner.updateSpawnEffects();
+
+        // Update explosions
+        explosions.removeIf(e -> { e.update(); return e.isExpired(); });
         // Apply temporary speed boost to newly spawned enemies if boost is active
         if (powerUpEffectManager.isEnemySpeedBoostActive() && enemyTanks.size() > enemyCountBefore) {
             for (int i = enemyCountBefore; i < enemyTanks.size(); i++) {
@@ -744,11 +749,17 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                 }
             } else if (player.getLives() > 0) {
                 // Player died but has lives left - respawn (lives already decremented by damage())
+                // Create explosion at death position before respawn
+                explosions.add(new ExplosionEffect(player.getX(), player.getY(), player.getSize()));
                 double respawnX = FIXED_START_POSITIONS[i][0];
                 double respawnY = FIXED_START_POSITIONS[i][1];
                 LOG.info("Player {} will respawn in 1 second at: {}, {} (lives left: {})",
                     i + 1, respawnX, respawnY, player.getLives());
                 player.respawn(respawnX, respawnY);
+            } else if (!playerDeathExplosionCreated[i]) {
+                // Player died permanently (no lives left) - create explosion once
+                explosions.add(new ExplosionEffect(player.getX(), player.getY(), player.getSize()));
+                playerDeathExplosionCreated[i] = true;
             }
             // When lives == 0 and player dies, they stay dead (game over check handles this)
         }
@@ -948,6 +959,13 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
             LOG.info("Easter egg expired!");
         }
 
+        // Create explosions for dead enemy tanks before removing them
+        for (Tank enemy : enemyTanks) {
+            if (!enemy.isAlive()) {
+                explosions.add(new ExplosionEffect(enemy.getX(), enemy.getY(), enemy.getSize()));
+            }
+        }
+
         // Remove dead enemy tanks using shared GameLogic
         GameLogic.removeDeadEnemies(enemyTanks);
 
@@ -1041,6 +1059,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         // Render spawn effects (lightning animation)
         for (SpawnEffect effect : enemySpawner.getSpawnEffects()) {
             effectRenderer.renderSpawnEffect(effect);
+        }
+
+        // Render explosions
+        for (ExplosionEffect explosion : explosions) {
+            effectRenderer.renderExplosion(explosion);
         }
 
         // Render UFO (above tanks, below trees)
@@ -1301,6 +1324,8 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
     @Override public void hideVictoryImage() { if (victoryImageView != null) victoryImageView.setVisible(false); }
     @Override public void hideGameOverImage() { if (gameOverImageView != null) gameOverImageView.setVisible(false); }
     @Override public void setGameOverSoundPlayed(boolean value) { gameOverSoundPlayed = value; }
+    @Override public List<ExplosionEffect> getExplosions() { return explosions; }
+    @Override public void resetPlayerDeathExplosionFlags() { java.util.Arrays.fill(playerDeathExplosionCreated, false); }
 
     @Override public double[][] getFixedStartPositions() { return FIXED_START_POSITIONS; }
 

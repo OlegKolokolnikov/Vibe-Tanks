@@ -1,5 +1,6 @@
 package com.vibetanks.rendering;
 
+import com.vibetanks.core.ExplosionEffect;
 import com.vibetanks.core.FrameTime;
 import com.vibetanks.core.GameConstants;
 import com.vibetanks.core.SpawnEffect;
@@ -134,6 +135,83 @@ public class EffectRenderer {
         // Bright tip
         gc.setFill(Color.rgb(255, 255, 255, alpha * 0.8));
         gc.fillOval(x1 - 2, y1 - 2, 4, 4);
+    }
+
+    /**
+     * Render explosion effect when a tank is destroyed.
+     */
+    public void renderExplosion(ExplosionEffect effect) {
+        double x = effect.getX();
+        double y = effect.getY();
+        int size = effect.getSize();
+        double progress = effect.getProgress();
+
+        // Center of explosion
+        double cx = x + size / 2.0;
+        double cy = y + size / 2.0;
+
+        gc.save();
+
+        // Explosion expands then fades
+        double expandFactor = 1.0 + progress * 0.8;
+        double alpha = 1.0 - progress;
+
+        // Outer orange/red glow (expanding)
+        double outerSize = size * expandFactor;
+        gc.setFill(Color.rgb(255, 100, 0, alpha * 0.4));
+        gc.fillOval(cx - outerSize / 2, cy - outerSize / 2, outerSize, outerSize);
+
+        // Middle fireball (orange)
+        double midSize = size * 0.8 * expandFactor;
+        gc.setFill(Color.rgb(255, 150, 0, alpha * 0.7));
+        gc.fillOval(cx - midSize / 2, cy - midSize / 2, midSize, midSize);
+
+        // Inner fireball (yellow)
+        double innerSize = size * 0.5 * (1.0 + progress * 0.3);
+        gc.setFill(Color.rgb(255, 220, 50, alpha * 0.9));
+        gc.fillOval(cx - innerSize / 2, cy - innerSize / 2, innerSize, innerSize);
+
+        // Bright white core (shrinks as explosion progresses)
+        if (progress < 0.5) {
+            double coreAlpha = (0.5 - progress) / 0.5;
+            double coreSize = size * 0.3 * (1.0 - progress);
+            gc.setFill(Color.rgb(255, 255, 255, coreAlpha));
+            gc.fillOval(cx - coreSize / 2, cy - coreSize / 2, coreSize, coreSize);
+        }
+
+        // Flying debris/sparks
+        int sparkCount = 8;
+        for (int i = 0; i < sparkCount; i++) {
+            double angle = (Math.PI * 2 * i) / sparkCount + progress * 2;
+            double dist = size * 0.3 + progress * size * 0.6;
+            double sparkX = cx + Math.cos(angle) * dist;
+            double sparkY = cy + Math.sin(angle) * dist;
+            double sparkSize = 3 + random.nextDouble() * 3;
+
+            // Alternate colors for sparks
+            if (i % 2 == 0) {
+                gc.setFill(Color.rgb(255, 200, 50, alpha));
+            } else {
+                gc.setFill(Color.rgb(255, 100, 0, alpha));
+            }
+            gc.fillOval(sparkX - sparkSize / 2, sparkY - sparkSize / 2, sparkSize, sparkSize);
+        }
+
+        // Smoke puffs (appear later in animation)
+        if (progress > 0.3) {
+            double smokeAlpha = (progress - 0.3) / 0.7 * alpha;
+            gc.setFill(Color.rgb(80, 80, 80, smokeAlpha * 0.5));
+            for (int i = 0; i < 4; i++) {
+                double angle = (Math.PI * 2 * i) / 4 + 0.5;
+                double dist = size * 0.2 + progress * size * 0.4;
+                double smokeX = cx + Math.cos(angle) * dist;
+                double smokeY = cy + Math.sin(angle) * dist - progress * 10; // Rise up
+                double smokeSize = 8 + progress * 6;
+                gc.fillOval(smokeX - smokeSize / 2, smokeY - smokeSize / 2, smokeSize, smokeSize);
+            }
+        }
+
+        gc.restore();
     }
 
     /**

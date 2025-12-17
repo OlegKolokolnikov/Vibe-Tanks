@@ -348,6 +348,8 @@ class LevelTransitionManagerTest {
         List<Bullet> bullets = new ArrayList<>();
         List<Laser> lasers = new ArrayList<>();
         List<PowerUp> powerUps = new ArrayList<>();
+        List<ExplosionEffect> explosions = new ArrayList<>();
+        boolean[] playerDeathExplosionFlags = new boolean[4];
         CelebrationManager celebrationManager = new CelebrationManager();
         UFOManager ufoManager = new UFOManager();
         PowerUpEffectManager powerUpEffectManager = new PowerUpEffectManager();
@@ -462,5 +464,11 @@ class LevelTransitionManagerTest {
 
         @Override
         public double[][] getFixedStartPositions() { return fixedPositions; }
+
+        @Override
+        public List<ExplosionEffect> getExplosions() { return explosions; }
+
+        @Override
+        public void resetPlayerDeathExplosionFlags() { java.util.Arrays.fill(playerDeathExplosionFlags, false); }
     }
 }

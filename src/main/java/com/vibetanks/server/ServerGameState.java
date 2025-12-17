@@ -470,6 +470,7 @@ public class ServerGameState {
         if (enemyFreezeDuration <= 0) {
             enemySpawner.update(enemyTanks);
         }
+        enemySpawner.updateSpawnEffects(); // Clean up expired effects
         // Apply temporary speed boost to newly spawned enemies if boost is active
         if (enemyTeamSpeedBoostDuration > 0 && enemyTanks.size() > enemyCountBefore) {
             for (int i = enemyCountBefore; i < enemyTanks.size(); i++) {

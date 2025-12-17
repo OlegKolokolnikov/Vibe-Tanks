@@ -1,6 +1,8 @@
 package com.vibetanks.rendering;
 
 import com.vibetanks.core.FrameTime;
+import com.vibetanks.core.GameConstants;
+import com.vibetanks.core.SpawnEffect;
 import com.vibetanks.core.Tank;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -8,6 +10,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 import java.util.List;
+import java.util.Random;
 
 /**
  * Renders special visual effects like UFO messages, boss health bar,
@@ -17,11 +20,120 @@ public class EffectRenderer {
     private final GraphicsContext gc;
     private final int width;
     private final int height;
+    private final Random random = GameConstants.RANDOM;
 
     public EffectRenderer(GraphicsContext gc, int width, int height) {
         this.gc = gc;
         this.width = width;
         this.height = height;
+    }
+
+    /**
+     * Render electricity/lightning spawn effect for enemy tanks.
+     */
+    public void renderSpawnEffect(SpawnEffect effect) {
+        double x = effect.getX();
+        double y = effect.getY();
+        int size = effect.getSize();
+        double progress = effect.getProgress();
+
+        // Effect fades out as it progresses
+        double alpha = 1.0 - progress;
+
+        // Center of the spawn area
+        double cx = x + size / 2.0;
+        double cy = y + size / 2.0;
+
+        // Draw electrical arcs radiating from center
+        gc.save();
+
+        // Outer glow (cyan/blue)
+        gc.setFill(Color.rgb(0, 200, 255, alpha * 0.3));
+        double glowSize = size * (1.0 + progress * 0.5);
+        gc.fillOval(cx - glowSize / 2, cy - glowSize / 2, glowSize, glowSize);
+
+        // Inner bright core
+        gc.setFill(Color.rgb(200, 240, 255, alpha * 0.6));
+        double coreSize = size * 0.4 * (1.0 - progress * 0.5);
+        gc.fillOval(cx - coreSize / 2, cy - coreSize / 2, coreSize, coreSize);
+
+        // Lightning bolts (randomized each frame for flickering effect)
+        gc.setStroke(Color.rgb(150, 220, 255, alpha));
+        gc.setLineWidth(2);
+
+        int boltCount = 6 + (int)(progress * 4); // More bolts as effect progresses
+        for (int i = 0; i < boltCount; i++) {
+            double angle = (i * 2 * Math.PI / boltCount) + (FrameTime.getFrameTime() * 0.1);
+            double boltLength = size * 0.4 * (1.0 - progress * 0.3);
+
+            // Draw jagged lightning bolt
+            drawLightningBolt(cx, cy, angle, boltLength, alpha);
+        }
+
+        // Bright white flash at start
+        if (progress < 0.2) {
+            double flashAlpha = (0.2 - progress) / 0.2;
+            gc.setFill(Color.rgb(255, 255, 255, flashAlpha * 0.8));
+            gc.fillOval(cx - size * 0.3, cy - size * 0.3, size * 0.6, size * 0.6);
+        }
+
+        // Spark particles
+        gc.setFill(Color.rgb(200, 240, 255, alpha));
+        for (int i = 0; i < 8; i++) {
+            double sparkAngle = random.nextDouble() * 2 * Math.PI;
+            double sparkDist = size * 0.3 * (1.0 + progress);
+            double sparkX = cx + Math.cos(sparkAngle) * sparkDist;
+            double sparkY = cy + Math.sin(sparkAngle) * sparkDist;
+            double sparkSize = 2 + random.nextDouble() * 3;
+            gc.fillOval(sparkX - sparkSize / 2, sparkY - sparkSize / 2, sparkSize, sparkSize);
+        }
+
+        gc.restore();
+    }
+
+    /**
+     * Draw a single jagged lightning bolt.
+     */
+    private void drawLightningBolt(double startX, double startY, double angle, double length, double alpha) {
+        int segments = 3;
+        double segLength = length / segments;
+
+        double x1 = startX;
+        double y1 = startY;
+
+        gc.setStroke(Color.rgb(150, 220, 255, alpha));
+        gc.setLineWidth(2);
+
+        for (int i = 0; i < segments; i++) {
+            // Add random offset for jagged effect
+            double jitter = (random.nextDouble() - 0.5) * segLength * 0.5;
+            double perpAngle = angle + Math.PI / 2;
+
+            double x2 = x1 + Math.cos(angle) * segLength + Math.cos(perpAngle) * jitter;
+            double y2 = y1 + Math.sin(angle) * segLength + Math.sin(perpAngle) * jitter;
+
+            gc.strokeLine(x1, y1, x2, y2);
+
+            // Occasional branch
+            if (random.nextDouble() < 0.3 && i < segments - 1) {
+                double branchAngle = angle + (random.nextDouble() - 0.5) * Math.PI / 2;
+                double branchLen = segLength * 0.5;
+                gc.setStroke(Color.rgb(100, 180, 255, alpha * 0.6));
+                gc.setLineWidth(1);
+                gc.strokeLine(x2, y2,
+                    x2 + Math.cos(branchAngle) * branchLen,
+                    y2 + Math.sin(branchAngle) * branchLen);
+                gc.setStroke(Color.rgb(150, 220, 255, alpha));
+                gc.setLineWidth(2);
+            }
+
+            x1 = x2;
+            y1 = y2;
+        }
+
+        // Bright tip
+        gc.setFill(Color.rgb(255, 255, 255, alpha * 0.8));
+        gc.fillOval(x1 - 2, y1 - 2, 4, 4);
     }
 
     /**

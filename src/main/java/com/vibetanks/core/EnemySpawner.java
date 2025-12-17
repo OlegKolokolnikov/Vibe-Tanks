@@ -1,6 +1,7 @@
 package com.vibetanks.core;
 
 import com.vibetanks.util.GameLogger;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -22,6 +23,9 @@ public class EnemySpawner {
     private final Random random = GameConstants.RANDOM; // Use shared Random instance
     private GameMap map;
     private int levelNumber;
+
+    // Spawn effects for visual feedback
+    private final List<SpawnEffect> spawnEffects = new ArrayList<>();
 
     // Spawn positions (top of map)
     private static final double[][] SPAWN_POSITIONS = {
@@ -148,11 +152,31 @@ public class EnemySpawner {
             enemyTanks.add(enemy);
             spawnedCount++;
 
+            // Create spawn effect (lightning animation)
+            spawnEffects.add(new SpawnEffect(spawnPos[0], spawnPos[1], tankSize));
+
             // Track POWER tanks for easy mode guarantees
             if (type == Tank.EnemyType.POWER) {
                 powerTanksSpawned++;
             }
         }
+    }
+
+    /**
+     * Update spawn effects (call each frame).
+     */
+    public void updateSpawnEffects() {
+        spawnEffects.removeIf(effect -> {
+            effect.update();
+            return effect.isExpired();
+        });
+    }
+
+    /**
+     * Get list of active spawn effects for rendering.
+     */
+    public List<SpawnEffect> getSpawnEffects() {
+        return spawnEffects;
     }
 
     // Track BOSS spawn wait time to prevent infinite blocking
@@ -264,6 +288,7 @@ public class EnemySpawner {
         this.bossSpawnWaitFrames = 0;
         this.map = newMap;
         this.levelNumber = newMap.getLevelNumber();
+        this.spawnEffects.clear();
     }
 
     /**
@@ -304,6 +329,9 @@ public class EnemySpawner {
             Tank enemy = new Tank(spawnPos[0], spawnPos[1], Direction.DOWN, false, 0, type);
             enemyTanks.add(enemy);
             spawnedCount++;
+
+            // Create spawn effect (lightning animation)
+            spawnEffects.add(new SpawnEffect(spawnPos[0], spawnPos[1], tankSize));
 
             // Track POWER tanks for easy mode guarantees
             if (type == Tank.EnemyType.POWER) {

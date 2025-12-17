@@ -709,6 +709,7 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
         // Spawn enemies if needed
         int enemyCountBefore = enemyTanks.size();
         enemySpawner.update(enemyTanks);
+        enemySpawner.updateSpawnEffects();
         // Apply temporary speed boost to newly spawned enemies if boost is active
         if (powerUpEffectManager.isEnemySpeedBoostActive() && enemyTanks.size() > enemyCountBefore) {
             for (int i = enemyCountBefore; i < enemyTanks.size(); i++) {
@@ -1035,6 +1036,11 @@ public class Game implements GameStateApplier.GameContext, LevelTransitionManage
                     effectRenderer.renderFreezeEffect(tank);
                 }
             }
+        }
+
+        // Render spawn effects (lightning animation)
+        for (SpawnEffect effect : enemySpawner.getSpawnEffects()) {
+            effectRenderer.renderSpawnEffect(effect);
         }
 
         // Render UFO (above tanks, below trees)

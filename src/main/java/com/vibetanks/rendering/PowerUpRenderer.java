@@ -25,10 +25,10 @@ public class PowerUpRenderer {
             return;
         }
 
-        // White background with border
-        gc.setFill(Color.WHITE);
+        // Semi-transparent white background with border
+        gc.setFill(Color.rgb(255, 255, 255, 0.5));
         gc.fillRect(x, y, SIZE, SIZE);
-        gc.setStroke(Color.DARKGRAY);
+        gc.setStroke(Color.rgb(100, 100, 100, 0.6));
         gc.setLineWidth(1);
         gc.strokeRect(x, y, SIZE, SIZE);
 
@@ -133,53 +133,122 @@ public class PowerUpRenderer {
     }
 
     private static void renderShip(GraphicsContext gc, double x, double y) {
-        // Water waves
-        gc.setFill(Color.BLUE);
-        gc.fillRect(x + 3, y + 21, 26, 6);
-        gc.setFill(Color.CYAN);
-        // Boat hull
+        // Water waves at bottom
+        gc.setFill(Color.rgb(30, 100, 180));
+        gc.fillRect(x + 1, y + 23, 30, 8);
+        // Wave highlights
+        gc.setFill(Color.rgb(100, 160, 220));
+        gc.fillOval(x + 3, y + 24, 8, 3);
+        gc.fillOval(x + 14, y + 25, 10, 3);
+        gc.fillOval(x + 25, y + 24, 6, 3);
+
+        // Hull (brown wooden ship)
+        gc.setFill(Color.rgb(120, 70, 40));
         gc.fillPolygon(
-            new double[]{x + 5, x + 27, x + 24, x + 8},
-            new double[]{y + 19, y + 19, y + 24, y + 24},
+            new double[]{x + 3, x + 29, x + 26, x + 6},
+            new double[]{y + 18, y + 18, y + 25, y + 25},
             4
         );
-        // Sail
+        // Hull stripe
+        gc.setFill(Color.rgb(90, 50, 30));
+        gc.fillRect(x + 5, y + 20, 22, 2);
+
+        // Mast
+        gc.setFill(Color.rgb(100, 60, 35));
+        gc.fillRect(x + 15, y + 4, 3, 16);
+
+        // Main sail (white/cream)
+        gc.setFill(Color.rgb(245, 240, 230));
         gc.fillPolygon(
-            new double[]{x + 16, x + 16, x + 24},
-            new double[]{y + 5, y + 19, y + 19},
+            new double[]{x + 18, x + 18, x + 28},
+            new double[]{y + 5, y + 16, y + 16},
             3
         );
+        // Sail shadow
+        gc.setFill(Color.rgb(200, 195, 185));
+        gc.fillPolygon(
+            new double[]{x + 18, x + 18, x + 23},
+            new double[]{y + 10, y + 16, y + 16},
+            3
+        );
+
+        // Flag on top
+        gc.setFill(Color.rgb(200, 50, 50));
+        gc.fillRect(x + 18, y + 3, 6, 4);
     }
 
     private static void renderShovel(GraphicsContext gc, double x, double y) {
-        gc.setFill(Color.ORANGE);
-        // Shovel handle
-        gc.fillRect(x + 13, y + 3, 6, 16);
-        // Shovel blade
+        // Wooden handle
+        gc.setFill(Color.rgb(140, 90, 50));
+        gc.fillRect(x + 14, y + 2, 4, 14);
+        // Handle grip (darker wood)
+        gc.setFill(Color.rgb(100, 65, 35));
+        gc.fillRect(x + 13, y + 2, 6, 4);
+
+        // Metal collar connecting handle to blade
+        gc.setFill(Color.rgb(120, 125, 130));
+        gc.fillRect(x + 12, y + 14, 8, 3);
+
+        // Shovel blade (metallic)
+        gc.setFill(Color.rgb(160, 165, 170));
         gc.fillPolygon(
-            new double[]{x + 8, x + 24, x + 21, x + 11},
-            new double[]{y + 19, y + 19, y + 29, y + 29},
-            4
+            new double[]{x + 8, x + 24, x + 22, x + 16, x + 10},
+            new double[]{y + 17, y + 17, y + 28, y + 30, y + 28},
+            5
         );
-        // Dirt/steel color accent
-        gc.setFill(Color.GRAY);
-        gc.fillRect(x + 11, y + 21, 10, 5);
+
+        // Blade edge (shiny)
+        gc.setFill(Color.rgb(200, 205, 210));
+        gc.fillPolygon(
+            new double[]{x + 10, x + 22, x + 21, x + 16, x + 11},
+            new double[]{y + 26, y + 26, y + 28, y + 30, y + 28},
+            5
+        );
+
+        // Blade shadow/depth
+        gc.setFill(Color.rgb(100, 105, 110));
+        gc.fillRect(x + 12, y + 19, 8, 4);
+
+        // Dirt on blade
+        gc.setFill(Color.rgb(100, 70, 40));
+        gc.fillOval(x + 11, y + 22, 5, 3);
+        gc.fillOval(x + 17, y + 23, 4, 3);
     }
 
     private static void renderSaw(GraphicsContext gc, double x, double y) {
-        gc.setFill(Color.BROWN);
-        gc.fillOval(x + 5, y + 5, 22, 22);
-        // Saw teeth
-        gc.setFill(Color.DARKGRAY);
-        for (int i = 0; i < 8; i++) {
-            double angle = (Math.PI * 2 * i) / 8;
-            double tx = x + SIZE / 2.0 + 10 * Math.cos(angle);
-            double ty = y + SIZE / 2.0 + 10 * Math.sin(angle);
-            gc.fillRect(tx - 3, ty - 3, 6, 6);
+        double cx = x + SIZE / 2.0;
+        double cy = y + SIZE / 2.0;
+
+        // Draw big visible teeth first (dark steel)
+        gc.setFill(Color.rgb(80, 85, 90));
+        int teethCount = 8;
+        for (int i = 0; i < teethCount; i++) {
+            double angle = (Math.PI * 2 * i) / teethCount;
+            // Big rectangular tooth
+            double tx = cx + 11 * Math.cos(angle);
+            double ty = cy + 11 * Math.sin(angle);
+            gc.save();
+            gc.translate(tx, ty);
+            gc.rotate(Math.toDegrees(angle));
+            gc.fillRect(-3, -4, 6, 8);
+            gc.restore();
         }
+
+        // Main blade disk (orange/gold like wood cutting saw)
+        gc.setFill(Color.rgb(210, 150, 50));
+        gc.fillOval(x + 6, y + 6, 20, 20);
+
+        // Inner ring
+        gc.setFill(Color.rgb(180, 120, 40));
+        gc.fillOval(x + 9, y + 9, 14, 14);
+
         // Center hole
-        gc.setFill(Color.WHITE);
-        gc.fillOval(x + 12, y + 12, 8, 8);
+        gc.setFill(Color.rgb(50, 50, 55));
+        gc.fillOval(x + 13, y + 13, 6, 6);
+
+        // Shine
+        gc.setFill(Color.rgb(240, 200, 100, 0.6));
+        gc.fillOval(x + 10, y + 10, 5, 4);
     }
 
     private static void renderTank(GraphicsContext gc, double x, double y) {
@@ -212,16 +281,35 @@ public class PowerUpRenderer {
     }
 
     private static void renderMachinegun(GraphicsContext gc, double x, double y) {
-        gc.setFill(Color.PURPLE);
-        // Gun barrel
-        gc.fillRect(x + 3, y + 13, 14, 6);
-        gc.fillRect(x + 5, y + 19, 6, 6); // Grip
-        // Multiple bullets flying
-        gc.setFill(Color.YELLOW);
-        gc.fillOval(x + 17, y + 13, 6, 6);
-        gc.fillOval(x + 23, y + 10, 4, 4);
-        gc.fillOval(x + 23, y + 18, 4, 4);
-        gc.fillOval(x + 27, y + 14, 3, 3);
+        // Gun body (dark metal)
+        gc.setFill(Color.rgb(50, 50, 55));
+        gc.fillRect(x + 2, y + 12, 16, 8);
+        // Barrel with holes
+        gc.setFill(Color.rgb(70, 70, 75));
+        gc.fillRect(x + 4, y + 14, 12, 4);
+        // Barrel holes (cooling vents)
+        gc.setFill(Color.rgb(30, 30, 35));
+        gc.fillOval(x + 5, y + 14.5, 2, 3);
+        gc.fillOval(x + 8, y + 14.5, 2, 3);
+        gc.fillOval(x + 11, y + 14.5, 2, 3);
+        // Stock/grip
+        gc.setFill(Color.rgb(60, 45, 30)); // Wood color
+        gc.fillRect(x + 2, y + 20, 6, 6);
+        // Muzzle flash
+        gc.setFill(Color.rgb(255, 200, 50));
+        gc.fillOval(x + 17, y + 12, 6, 8);
+        gc.setFill(Color.rgb(255, 255, 200));
+        gc.fillOval(x + 18, y + 14, 3, 4);
+        // Flying bullets (tracer rounds)
+        gc.setFill(Color.rgb(255, 180, 50));
+        gc.fillRect(x + 23, y + 11, 5, 2);
+        gc.fillRect(x + 25, y + 15, 5, 2);
+        gc.fillRect(x + 24, y + 19, 5, 2);
+        // Bullet tips
+        gc.setFill(Color.rgb(200, 150, 50));
+        gc.fillOval(x + 27, y + 10.5, 2, 3);
+        gc.fillOval(x + 29, y + 14.5, 2, 3);
+        gc.fillOval(x + 28, y + 18.5, 2, 3);
     }
 
     private static void renderFreeze(GraphicsContext gc, double x, double y) {
@@ -259,23 +347,37 @@ public class PowerUpRenderer {
     }
 
     private static void renderLaser(GraphicsContext gc, double x, double y) {
-        // Laser emitter/gun
-        gc.setFill(Color.DARKGRAY);
-        gc.fillRect(x + 3, y + 12, 10, 8);
-        gc.setFill(Color.GRAY);
-        gc.fillRect(x + 5, y + 14, 6, 4);
-        // Laser beam
-        gc.setFill(Color.DARKRED);
-        gc.fillRect(x + 13, y + 14, 18, 4);
-        gc.setFill(Color.RED);
-        gc.fillRect(x + 13, y + 15, 18, 2);
-        gc.setFill(Color.WHITE);
-        gc.fillRect(x + 13, y + 15.5, 18, 1);
-        // Glow particles
-        gc.setFill(Color.ORANGE);
-        gc.fillOval(x + 28, y + 13, 3, 3);
-        gc.fillOval(x + 26, y + 17, 2, 2);
-        gc.fillOval(x + 29, y + 16, 2, 2);
+        // Laser emitter device
+        gc.setFill(Color.rgb(60, 60, 65));
+        gc.fillRect(x + 2, y + 10, 12, 12);
+        // Emitter lens housing
+        gc.setFill(Color.rgb(80, 80, 85));
+        gc.fillOval(x + 4, y + 12, 8, 8);
+        // Lens (glowing red)
+        gc.setFill(Color.rgb(200, 50, 50));
+        gc.fillOval(x + 6, y + 14, 4, 4);
+        // Lens highlight
+        gc.setFill(Color.rgb(255, 150, 150));
+        gc.fillOval(x + 6.5, y + 14.5, 2, 2);
+
+        // Laser beam (gradient effect with glow)
+        // Outer glow
+        gc.setFill(Color.rgb(255, 100, 100, 0.4));
+        gc.fillRect(x + 12, y + 13, 19, 6);
+        // Middle beam
+        gc.setFill(Color.rgb(255, 50, 50));
+        gc.fillRect(x + 12, y + 14.5, 19, 3);
+        // Core (bright)
+        gc.setFill(Color.rgb(255, 200, 200));
+        gc.fillRect(x + 12, y + 15.5, 19, 1);
+
+        // Impact point sparks
+        gc.setFill(Color.rgb(255, 255, 200));
+        gc.fillOval(x + 28, y + 12, 3, 3);
+        gc.fillOval(x + 29, y + 17, 2, 2);
+        gc.setFill(Color.rgb(255, 150, 50));
+        gc.fillOval(x + 26, y + 11, 2, 2);
+        gc.fillOval(x + 27, y + 19, 2, 2);
     }
 
     /**
